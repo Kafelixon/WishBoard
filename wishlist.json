@@ -35,13 +35,6 @@
     "price": "189",
     "link": "https://japonskienoze.pl/seki-kanetsugu-miyabi-issin-aus8-noz-szefa-kuchni-18-cm.html"
   },
-
-  {
-    "name": "Obudowa do Raspberry Pi 5 oficjalna - czerwono-biała",
-    "image": "https://cdn3.botland.com.pl/121217-pdt_540/obudowa-do-raspberry-pi-5-oficjalna-czerwono-biala.jpg",
-    "price": "56",
-    "link": "https://botland.com.pl/obudowy-do-raspberry-pi-5/23923-obudowa-do-raspberry-pi-5-oficjalna-czerwono-biala-5056561803340.html"
-  },
   {
     "name": "Oficjalny zasilacz  do Raspberry Pi 5",
     "image": "https://cdn2.botland.com.pl/121207-pdt_540/raspberry-pi-27w-usb-c-power-supply-oficjalny-zasilacz-usb-c-51v-5a-do-raspberry-pi-5-bialy.jpg",
@@ -67,10 +60,22 @@
     "price": "170",
     "link": "https://allegro.pl/oferta/baseus-magnetyczny-powerbank-bezprzewodowe-ladowanie-magsafe-10000mah-20w-14510652901"
   },
-  {
-    "name": "PS5",
-    "image": "https://image.ceneostatic.pl/data/products/86467784/i-sony-playstation-5.jpg",
-    "price": "2350",
-    "link": "https://www.ceneo.pl/86467784"
-  }
+    {
+      "name": "God of War PS5",
+      "image": "???",
+      "price": "~200",
+      "link": "#"
+    },
+    {
+      "name": "Marvel's Spiderman PS5",
+      "image": "???",
+      "price": "~200",
+      "link": "#"
+    },
+    {
+      "name": "Horizon Zero Dawn PS4",
+      "image": "???",
+      "price": "~40",
+      "link": "#"
+    }
 ]
