@@ -11,7 +11,7 @@ async function loadWishlist() {
 }
 
 function createWishlistCards(wishlist) {
-  wishlist.sort((a, b) => a.price - b.price);
+  wishlist.sort((a, b) => a.price.replace("~", "") - b.price.replace("~", ""));
 
   const cardsFragment = document.createDocumentFragment();
 
