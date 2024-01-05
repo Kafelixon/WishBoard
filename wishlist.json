@@ -6,12 +6,6 @@
     "link": "https://botland.com.pl/drukarki-3d-creality-seria-ender/23770-drukarka-3d-creality-ender-3-v3-se.html"
   },
   {
-    "name": "Apple HomePod Mini Biały",
-    "image": "https://image.ceneostatic.pl/data/products/98014120/f-apple-homepod-mini-bialy.jpg",
-    "price": "540",
-    "link": "https://www.ceneo.pl/98014120"
-  },
-  {
     "name": "Apple MagSafe Charger Biały (MHXH3ZMA)",
     "image": "https://image.ceneostatic.pl/data/products/98064014/121f2914-ca2a-4f35-9bce-2089a4c7713f_i-apple-magsafe-charger-bialy-mhxh3zma.jpg?=4e171",
     "price": "185",
@@ -24,23 +18,10 @@
     "link": "https://www.apple.com/pl/shop/product/MT0H3ZM/A/przewód-usb-c-do-szybkiego-ładowania-apple-watch-podłączany-magnetycznie-1-m"
   },
   {
-    "name": "Nóż Seki Kanetsune 555 DSR-1K6",
-    "image": "https://japonskienoze.pl/media/products/9f869ad669fb3452e11bc366effaa9fa/images/thumbnail/large_seki-kanetsune-555-dsr-1k6-noz-szefa-kuchni-18-cm00008.webp?lm=1689877234",
-    "price": "330",
-    "link": "https://japonskienoze.pl/seki-kanetsune-555-dsr-1k6-noz-szefa-kuchni-18-cm.html"
-  },
-  {
-    "name": "Nóż Seki Kanetsugu Miyabi Issin AUS8",
-    "image": "https://japonskienoze.pl/media/products/7ab2d6134d225b5bb2dc6cb75a4b1c51/images/thumbnail/large_seki-kanetsugu-miyabi-issin-aus8-noz-szefa-kuchni-18-cm-1.webp?lm=1689792833",
-    "price": "189",
-    "link": "https://japonskienoze.pl/seki-kanetsugu-miyabi-issin-aus8-noz-szefa-kuchni-18-cm.html"
-  },
-  {
     "name": "Oficjalny zasilacz  do Raspberry Pi 5",
     "image": "https://cdn2.botland.com.pl/121207-pdt_540/raspberry-pi-27w-usb-c-power-supply-oficjalny-zasilacz-usb-c-51v-5a-do-raspberry-pi-5-bialy.jpg",
     "price": "68",
     "link": "https://botland.com.pl/zasilacze-do-raspberry-pi-5/23906-raspberry-pi-27w-usb-c-power-supply-oficjalny-zasilacz-usb-c-51v-5a-do-raspberry-pi-5-bialy-5056561803401.html"
-
   },
   {
     "name": "Seeed Xiao ESP32-S3 Sense - zestaw z kamerą",
@@ -59,23 +40,5 @@
     "image": "https://a.allegroimg.com/original/111323/f38968fb4a2c877380f7630e027b/BASEUS-MAGNETYCZNY-POWERBANK-BEZPRZEWODOWE-LADOWANIE-MAGSAFE-10000MAH-20W",
     "price": "170",
     "link": "https://allegro.pl/oferta/baseus-magnetyczny-powerbank-bezprzewodowe-ladowanie-magsafe-10000mah-20w-14510652901"
-  },
-    {
-      "name": "God of War PS5",
-      "image": "???",
-      "price": "~200",
-      "link": "#"
-    },
-    {
-      "name": "Marvel's Spiderman PS5",
-      "image": "???",
-      "price": "~200",
-      "link": "#"
-    },
-    {
-      "name": "Horizon Zero Dawn PS4",
-      "image": "???",
-      "price": "~40",
-      "link": "#"
-    }
+  }
 ]
