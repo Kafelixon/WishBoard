@@ -9,15 +9,15 @@ import {
   FormLabel,
 } from "@mui/joy";
 import axios from "axios";
-import { auth } from "../src/firebaseSetup";
+// import { auth } from "../src/firebaseSetup";
 import { API_URL } from "../config";
-import { saveToUserWishlist } from "../data/userWishlist";
+// import { saveToUserWishlist } from "../data/userWishlist";
 import StyledCard from "../components/StyledCard";
 import DropZone from "../components/DropZone";
 import LanguageSelector from "../components/LanguageSelector";
 import { PossibleTranslationLanguages } from "../data/PossibleTranslationLanguages";
 import ToggleGroup from "../components/ToggleGroup";
-import TranslatedResponseTable from "../components/TranslatedResponseTable";
+import WishlistTable from "../components/WishlistTable";
 
 interface APIResponse {
   data: any;
@@ -34,7 +34,7 @@ export const TranslationView: React.FC = () => {
   const [minAppearances, setMinAppearances] = useState<number>(1);
 
   const [loading, setLoading] = useState(false);
-  const userId = auth.currentUser?.uid;
+  // const userId = auth.currentUser?.uid;
 
   const handleSubmit = async () => {
     setLoading(true);
@@ -78,13 +78,13 @@ export const TranslationView: React.FC = () => {
     }
   };
 
-  const handleSaveToWishlist = () => {
-    if (response && userId) {
-      saveToUserWishlist(userId, response.data).then(() => {
-        alert("Saved to user wishlist!");
-      });
-    }
-  };
+  // const handleSaveToWishlist = () => {
+  //   if (response && userId) {
+  //     saveToUserWishlist(userId, response.data).then(() => {
+  //       alert("Saved to user wishlist!");
+  //     });
+  //   }
+  // };
 
   return (
     <Stack
@@ -191,10 +191,10 @@ export const TranslationView: React.FC = () => {
       </StyledCard>
       {response && (
         <StyledCard>
-          <TranslatedResponseTable response={response} />
-          <Button onClick={handleSaveToWishlist} sx={{ mt: 2, width: 300 }}>
+          <WishlistTable response={response} />
+          {/* <Button onClick={handleSaveToWishlist} sx={{ mt: 2, width: 300 }}>
             Save to Wishlist
-          </Button>
+          </Button> */}
         </StyledCard>
       )}
     </Stack>

@@ -1,5 +1,7 @@
-export interface ResponseData {
-  occurrences: number;
-  original_text: string;
-  translated_text: string;
-}
+export type WishlistItem = {
+  id: number;
+  image: string;
+  name: string;
+  price: string;
+  link: string;
+};

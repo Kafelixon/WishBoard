@@ -10,8 +10,9 @@ const StyledCard = (props: StyledCardProps) => (
     variant="outlined"
     sx={{
       boxShadow: 2,
-      width: { xs: 300, sm: "auto" },
+      // width: { xs: 350, sm: "auto" },
       alignItems: "center",
+      minWidth: 300,
       maxWidth: "80vw",
       maxHeight: "80vh",
       flexGrow: 1,
