@@ -19,21 +19,23 @@ export default function WishlistTable({
   // selectedRecords = [],
   // onSelectRecord,
 }: WishlistTableProps) {
-    const sortedData = [...response.data].sort(
-      (a, b) => parseFloat(a.price.replace("~", "")) - parseFloat(b.price.replace("~", ""))
-    );
+  const sortedData = [...response.data].sort(
+    (a, b) =>
+      parseFloat(a.price.replace("~", "")) -
+      parseFloat(b.price.replace("~", "")),
+  );
 
-    // const handleSelectAllRecords = () => {
-    //   if (onSelectRecord) {
-    //     if (selectedRecords.length === response.data.length) {
-    //       // Deselect all records
-    //       selectedRecords.forEach((recordId) => onSelectRecord(recordId));
-    //     } else {
-    //       // Select all records
-    //       response.data.forEach((row) => onSelectRecord(row.id));
-    //     }
-    //   }
-    // };
+  // const handleSelectAllRecords = () => {
+  //   if (onSelectRecord) {
+  //     if (selectedRecords.length === response.data.length) {
+  //       // Deselect all records
+  //       selectedRecords.forEach((recordId) => onSelectRecord(recordId));
+  //     } else {
+  //       // Select all records
+  //       response.data.forEach((row) => onSelectRecord(row.id));
+  //     }
+  //   }
+  // };
 
   // const tableHeaderStyle = {
   //   verticalAlign: "middle",
@@ -52,7 +54,30 @@ export default function WishlistTable({
     </div>
   ));
 
-  return <Sheet sx={{ overflow: "auto"}}>{cards}</Sheet>;
+  return (
+    <Sheet
+      sx={{
+        borderRadius: "8px",
+        "--TableCell-height": "40px",
+        // the number is the amount of the header rows.
+        "--TableHeader-height": "calc(1 * var(--TableCell-height))",
+        maxHeight: "60vh",
+        overflow: "auto",
+        backgroundSize: "100% 40px, 100% 40px, 100% 14px, 100% 14px",
+        backgroundRepeat: "no-repeat",
+        backgroundAttachment: "local, local, scroll, scroll",
+        backgroundPosition:
+          "0 var(--TableHeader-height), 0 100%, 0 var(--TableHeader-height), 0 100%",
+
+        backgroundColor: "rgba(255, 255, 255, 0.4)", // semi-transparent white
+        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
+        boxShadow: "0 8px 32px 0 rgba(31, 38, 31, 0.17)",
+      }}
+    >
+      {cards}
+    </Sheet>
+  );
   // return (
   //   <Sheet sx={{ overflow: "auto" }}>
   //     <Table aria-label="translated text table" stickyHeader hoverRow>

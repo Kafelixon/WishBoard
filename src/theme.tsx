@@ -1,4 +1,4 @@
-import { extendTheme } from '@mui/joy/styles';
+import { extendTheme } from "@mui/joy/styles";
 
 export const theme = extendTheme({
   cssVarPrefix: "bs",
@@ -6,27 +6,27 @@ export const theme = extendTheme({
     light: {
       palette: {
         primary: {
-          50: "#88BDBF",
-          100: "#b5d7d8",
-          200: "#88bdbf",
-          300: "#5aa4a6",
+          50: "#BFBED5",
+          100: "#AAAAC7",
+          200: "#9695BA",
+          300: "#8181AC",
           400: "#399394",
-          500: "#208180",
-          600: "#1e7574",
-          700: "#1b6664",
-          800: "#185654",
-          900: "#103c38",
+          500: "#6D6C9F",
+          600: "#5D5C8D",
+          700: "#4F4F78",
+          800: "#424164",
+          900: "#34344F",
         },
         neutral: {
           plainColor: "var(--light-font-color)",
           50: "#f1eeec",
-          100: "#dcd4ce",
-          200: "#dcd4ce",
-          300: "#dcd4ce",
+          100: "#BFBED5",
+          200: "#BFBED5",
+          300: "#BFBED5",
           400: "#9c8171",
           500: "#8a6a57",
           600: "#7d604f",
-          700: "#6d5345",
+          700: "#2E2D45",
           800: "var(--light-font-color)",
           900: "#4e3830",
         },

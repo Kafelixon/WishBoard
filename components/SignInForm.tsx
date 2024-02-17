@@ -29,7 +29,7 @@ export const SignInForm = () => {
         dispatch,
         uid,
         navigate,
-        from
+        from,
       );
     } catch (error) {
       handleLoginError(error);
@@ -49,7 +49,12 @@ export const SignInForm = () => {
     <StyledCard>
       <form
         onSubmit={handleLogin}
-        style={{ display: "flex", flexDirection: "column", gap: "8px", padding: "8px 0"}}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          padding: "8px 0",
+        }}
       >
         {renderEmailInput(email, setEmail)}
         {renderPasswordInput(password, setPassword)}
@@ -66,7 +71,7 @@ function renderEmailInput(
   setEmail: {
     (value: React.SetStateAction<string>): void;
     (arg0: string): void;
-  }
+  },
 ) {
   return (
     <Input
@@ -83,7 +88,7 @@ function renderPasswordInput(
   setPassword: {
     (value: React.SetStateAction<string>): void;
     (arg0: string): void;
-  }
+  },
 ) {
   return (
     <Input
@@ -126,7 +131,7 @@ function renderToggleRegisterLogin(
   setRegistered: {
     (value: React.SetStateAction<boolean>): void;
     (arg0: boolean): void;
-  }
+  },
 ) {
   return (
     <Typography
@@ -150,6 +155,13 @@ function renderToggleRegisterLogin(
 
 function handleLoginError(error: any) {
   console.error("Login Error: ", error.message || error);
+  // TODO: Show error message to user
+  if (error.code === "auth/wrong-password") {
+    alert("Wrong password.");
+  }
+  if (error.code === "auth/invalid-login-credentials") {
+    alert("User not found.");
+  }
 }
 
 export default SignInForm;

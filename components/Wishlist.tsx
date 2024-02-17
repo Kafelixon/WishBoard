@@ -6,15 +6,13 @@ import {
 } from "../data/userWishlist";
 import { WishlistItem } from "../src/types";
 import { auth } from "../src/firebaseSetup";
-import { Stack } from "@mui/joy";
+import { Button, Stack } from "@mui/joy";
 import StyledCard from "./StyledCard";
 
 export const Wishlist: React.FC = () => {
   const [userWishlist, setUserWishlist] = useState<WishlistItem[] | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  // const [isEditMode, setIsEditMode] = useState<boolean>(false);
-  // const [selectedRecords, setSelectedRecords] = useState<string[]>([]);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -81,43 +79,41 @@ export const Wishlist: React.FC = () => {
     return <p>Loading...</p>;
   }
 
+  const handleAddNewListing = () => {
+    console.log("Add new button clicked");
+    // TODO: Add new listing functionality
+  };
+
   return (
-    <StyledCard>
-      {userWishlist && (
-        <>
-          <Stack
-            direction="row"
-            justifyContent="space-between"
-            alignItems="center"
-            width={"-webkit-fill-available"}
-            px={2}
-          >
-            <h1 style={{ alignSelf: "start" }}>Personal Wishlist</h1>
-            {/* {isEditMode ? (
+    <Stack
+      direction={{ xs: "column", sm: "row" }}
+      spacing={{ xs: 1, sm: 2, md: 4, pt: 7 }}
+      marginX={{ xs: 10, sm: 20, md: 50, pt: 100 }}
+      justifyContent="center"
+      alignItems="center"
+      mt={6}
+    >
+      <StyledCard>
+        {userWishlist && userWishlist.length > 0 ? (
+          <>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
+              width={"-webkit-fill-available"}
+              px={2}
+            >
+              <h1 style={{ alignSelf: "start" }}>Personal Wishlist</h1>
               <Stack direction="row" gap={1}>
-                <Button onClick={removeSelected}>Remove</Button>
-                <Button onClick={cancelEditMode}>Cancel</Button>
+                <Button onClick={handleAddNewListing}>Add new</Button>
               </Stack>
-            ) : (
-              <Button onClick={() => setIsEditMode(true)}>Edit</Button>
-            )} */}
-          </Stack>
-          <WishlistTable
-            response={{ data: userWishlist }}
-            // isEditMode={isEditMode}
-            // selectedRecords={selectedRecords}
-            // onSelectRecord={(recordId) => {
-            //   setSelectedRecords((prev: string[]) => {
-            //     if (prev.includes(recordId)) {
-            //       return prev.filter((id) => id !== recordId);
-            //     } else {
-            //       return [...prev, recordId];
-            //     }
-            //   });
-            // }}
-          />
-        </>
-      )}
-    </StyledCard>
+            </Stack>
+            <WishlistTable response={{ data: userWishlist }} />
+          </>
+        ) : (
+          <p>Your personal dictionary is empty.</p>
+        )}
+      </StyledCard>
+    </Stack>
   );
 };

@@ -37,8 +37,8 @@ const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
   children,
 }) => {
   return (
-    <FormControl sx={{width:"100%", flexDirection:"column", gap:1}}>
-      <FormLabel sx={{m:0}}>{label}</FormLabel>
+    <FormControl sx={{ width: "100%", flexDirection: "column", gap: 1 }}>
+      <FormLabel sx={{ m: 0 }}>{label}</FormLabel>
       {children}
     </FormControl>
   );
@@ -58,7 +58,7 @@ const ResetPassword: React.FC = () => {
 
   return (
     <CommonSettingsForm label="Reset Password">
-      <Button variant="outlined" color="primary" onClick={resetPassword}>
+      <Button color="primary" onClick={resetPassword}>
         Send Password Reset Email
       </Button>
     </CommonSettingsForm>
@@ -112,8 +112,7 @@ const ChangeEmail: React.FC = () => {
       />
       <Button
         type="submit"
-        disabled={!isValid}
-        variant="outlined"
+        disabled={!email || !isValid}
         color="primary"
         onClick={changeEmail}
       >
@@ -123,12 +122,10 @@ const ChangeEmail: React.FC = () => {
   );
 };
 
-
-
 const RemoveAccount: React.FC = () => {
   const removeAccount = async () => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete your account? This cannot be undone."
+      "Are you sure you want to delete your account? This cannot be undone.",
     );
     if (confirmDelete) {
       try {
