@@ -19,7 +19,7 @@ export const LandingPage = () => {
           textAlign="center"
           sx={{ my: 1 }}
         >
-          Simple Wishlist
+          Minimal Wishlist
         </Typography>
         <section className="mainDescription">
           <h2>Create and share wishlists easily</h2>

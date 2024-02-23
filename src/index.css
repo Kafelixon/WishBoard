@@ -43,3 +43,10 @@ body {
     align-items: center;
     min-height: 100vh;
 }
+
+.wishlist-card img {
+    object-fit: fit;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+}

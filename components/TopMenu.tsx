@@ -19,7 +19,7 @@ export function TopMenu() {
   };
 
   const navigateToWishlist = () => {
-    navigate("/wishlist");
+    navigate("/wishlist/wishlist1");
   };
 
   const navigateToSettingsPage = () => {
@@ -50,7 +50,7 @@ export function TopMenu() {
           textAlign="center"
           onClick={navigateToHome}
         >
-          Wishlist
+          Minimal Wishlist
         </Typography>
       </Box>
       <Box
@@ -65,7 +65,7 @@ export function TopMenu() {
           <Button onClick={navigateToLogin}>Sign in</Button>
         ) : (
           <>
-            <Button onClick={navigateToWishlist}>My Wishlist</Button>
+            <Button onClick={navigateToWishlist}>Wishlists</Button>
             <Button onClick={navigateToSettingsPage}>
               <SettingsIcon />
             </Button>
