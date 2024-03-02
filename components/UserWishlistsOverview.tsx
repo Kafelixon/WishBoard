@@ -1,8 +1,8 @@
-import { Stack } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import { auth } from "../src/firebaseSetup";
 import { FollowedWishlists } from "./FollowedWishlists";
 import StyledCard from "./StyledCard";
+import StyledStack from "./StyledStack";
 import { UserWishlists } from "./UserWishlists";
 
 export const UserWishlistsOverview: React.FC = () => {
@@ -28,19 +28,11 @@ export const UserWishlistsOverview: React.FC = () => {
   }, [userId]);
 
   return (
-    <Stack
-      direction={{ xs: "column", sm: "row" }}
-      spacing={{ xs: 1, sm: 2, md: 4, pt: 7 }}
-      marginX={{ xs: 5, sm: 20, md: 50, pt: 100 }}
-      justifyContent="center"
-      alignItems="center"
-      mt={12}
-      mb={6}
-    >
+    <StyledStack>
       <StyledCard sx={{ display: "grid", gap: "1rem" }}>
         <FollowedWishlists />
         <UserWishlists />
       </StyledCard>
-    </Stack>
+    </StyledStack>
   );
 };

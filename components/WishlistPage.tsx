@@ -6,6 +6,7 @@ import {
   isUserWishlistOwner,
 } from "../data/wishlistHandlers";
 import StyledCard from "./StyledCard";
+import StyledStack from "./StyledStack";
 import WishlistItemsTable from "./WishlistTable";
 import { useUserId } from "../data/common";
 
@@ -14,7 +15,7 @@ export const WishlistPage: React.FC = () => {
   const [isAddMode, setIsAddMode] = useState<boolean>(false);
   const [isWishlistOwner, setIsWishlistOwner] = useState<boolean>(false);
   const [wishlistName, setWishlistName] = useState<string>("");
-  const {userId} = useUserId();
+  const { userId } = useUserId();
 
   useEffect(() => {
     if (userId && wishlistId) {
@@ -46,14 +47,7 @@ export const WishlistPage: React.FC = () => {
   }
 
   return (
-    <Stack
-      direction={{ xs: "column", sm: "row" }}
-      spacing={{ xs: 1, sm: 2, md: 4, pt: 7 }}
-      marginX={{ xs: 10, sm: 20, md: 50, pt: 100 }}
-      justifyContent="center"
-      alignItems="center"
-      mt={6}
-    >
+    <StyledStack>
       <StyledCard>
         <Stack
           direction="row"
@@ -76,6 +70,6 @@ export const WishlistPage: React.FC = () => {
           wishlistId={wishlistId}
         />
       </StyledCard>
-    </Stack>
+    </StyledStack>
   );
 };
