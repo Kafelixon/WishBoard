@@ -8,7 +8,7 @@ import { useUserId } from "../data/common";
 export function TopMenu() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { userId } = useUserId();
+  const userId = useUserId();
 
   const navigateToLogin = () => {
     navigate("/login");

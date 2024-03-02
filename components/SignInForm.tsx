@@ -1,11 +1,10 @@
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button, Input, Typography } from "@mui/joy";
 import { Google } from "@mui/icons-material";
 import { loginUser, loginWithGoogle } from "./authHandlers";
 import StyledCard from "./StyledCard";
-import { User, UserState } from "../src/types";
 import StyledStack from "./StyledStack";
 
 interface LocationState {
@@ -18,25 +17,14 @@ export const SignInForm = () => {
   const [registered, setRegistered] = useState(true);
 
   const dispatch = useDispatch();
-  const user: User | null = useSelector((state: UserState) => state.user);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const uid: string = user?.uid || "";
   const from = (location.state as LocationState)?.from || "/";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await loginUser(
-        email,
-        password,
-        registered,
-        dispatch,
-        uid,
-        navigate,
-        from,
-      );
+      await loginUser(email, password, registered, dispatch, navigate, from);
     } catch (error) {
       handleLoginError(error);
     }

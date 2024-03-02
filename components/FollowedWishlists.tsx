@@ -8,7 +8,7 @@ export const FollowedWishlists: React.FC = () => {
     null,
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const { userId } = useUserId();
+  const userId = useUserId();
 
   useEffect(() => {
     if (userId) {
@@ -17,8 +17,7 @@ export const FollowedWishlists: React.FC = () => {
         setFollowedWishlists(data);
         setIsLoading(false);
       });
-    }
-    else {
+    } else {
       setFollowedWishlists(null);
       setIsLoading(false);
     }

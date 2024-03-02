@@ -6,7 +6,7 @@ import { useUserId } from "../data/common";
 export const WishlistImport: React.FC = () => {
   const [jsonInput, setJsonInput] = useState<string>("");
   const [wishlistId, setWishlistId] = useState("");
-  const { userId } = useUserId();
+  const userId = useUserId();
 
   const handleAddToWishlist = () => {
     try {

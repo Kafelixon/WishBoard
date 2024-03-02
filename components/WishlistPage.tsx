@@ -15,7 +15,7 @@ export const WishlistPage: React.FC = () => {
   const [isAddMode, setIsAddMode] = useState<boolean>(false);
   const [isWishlistOwner, setIsWishlistOwner] = useState<boolean>(false);
   const [wishlistName, setWishlistName] = useState<string>("");
-  const { userId } = useUserId();
+  const userId = useUserId();
 
   useEffect(() => {
     if (userId && wishlistId) {

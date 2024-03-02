@@ -1,29 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { createWishlist, findWishlistsByOwner } from "../data/wishlistHandlers";
-import { auth } from "../src/firebaseSetup";
 import StyledCard from "./StyledCard";
 import { Wishlist } from "../src/types";
 import { Button } from "@mui/joy";
+import { useUserId } from "../data/common";
 
 export const UserWishlists: React.FC = () => {
   const [userWishlists, setUserWishlists] = useState<Wishlist[] | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        setUserId(null);
-        setUserWishlists(null);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, []);
+  const userId = useUserId();
 
   useEffect(() => {
     if (userId) {

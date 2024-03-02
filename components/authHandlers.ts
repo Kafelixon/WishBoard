@@ -16,9 +16,8 @@ export const loginUser = async (
   password: string,
   registered: boolean,
   dispatch: Dispatch<AnyAction>,
-  uid: string,
   navigate: NavigateFunction,
-  from: string
+  from: string,
 ) => {
   let userCredential: UserCredential;
 
@@ -32,10 +31,10 @@ export const loginUser = async (
       userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
-        password
+        password,
       );
       await sendEmailVerification(userCredential.user).catch((err) =>
-        console.log(err)
+        console.log(err),
       );
     }
     dispatchLogin(dispatch, userCredential, navigate, from);
@@ -47,19 +46,19 @@ export const loginUser = async (
 export const loginWithGoogle = async (
   dispatch: Dispatch<AnyAction>,
   navigate: NavigateFunction,
-  from: string
+  from: string,
 ) => {
   const provider = new GoogleAuthProvider();
 
-  const result = await signInWithPopup(auth, provider);
-  dispatchLogin(dispatch, result, navigate, from);
+  const userCredential = await signInWithPopup(auth, provider);
+  dispatchLogin(dispatch, userCredential, navigate, from);
 };
 
 const dispatchLogin = (
   dispatch: Dispatch<AnyAction>,
   credential: UserCredential,
   navigate: NavigateFunction,
-  from: string
+  from: string,
 ) => {
   const { uid, email } = credential.user;
   dispatch(login({ uid, email }));
