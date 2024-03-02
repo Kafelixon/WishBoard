@@ -45,20 +45,21 @@ const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
 };
 
 const ResetPassword: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/require-await -- This function will be updated later
   const resetPassword = async () => {
     try {
       // await auth.sendPasswordResetEmail(auth.currentUser?.email || "");
       // alert("Password reset email sent!");
       alert("This feature is not yet implemented.");
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Error sending reset email:", error);
-      alert(error.message);
+      console.error(error);
     }
   };
 
   return (
     <CommonSettingsForm label="Reset Password">
-      <Button color="primary" onClick={resetPassword}>
+      <Button color="primary" onClick={() => void resetPassword()}>
         Send Password Reset Email
       </Button>
     </CommonSettingsForm>
@@ -82,6 +83,7 @@ const ChangeEmail: React.FC = () => {
     setIsValid(isValidEmail(e.target.value));
   };
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- This function will be updated later
   const changeEmail = async () => {
     try {
       if (!isValid) {
@@ -94,9 +96,9 @@ const ChangeEmail: React.FC = () => {
         // alert("Email updated successfully!");
         alert("This feature is not yet implemented.");
       }
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
       console.error("Error updating email:", error);
-      alert(error.message);
+      console.error(error);
     }
   };
 
@@ -114,7 +116,7 @@ const ChangeEmail: React.FC = () => {
         type="submit"
         disabled={!email || !isValid}
         color="primary"
-        onClick={changeEmail}
+        onClick={() => void changeEmail()}
       >
         Change Email
       </Button>
@@ -123,6 +125,7 @@ const ChangeEmail: React.FC = () => {
 };
 
 const RemoveAccount: React.FC = () => {
+  // eslint-disable-next-line @typescript-eslint/require-await -- This function will be updated later
   const removeAccount = async () => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete your account? This cannot be undone.",
@@ -134,16 +137,16 @@ const RemoveAccount: React.FC = () => {
           // alert("Account deleted successfully.");
           alert("This feature is not yet implemented.");
         }
-      } catch (error: any) {
+      } catch (error: Error | unknown) {
         console.error("Error deleting account:", error);
-        alert(error.message);
+        console.error(error);
       }
     }
   };
 
   return (
     <CommonSettingsForm label="Delete Account">
-      <Button variant="outlined" color="danger" onClick={removeAccount}>
+      <Button variant="outlined" color="danger" onClick={() => void removeAccount()}>
         Delete My Account
       </Button>
     </CommonSettingsForm>
