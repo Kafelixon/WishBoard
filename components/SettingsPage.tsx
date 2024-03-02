@@ -8,21 +8,24 @@ import {
   Divider,
 } from "@mui/joy";
 import { auth } from "../src/firebaseSetup";
-import StyledCard from "../components/StyledCard";
+import StyledCard from "./StyledCard";
+import StyledStack from "./StyledStack";
 
 export const SettingsPage = () => {
   return (
-    <StyledCard>
-      <Typography level="h3" mb={2}>
-        Settings
-      </Typography>
+    <StyledStack>
+      <StyledCard>
+        <Typography level="h3" mb={2}>
+          Settings
+        </Typography>
 
-      <ResetPassword />
-      <Divider />
-      <ChangeEmail />
-      <Divider />
-      <RemoveAccount />
-    </StyledCard>
+        <ResetPassword />
+        <Divider />
+        <ChangeEmail />
+        <Divider />
+        <RemoveAccount />
+      </StyledCard>
+    </StyledStack>
   );
 };
 
@@ -146,7 +149,11 @@ const RemoveAccount: React.FC = () => {
 
   return (
     <CommonSettingsForm label="Delete Account">
-      <Button variant="outlined" color="danger" onClick={() => void removeAccount()}>
+      <Button
+        variant="outlined"
+        color="danger"
+        onClick={() => void removeAccount()}
+      >
         Delete My Account
       </Button>
     </CommonSettingsForm>
