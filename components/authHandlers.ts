@@ -8,7 +8,6 @@ import {
 } from "firebase/auth";
 import { auth } from "../src/firebaseSetup";
 import { login } from "../redux/slices/userSlice";
-import { setUserPreferences } from "../data/userPreferences";
 import { AnyAction, Dispatch } from "redux";
 import { NavigateFunction } from "react-router-dom";
 
@@ -40,7 +39,6 @@ export const loginUser = async (
       );
     }
     dispatchLogin(dispatch, userCredential, navigate, from);
-    await setUserPreferences(uid, { theme: "dark" });
   } catch (error: Error | unknown) {
     throw new Error("Invalid email or password. Please try again.");
   }
