@@ -1,17 +1,10 @@
-import { Stack, Typography } from "@mui/joy";
+import { Typography } from "@mui/joy";
 import StyledCard from "../components/StyledCard";
+import StyledStack from "./StyledStack";
 
 export const LandingPage = () => {
   return (
-    <Stack
-      direction={{ xs: "column", sm: "row" }}
-      spacing={{ xs: 1, sm: 2, md: 4, pt: 7 }}
-      marginX={{ xs: 5, sm: 20, md: 50, pt: 100 }}
-      justifyContent="center"
-      alignItems="center"
-      mt={12}
-      mb={6}
-    >
+    <StyledStack>
       <StyledCard sx={{ padding: 5 }}>
         <Typography
           level="h1"
@@ -42,6 +35,6 @@ export const LandingPage = () => {
           </p>
         </section>
       </StyledCard>
-    </Stack>
+    </StyledStack>
   );
 };

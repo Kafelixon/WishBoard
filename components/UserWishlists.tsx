@@ -3,6 +3,7 @@ import { createWishlist, findWishlistsByOwner } from "../data/wishlistHandlers";
 import { auth } from "../src/firebaseSetup";
 import StyledCard from "./StyledCard";
 import { Wishlist } from "../src/types";
+import { Button } from "@mui/joy";
 
 export const UserWishlists: React.FC = () => {
   const [userWishlists, setUserWishlists] = useState<Wishlist[] | null>(null);
@@ -27,13 +28,12 @@ export const UserWishlists: React.FC = () => {
   useEffect(() => {
     if (userId) {
       setIsLoading(true);
-      findWishlistsByOwner(userId).then((data) => {
+      void findWishlistsByOwner(userId).then((data) => {
         setUserWishlists(data);
         setIsLoading(false);
       });
     }
   }, [userId]);
-
 
   const handleAddWishlist = async () => {
     if (userId) {
@@ -58,11 +58,15 @@ export const UserWishlists: React.FC = () => {
 
   return (
     <StyledCard>
-      <button onClick={handleAddWishlist}>Add Wishlist</button>
+      <h2 style={{ alignSelf: "start" }}>Your Wishlists</h2>
+
+      <Button onClick={() => void handleAddWishlist()}>Add new</Button>
       {userWishlists && userWishlists.length > 0 ? (
         <ul>
           {userWishlists.map((wishlist) => (
-            <li key={wishlist.id}>{wishlist.name}</li>
+            <li key={wishlist.id}>
+              <a href={`/wishlist/${wishlist.id}`}>{wishlist.name}</a>
+            </li>
           ))}
         </ul>
       ) : (

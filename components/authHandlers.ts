@@ -5,19 +5,20 @@ import {
   GoogleAuthProvider,
   UserCredential,
   sendEmailVerification,
-  AuthError,
 } from "firebase/auth";
 import { auth } from "../src/firebaseSetup";
 import { login } from "../redux/slices/userSlice";
 import { setUserPreferences } from "../data/userPreferences";
+import { AnyAction, Dispatch } from "redux";
+import { NavigateFunction } from "react-router-dom";
 
 export const loginUser = async (
   email: string,
   password: string,
   registered: boolean,
-  dispatch: any,
+  dispatch: Dispatch<AnyAction>,
   uid: string,
-  navigate: any,
+  navigate: NavigateFunction,
   from: string
 ) => {
   let userCredential: UserCredential;
@@ -39,31 +40,27 @@ export const loginUser = async (
       );
     }
     dispatchLogin(dispatch, userCredential, navigate, from);
-    setUserPreferences(uid, { theme: "dark" });
-  } catch (error: AuthError | any) {
-    throw error;
+    await setUserPreferences(uid, { theme: "dark" });
+  } catch (error: Error | unknown) {
+    throw new Error("Invalid email or password. Please try again.");
   }
 };
 
 export const loginWithGoogle = async (
-  dispatch: any,
-  navigate: any,
+  dispatch: Dispatch<AnyAction>,
+  navigate: NavigateFunction,
   from: string
 ) => {
   const provider = new GoogleAuthProvider();
 
-  try {
-    const result = await signInWithPopup(auth, provider);
-    dispatchLogin(dispatch, result, navigate, from);
-  } catch (error: AuthError | any) {
-    throw error;
-  }
+  const result = await signInWithPopup(auth, provider);
+  dispatchLogin(dispatch, result, navigate, from);
 };
 
 const dispatchLogin = (
-  dispatch: any,
+  dispatch: Dispatch<AnyAction>,
   credential: UserCredential,
-  navigate: any,
+  navigate: NavigateFunction,
   from: string
 ) => {
   const { uid, email } = credential.user;

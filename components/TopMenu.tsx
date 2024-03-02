@@ -1,14 +1,14 @@
 import { Box, Button, Typography } from "@mui/joy";
 import { logout } from "../redux/slices/userSlice";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import SettingsIcon from "@mui/icons-material/Settings";
+import { useUserId } from "../data/common";
 
 export function TopMenu() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const userState = useSelector((state: any) => state.user);
-  const uid = userState.user ? userState.user.uid : null;
+  const { userId } = useUserId();
 
   const navigateToLogin = () => {
     navigate("/login");
@@ -19,7 +19,7 @@ export function TopMenu() {
   };
 
   const navigateToWishlist = () => {
-    navigate("/wishlist/wishlist1");
+    navigate("/wishlists");
   };
 
   const navigateToSettingsPage = () => {
@@ -34,22 +34,14 @@ export function TopMenu() {
         top: 0,
         p: 2,
         width: "100vw",
-        minHeight: "60px",
-        flexDirection: "row",
         display: "flex",
-        alignItems: "end",
+        alignItems: "center",
         justifyContent: "space-between",
-        gap: 1,
         zIndex: 1,
       }}
     >
-      <Box sx={{ justifySelf: "start" }}>
-        <Typography
-          level="h2"
-          fontWeight="xl"
-          textAlign="center"
-          onClick={navigateToHome}
-        >
+      <Box>
+        <Typography level="h2" onClick={navigateToHome}>
           Minimal Wishlist
         </Typography>
       </Box>
@@ -61,7 +53,7 @@ export function TopMenu() {
           gap: 1,
         }}
       >
-        {!uid ? (
+        {!userId ? (
           <Button onClick={navigateToLogin}>Sign in</Button>
         ) : (
           <>

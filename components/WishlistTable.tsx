@@ -1,30 +1,51 @@
 import { FormControl, Button, Input, Stack } from "@mui/joy";
 import Sheet from "@mui/joy/Sheet";
 import { WishlistItem } from "../src/types";
-import { useState } from "react";
-import { addItemToWishlist } from "../data/wishlistHandlers";
+import { useEffect, useState } from "react";
+import {
+  addItemToWishlist,
+  fetchWishlistItems,
+} from "../data/wishlistHandlers";
 
-interface WishlistTableProps {
-  response: {
-    data: WishlistItem[] | null;
-  };
-  isAddMode?: boolean;
-  onCancelAddMode?: () => void;
-  wishlistId?: string;
+interface WishlistItemsTableProps {
+  isAddMode: boolean;
+  onCancelAddMode: () => void;
+  wishlistId: string;
+  userId: string | null;
 }
 
-export default function WishlistTable({
-  response,
+export default function WishlistItemsTable({
   isAddMode,
   onCancelAddMode,
   wishlistId,
-}: WishlistTableProps) {
+  userId,
+}: WishlistItemsTableProps) {
+  const [isAdding, setIsAdding] = useState(false);
   const [productName, setProductName] = useState("");
   const [averagePrice, setAveragePrice] = useState("");
   const [link, setLink] = useState("");
+  const [userWishlist, setUserWishlist] = useState<WishlistItem[]>([]);
+  const [isFetching, setIsFetching] = useState(true);
 
-  const cards = response.data
-    ? [...response.data]
+  useEffect(() => {
+    if (isAddMode) {
+      setProductName("");
+      setAveragePrice("");
+      setLink("");
+    }
+  }, [isAddMode]);
+
+  useEffect(() => {
+    if (wishlistId) {
+      void fetchWishlistItems(wishlistId).then((data) => {
+        if (data) setUserWishlist(data);
+        setIsFetching(false);
+      });
+    }
+  }, [wishlistId]);
+
+  const cards = userWishlist
+    ? [...userWishlist]
         .sort(
           (a, b) =>
             parseFloat(a.price.replace("~", "")) -
@@ -45,21 +66,32 @@ export default function WishlistTable({
     : [];
 
   const addListing = async () => {
+    if (!userId || !wishlistId) {
+      console.error("User ID or Wishlist ID is missing");
+      return;
+    }
     try {
-      addItemToWishlist(userId, wishlistId, {
-        name: productName,
+      setIsAdding(true);
+      await addItemToWishlist(userId, wishlistId, {
+        name: productName.trim(),
         price: averagePrice,
         link: link,
         image: "https://via.placeholder.com/150",
       });
-    } catch (error: any) {
-      console.error("Error adding new item:", error);
-      alert(error.message);
+      setIsAdding(false);
+      await cancelAddMode();
+    } catch (error: Error | unknown) {
+      setIsAdding(false);
+      console.error(error);
+      alert("Failed to add item to wishlist");
     }
   };
 
-  const cancelAddMode = () => {
+  const cancelAddMode = async () => {
     if (onCancelAddMode) onCancelAddMode();
+    await fetchWishlistItems(wishlistId).then((data) => {
+      if (data) setUserWishlist(data);
+    });
   };
 
   const addCard = (
@@ -85,15 +117,20 @@ export default function WishlistTable({
             onChange={(e) => setLink(e.target.value)}
             placeholder="Link"
           />
-          <Stack direction="row" justifyContent="space-between">
-            <Button color="primary" onClick={cancelAddMode}>
-              Cancel
-            </Button>
-            <Button color="primary" onClick={addListing}>
-              Add listing
-            </Button>
-          </Stack>
         </FormControl>
+
+        <Stack direction="row" justifyContent="space-between">
+          <Button color="primary" onClick={() => void cancelAddMode()}>
+            Cancel
+          </Button>
+          <Button
+            color="primary"
+            loading={isAdding}
+            onClick={() => void addListing()}
+          >
+            Add listing
+          </Button>
+        </Stack>
       </div>
     </div>
   );
@@ -118,8 +155,8 @@ export default function WishlistTable({
         boxShadow: "0 8px 32px 0 rgba(31, 38, 31, 0.17)",
       }}
     >
-      {isAddMode && addCard}
-      {cards}
+      {isAddMode && userId && addCard}
+      {isFetching ? "Loading..." : cards}
     </Sheet>
   );
 }

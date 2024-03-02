@@ -5,6 +5,12 @@ import { Button, Input, Typography } from "@mui/joy";
 import { Google } from "@mui/icons-material";
 import { loginUser, loginWithGoogle } from "./authHandlers";
 import StyledCard from "./StyledCard";
+import { User, UserState } from "../src/types";
+import StyledStack from "./StyledStack";
+
+interface LocationState {
+  from: string;
+}
 
 export const SignInForm = () => {
   const [email, setEmail] = useState("");
@@ -12,12 +18,12 @@ export const SignInForm = () => {
   const [registered, setRegistered] = useState(true);
 
   const dispatch = useDispatch();
-  const { user } = useSelector((state: any) => state.user);
+  const user: User | null = useSelector((state: UserState) => state.user);
   const navigate = useNavigate();
-  const { state } = useLocation();
+  const location = useLocation();
 
-  const uid = user?.uid;
-  const from = state?.from?.pathname || "/";
+  const uid: string = user?.uid || "";
+  const from = (location.state as LocationState)?.from || "/";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,23 +52,25 @@ export const SignInForm = () => {
   };
 
   return (
-    <StyledCard>
-      <form
-        onSubmit={handleLogin}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "8px",
-          padding: "8px 0",
-        }}
-      >
-        {renderEmailInput(email, setEmail)}
-        {renderPasswordInput(password, setPassword)}
-        {renderSubmitButton(registered)}
-        {renderGoogleLoginButton(handleGoogleLogin)}
-      </form>
-      {renderToggleRegisterLogin(registered, setRegistered)}
-    </StyledCard>
+    <StyledStack>
+      <StyledCard>
+        <form
+          onSubmit={(e) => void handleLogin(e)}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+            padding: "8px 0",
+          }}
+        >
+          {renderEmailInput(email, setEmail)}
+          {renderPasswordInput(password, setPassword)}
+          {renderSubmitButton(registered)}
+          {renderGoogleLoginButton(handleGoogleLogin)}
+        </form>
+        {renderToggleRegisterLogin(registered, setRegistered)}
+      </StyledCard>
+    </StyledStack>
   );
 };
 
@@ -75,6 +83,8 @@ function renderEmailInput(
 ) {
   return (
     <Input
+      name="email"
+      autoComplete="email"
       type="email"
       placeholder="Email"
       value={email}
@@ -92,6 +102,8 @@ function renderPasswordInput(
 ) {
   return (
     <Input
+      name="password"
+      autoComplete="current-password"
       type="password"
       placeholder="Password"
       value={password}
@@ -105,12 +117,11 @@ function renderSubmitButton(registered: boolean) {
 }
 
 function renderGoogleLoginButton(handleGoogleLogin: {
-  (e: React.FormEvent<any>): Promise<void>;
-  (e: React.FormEvent<any>): Promise<void>;
+  (e: React.FormEvent): Promise<void>;
 }) {
   return (
     <Button
-      onClick={handleGoogleLogin}
+      onClick={(e) => void handleGoogleLogin(e)}
       variant="outlined"
       sx={{
         color: "var(--bs-palette-primary-600)",
@@ -153,13 +164,22 @@ function renderToggleRegisterLogin(
   );
 }
 
-function handleLoginError(error: any) {
+function handleLoginError(error: Error | unknown) {
+  // if error is unknown just log it
+  if (
+    typeof error !== "object" ||
+    error === null ||
+    !(error instanceof Error)
+  ) {
+    console.error("Login Error: ", error);
+    return;
+  }
   console.error("Login Error: ", error.message || error);
   // TODO: Show error message to user
-  if (error.code === "auth/wrong-password") {
+  if (error.message === "auth/wrong-password") {
     alert("Wrong password.");
   }
-  if (error.code === "auth/invalid-login-credentials") {
+  if (error.message === "auth/invalid-login-credentials") {
     alert("User not found.");
   }
 }

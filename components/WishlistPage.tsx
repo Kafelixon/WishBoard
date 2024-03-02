@@ -1,64 +1,49 @@
 import { Button, Stack } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { fetchWishlist, followWishlist } from "../data/wishlistHandlers";
-import { auth } from "../src/firebaseSetup";
-import { WishlistItem } from "../src/types";
+import {
+  fetchWishlistName,
+  isUserWishlistOwner,
+} from "../data/wishlistHandlers";
 import StyledCard from "./StyledCard";
-import WishlistTable from "./WishlistTable";
+import WishlistItemsTable from "./WishlistTable";
+import { useUserId } from "../data/common";
 
-export const Wishlist: React.FC = () => {
+export const WishlistPage: React.FC = () => {
   const { wishlistId } = useParams();
-  const [userWishlist, setUserWishlist] = useState<WishlistItem[] | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isAddMode, setIsAddMode] = useState<boolean>(false);
+  const [isWishlistOwner, setIsWishlistOwner] = useState<boolean>(false);
+  const [wishlistName, setWishlistName] = useState<string>("");
+  const {userId} = useUserId();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) {
-        setUserId(user.uid);
-      } else {
-        setUserId(null);
-        setUserWishlist(null);
-      }
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (userId) {
-      console.log(wishlistId);
-      setIsLoading(true);
-      if (!wishlistId) {
-        return;
-      }
-      fetchWishlist(wishlistId).then((data) => {
-        setUserWishlist(data);
-        setIsLoading(false);
+    if (userId && wishlistId) {
+      void isUserWishlistOwner(userId, wishlistId).then((isOwner) => {
+        setIsWishlistOwner(isOwner);
       });
     }
-  }, [userId]);
+  }, [userId, wishlistId]);
 
-  if (!userId) {
-    return <p>Please sign in to view your personal wishlist.</p>;
-  }
-
-  if (isLoading) {
-    return <p>Loading...</p>;
-  }
+  useEffect(() => {
+    if (wishlistId) {
+      console.log("fetching wishlist name");
+      void fetchWishlistName(wishlistId).then((name) => {
+        setWishlistName(name);
+      });
+    }
+  }, [wishlistId]);
 
   const handleAddNewListing = () => {
     setIsAddMode(true);
-    followWishlist(userId, "wishlist1");
   };
 
   const cancelAddMode = () => {
     setIsAddMode(false);
   };
+
+  if (!wishlistId) {
+    return <div>Wishlist not found</div>;
+  }
 
   return (
     <Stack
@@ -77,19 +62,18 @@ export const Wishlist: React.FC = () => {
           width={"-webkit-fill-available"}
           px={2}
         >
-          <h1 style={{ alignSelf: "start", paddingRight: 10 }}>
-            Personal Wishlist
-          </h1>
-          {!isAddMode && (
-            <Stack direction="row" gap={1}>
+          <h1 style={{ alignSelf: "start" }}>{wishlistName}</h1>
+          {!isAddMode && userId && isWishlistOwner && (
+            <Stack direction="row" gap={1} sx={{ paddingLeft: 5 }}>
               <Button onClick={handleAddNewListing}>Add new</Button>
             </Stack>
           )}
         </Stack>
-        <WishlistTable
-          response={{ data: userWishlist }}
+        <WishlistItemsTable
           isAddMode={isAddMode}
           onCancelAddMode={cancelAddMode}
+          userId={userId}
+          wishlistId={wishlistId}
         />
       </StyledCard>
     </Stack>

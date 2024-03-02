@@ -7,9 +7,11 @@ import { CssVarsProvider } from "@mui/joy/styles";
 import { theme } from "./theme";
 import { TopMenu } from "../components/TopMenu";
 import { SignInForm } from "../components/SignInForm";
-import { Wishlist } from "../components/WishlistPage";
+import { WishlistPage } from "../components/WishlistPage";
 import { SettingsPage } from "../components/SettingsPage";
 import { LandingPage } from "../components/LandingPage";
+import { UserWishlistsOverview } from "../components/UserWishlistsOverview";
+import { WishlistImport } from "../components/JsonWishlistImporter";
 
 const App = () => {
   return (
@@ -21,8 +23,10 @@ const App = () => {
             <Route element={<Outlet />}>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<SignInForm />} />
-              <Route path="/wishlist/:wishlistId" element={<Wishlist />} />
+              <Route path="/wishlists" element={<UserWishlistsOverview />} />
+              <Route path="/wishlist/:wishlistId" element={<WishlistPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/import/" element={<WishlistImport />} />
             </Route>
           </Routes>
         </CssVarsProvider>

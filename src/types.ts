@@ -1,5 +1,4 @@
 export type WishlistItem = {
-  id: number;
   image: string;
   name: string;
   price: string;
@@ -10,3 +9,12 @@ export type Wishlist = {
   id: string;
   name: string;
 };
+
+export type UserState = {
+  user: User | null;
+};
+
+export interface User {
+  uid: string;
+  email: string | null;
+}
