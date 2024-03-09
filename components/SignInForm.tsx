@@ -67,7 +67,7 @@ function renderEmailInput(
   setEmail: {
     (value: React.SetStateAction<string>): void;
     (arg0: string): void;
-  },
+  }
 ) {
   return (
     <Input
@@ -86,7 +86,7 @@ function renderPasswordInput(
   setPassword: {
     (value: React.SetStateAction<string>): void;
     (arg0: string): void;
-  },
+  }
 ) {
   return (
     <Input
@@ -130,7 +130,7 @@ function renderToggleRegisterLogin(
   setRegistered: {
     (value: React.SetStateAction<boolean>): void;
     (arg0: boolean): void;
-  },
+  }
 ) {
   return (
     <Typography
@@ -152,24 +152,14 @@ function renderToggleRegisterLogin(
   );
 }
 
-function handleLoginError(error: Error | unknown) {
-  // if error is unknown just log it
-  if (
-    typeof error !== "object" ||
-    error === null ||
-    !(error instanceof Error)
-  ) {
-    console.error("Login Error: ", error);
+function handleLoginError(error: unknown) {
+  // if error is unknown just log it and show user a generic error message
+  if (error !== null && error instanceof Error) {
+    alert(error);
     return;
   }
-  console.error("Login Error: ", error.message || error);
-  // TODO: Show error message to user
-  if (error.message === "auth/wrong-password") {
-    alert("Wrong password.");
-  }
-  if (error.message === "auth/invalid-login-credentials") {
-    alert("User not found.");
-  }
+  console.error("Login Error: ", error);
+  alert("An error occurred while logging in. Please try again.");
 }
 
 export default SignInForm;

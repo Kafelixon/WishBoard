@@ -49,7 +49,7 @@ export default function WishlistItemsTable({
         .sort(
           (a, b) =>
             parseFloat(a.price.replace("~", "")) -
-            parseFloat(b.price.replace("~", "")),
+            parseFloat(b.price.replace("~", ""))
         )
         .map((item) => (
           <div className="wishlist-card">
@@ -80,7 +80,7 @@ export default function WishlistItemsTable({
       });
       setIsAdding(false);
       await cancelAddMode();
-    } catch (error: Error | unknown) {
+    } catch (error: unknown) {
       setIsAdding(false);
       console.error(error);
       alert("Failed to add item to wishlist");

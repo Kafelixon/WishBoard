@@ -8,16 +8,16 @@ import {
 } from "firebase/auth";
 import { auth } from "../src/firebaseSetup";
 import { login } from "../redux/slices/userSlice";
-import { AnyAction, Dispatch } from "redux";
+import { Action, Dispatch } from "redux";
 import { NavigateFunction } from "react-router-dom";
 
 export const loginUser = async (
   email: string,
   password: string,
   registered: boolean,
-  dispatch: Dispatch<AnyAction>,
+  dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
-  from: string,
+  from: string
 ) => {
   let userCredential: UserCredential;
 
@@ -31,22 +31,22 @@ export const loginUser = async (
       userCredential = await createUserWithEmailAndPassword(
         auth,
         email,
-        password,
+        password
       );
       await sendEmailVerification(userCredential.user).catch((err) =>
-        console.log(err),
+        console.log(err)
       );
     }
     dispatchLogin(dispatch, userCredential, navigate, from);
-  } catch (error: Error | unknown) {
+  } catch (error: unknown) {
     throw new Error("Invalid email or password. Please try again.");
   }
 };
 
 export const loginWithGoogle = async (
-  dispatch: Dispatch<AnyAction>,
+  dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
-  from: string,
+  from: string
 ) => {
   const provider = new GoogleAuthProvider();
 
@@ -55,10 +55,10 @@ export const loginWithGoogle = async (
 };
 
 const dispatchLogin = (
-  dispatch: Dispatch<AnyAction>,
+  dispatch: Dispatch<Action>,
   credential: UserCredential,
   navigate: NavigateFunction,
-  from: string,
+  from: string
 ) => {
   const { uid, email } = credential.user;
   dispatch(login({ uid, email }));

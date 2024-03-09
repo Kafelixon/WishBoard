@@ -5,7 +5,7 @@ import { useUserId } from "../data/common";
 
 export const FollowedWishlists: React.FC = () => {
   const [followedWishlists, setFollowedWishlists] = useState<string[] | null>(
-    null,
+    null
   );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const userId = useUserId();

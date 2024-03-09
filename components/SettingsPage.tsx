@@ -54,7 +54,7 @@ const ResetPassword: React.FC = () => {
       // await auth.sendPasswordResetEmail(auth.currentUser?.email || "");
       // alert("Password reset email sent!");
       alert("This feature is not yet implemented.");
-    } catch (error: Error | unknown) {
+    } catch (error: unknown) {
       console.error("Error sending reset email:", error);
       console.error(error);
     }
@@ -99,7 +99,7 @@ const ChangeEmail: React.FC = () => {
         // alert("Email updated successfully!");
         alert("This feature is not yet implemented.");
       }
-    } catch (error: Error | unknown) {
+    } catch (error: unknown) {
       console.error("Error updating email:", error);
       console.error(error);
     }
@@ -131,7 +131,7 @@ const RemoveAccount: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/require-await -- This function will be updated later
   const removeAccount = async () => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete your account? This cannot be undone.",
+      "Are you sure you want to delete your account? This cannot be undone."
     );
     if (confirmDelete) {
       try {
@@ -140,7 +140,7 @@ const RemoveAccount: React.FC = () => {
           // alert("Account deleted successfully.");
           alert("This feature is not yet implemented.");
         }
-      } catch (error: Error | unknown) {
+      } catch (error: unknown) {
         console.error("Error deleting account:", error);
         console.error(error);
       }
