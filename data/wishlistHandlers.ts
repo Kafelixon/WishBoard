@@ -12,7 +12,7 @@ import {
 import { firestore } from "../src/firebaseSetup";
 import { WishlistItem, Wishlist } from "../src/types";
 
-export const createWishlist = async (userId: string, wishlistName: string) => {
+export const createWishlist = async (userId: string, authorUserName: string, wishlistName: string) => {
   if (!userId) throw new Error("User ID is not provided.");
   if (!wishlistName) throw new Error("Wishlist name is not provided.");
 
@@ -20,6 +20,7 @@ export const createWishlist = async (userId: string, wishlistName: string) => {
   await addDoc(wishlistsCollection, {
     wishlistName: wishlistName,
     ownerId: userId,
+    author: authorUserName,
   });
 };
 
@@ -87,6 +88,16 @@ export const fetchWishlistItems = async (wishlistId: string) => {
     return wishlistData.data().items as WishlistItem[];
   }
   return null;
+};
+
+export const fetchWishlistAuthor = async (wishlistId: string) => {
+  const wishlistRef = doc(firestore, "wishlists", wishlistId);
+  const wishlistData = await getDoc(wishlistRef);
+  console.log(wishlistData.data());
+  if (wishlistData.exists()) {
+    return wishlistData.data().author as string;
+  }
+  return "";
 };
 
 // Follow Wishlist

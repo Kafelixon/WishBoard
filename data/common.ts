@@ -1,6 +1,4 @@
 // common.ts TODO: rename
-// import { useState, useEffect } from "react";
-// import { auth } from "../src/firebaseSetup";
 import { UserState } from "../src/types";
 import { useSelector } from "react-redux";
 
@@ -10,3 +8,10 @@ export const useUserId = (): string => {
   );
   return userState.user?.uid || "";
 };
+
+export const useUserName = (): string => {
+  const userState: UserState = useSelector(
+    (state: { user: UserState }) => state.user,
+  );
+  return userState.user?.displayName || "";
+}

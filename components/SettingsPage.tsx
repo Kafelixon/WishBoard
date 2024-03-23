@@ -30,7 +30,9 @@ export const SettingsPage = () => {
         <Typography level="h3" mb={2}>
           Settings
         </Typography>
-
+        {
+          // TODO: Change Username component which will update the user's display name and author name in all the wishlists
+        }
         <ResetPassword />
         <Divider />
         <ChangeEmail />

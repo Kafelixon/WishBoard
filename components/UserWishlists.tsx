@@ -3,12 +3,13 @@ import { createWishlist, findWishlistsByOwner } from "../data/wishlistHandlers";
 import StyledCard from "./StyledCard";
 import { Wishlist } from "../src/types";
 import { Button } from "@mui/joy";
-import { useUserId } from "../data/common";
+import { useUserId, useUserName } from "../data/common";
 
 export const UserWishlists: React.FC = () => {
   const [userWishlists, setUserWishlists] = useState<Wishlist[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const userId = useUserId();
+  const userName = useUserName();
 
   useEffect(() => {
     if (userId) {
@@ -25,7 +26,7 @@ export const UserWishlists: React.FC = () => {
       const newWishlistName = prompt("Enter the name of the new wishlist:");
       if (newWishlistName) {
         setIsLoading(true);
-        await createWishlist(userId, newWishlistName);
+        await createWishlist(userId, userName, newWishlistName);
         const updatedWishlists = await findWishlistsByOwner(userId);
         setUserWishlists(updatedWishlists);
         setIsLoading(false);

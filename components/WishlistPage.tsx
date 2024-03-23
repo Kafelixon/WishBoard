@@ -1,7 +1,8 @@
-import { Button, Stack } from "@mui/joy";
+import { Button, Stack, Typography } from "@mui/joy";
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
+  fetchWishlistAuthor,
   fetchWishlistName,
   isUserWishlistOwner,
 } from "../data/wishlistHandlers";
@@ -15,6 +16,7 @@ export const WishlistPage: React.FC = () => {
   const [isAddMode, setIsAddMode] = useState<boolean>(false);
   const [isWishlistOwner, setIsWishlistOwner] = useState<boolean>(false);
   const [wishlistName, setWishlistName] = useState<string>("");
+  const [wishlistAuthor, setWishlistAuthor] = useState<string>("");
   const userId = useUserId();
 
   useEffect(() => {
@@ -27,9 +29,11 @@ export const WishlistPage: React.FC = () => {
 
   useEffect(() => {
     if (wishlistId) {
-      console.log("fetching wishlist name");
       void fetchWishlistName(wishlistId).then((name) => {
         setWishlistName(name);
+      });
+      void fetchWishlistAuthor(wishlistId).then((author) => {
+        setWishlistAuthor(author);
       });
     }
   }, [wishlistId]);
@@ -56,7 +60,16 @@ export const WishlistPage: React.FC = () => {
           width={"-webkit-fill-available"}
           px={2}
         >
-          <h1 style={{ alignSelf: "start" }}>{wishlistName}</h1>
+          <Stack direction="column" style={{ alignSelf: "start" }}>
+            <Typography level="h2" style={{ marginBottom: 0 }}>
+              {wishlistName}
+            </Typography>
+            {wishlistAuthor && (
+              <Typography level="body-sm" style={{ margin: 0 }}>
+                by {wishlistAuthor}
+              </Typography>
+            )}
+          </Stack>
           {!isAddMode && userId && isWishlistOwner && (
             <Stack direction="row" gap={1} sx={{ paddingLeft: 5 }}>
               <Button onClick={handleAddNewListing}>Add new</Button>
