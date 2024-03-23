@@ -64,6 +64,7 @@ const ResetPassword: React.FC = () => {
   const resetPassword = async () => {
     if (!auth.currentUser?.email) {
       console.error("No user or email found.");
+      toast.error("Something went wrong. Please try again.");
       return;
     }
 
@@ -72,6 +73,7 @@ const ResetPassword: React.FC = () => {
       toast.success("Password reset email sent successfully!");
     } catch (error) {
       console.error("Error sending reset email:", error);
+      toast.error("Failed to send password reset email.");
     }
   };
 
@@ -158,6 +160,7 @@ const RemoveAccount: React.FC = () => {
       navigate("/");
     } catch (error) {
       console.error("Error deleting user:", error);
+      toast.error("Failed to delete account. Please try again.");
     }
   };
 

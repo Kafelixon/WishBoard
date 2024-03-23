@@ -6,6 +6,7 @@ import { Google } from "@mui/icons-material";
 import { loginUser, loginWithGoogle } from "./authHandlers";
 import StyledCard from "./StyledCard";
 import StyledStack from "./StyledStack";
+import toast from "react-hot-toast";
 
 interface LocationState {
   from: string;
@@ -153,13 +154,12 @@ function renderToggleRegisterLogin(
 }
 
 function handleLoginError(error: unknown) {
-  // if error is unknown just log it and show user a generic error message
   if (error !== null && error instanceof Error) {
-    alert(error);
+    toast.error(error.message);
     return;
   }
   console.error("Login Error: ", error);
-  alert("An error occurred while logging in. Please try again.");
+  toast.error("An error occurred while logging in. Please try again.");
 }
 
 export default SignInForm;
