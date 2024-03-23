@@ -38,7 +38,7 @@ export const loginUser = async (
       );
     }
     dispatchLogin(dispatch, userCredential, navigate, from);
-  } catch (error: unknown) {
+  } catch (error) {
     throw new Error("Invalid email or password. Please try again.");
   }
 };

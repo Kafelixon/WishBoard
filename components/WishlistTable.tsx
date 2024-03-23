@@ -6,6 +6,7 @@ import {
   addItemToWishlist,
   fetchWishlistItems,
 } from "../data/wishlistHandlers";
+import toast from "react-hot-toast";
 
 interface WishlistItemsTableProps {
   isAddMode: boolean;
@@ -79,11 +80,12 @@ export default function WishlistItemsTable({
         image: "https://via.placeholder.com/150",
       });
       setIsAdding(false);
+      toast.success("Item added successfully.");
       await cancelAddMode();
-    } catch (error: unknown) {
+    } catch (error) {
       setIsAdding(false);
       console.error(error);
-      alert("Failed to add item to wishlist");
+      toast.error("Failed to add item to wishlist.");
     }
   };
 
