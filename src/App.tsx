@@ -12,7 +12,6 @@ import { WishlistPage } from "../components/WishlistPage";
 import { SettingsPage } from "../components/SettingsPage";
 import { LandingPage } from "../components/LandingPage";
 import { UserWishlistsOverview } from "../components/UserWishlistsOverview";
-import { WishlistImport } from "../components/JsonWishlistImporter";
 
 const App = () => {
   return (
@@ -28,7 +27,6 @@ const App = () => {
               <Route path="/wishlists" element={<UserWishlistsOverview />} />
               <Route path="/wishlist/:wishlistId" element={<WishlistPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/import/" element={<WishlistImport />} />
             </Route>
           </Routes>
         </CssVarsProvider>
