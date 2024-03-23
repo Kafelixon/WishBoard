@@ -2,6 +2,7 @@ import { Outlet, Route, Routes } from "react-router-dom";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "../redux/store";
+import { Toaster } from "react-hot-toast";
 
 import { CssVarsProvider } from "@mui/joy/styles";
 import { theme } from "./theme";
@@ -18,6 +19,7 @@ const App = () => {
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <CssVarsProvider theme={theme}>
+          <Toaster />
           <TopMenu />
           <Routes>
             <Route element={<Outlet />}>

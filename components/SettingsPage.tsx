@@ -1,4 +1,14 @@
 import { useState } from "react";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import {
+  AuthCredential,
+  EmailAuthProvider,
+  deleteUser,
+  reauthenticateWithCredential,
+  sendPasswordResetEmail,
+  verifyBeforeUpdateEmail,
+} from "firebase/auth";
 import {
   Button,
   Typography,
@@ -7,7 +17,9 @@ import {
   FormControl,
   Divider,
 } from "@mui/joy";
+import toast from "react-hot-toast";
 import { auth } from "../src/firebaseSetup";
+import { logout } from "../redux/slices/userSlice";
 import StyledCard from "./StyledCard";
 import StyledStack from "./StyledStack";
 
@@ -29,7 +41,6 @@ export const SettingsPage = () => {
   );
 };
 
-// component : Common Form Control
 type CommonSettingsFormProps = {
   label: string;
   children: React.ReactNode;
@@ -48,15 +59,17 @@ const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
 };
 
 const ResetPassword: React.FC = () => {
-  // eslint-disable-next-line @typescript-eslint/require-await -- This function will be updated later
   const resetPassword = async () => {
+    if (!auth.currentUser?.email) {
+      console.error("No user or email found.");
+      return;
+    }
+
     try {
-      // await auth.sendPasswordResetEmail(auth.currentUser?.email || "");
-      // alert("Password reset email sent!");
-      alert("This feature is not yet implemented.");
-    } catch (error: unknown) {
+      await sendPasswordResetEmail(auth, auth.currentUser.email);
+      toast.success("Password reset email sent successfully!");
+    } catch (error) {
       console.error("Error sending reset email:", error);
-      console.error(error);
     }
   };
 
@@ -86,22 +99,17 @@ const ChangeEmail: React.FC = () => {
     setIsValid(isValidEmail(e.target.value));
   };
 
-  // eslint-disable-next-line @typescript-eslint/require-await -- This function will be updated later
   const changeEmail = async () => {
-    try {
-      if (!isValid) {
-        alert("Please enter a valid email address.");
-        return;
-      }
+    if (!isValid) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    const credential = promptForCredentials();
 
-      if (auth.currentUser) {
-        // await auth.currentUser.updateEmail(email);
-        // alert("Email updated successfully!");
-        alert("This feature is not yet implemented.");
-      }
-    } catch (error: unknown) {
-      console.error("Error updating email:", error);
-      console.error(error);
+    if (auth.currentUser) {
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await verifyBeforeUpdateEmail(auth.currentUser, email);
+      toast.success("Verification email sent successfully to " + email);
     }
   };
 
@@ -128,22 +136,26 @@ const ChangeEmail: React.FC = () => {
 };
 
 const RemoveAccount: React.FC = () => {
-  // eslint-disable-next-line @typescript-eslint/require-await -- This function will be updated later
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const removeAccount = async () => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete your account? This cannot be undone."
     );
-    if (confirmDelete) {
-      try {
-        if (auth.currentUser) {
-          // await auth.currentUser.delete();
-          // alert("Account deleted successfully.");
-          alert("This feature is not yet implemented.");
-        }
-      } catch (error: unknown) {
-        console.error("Error deleting account:", error);
-        console.error(error);
-      }
+    if (!confirmDelete) return;
+
+    const credential = promptForCredentials();
+    if (!auth.currentUser) return;
+
+    try {
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await deleteUser(auth.currentUser);
+      toast.success("Account deleted successfully!");
+      dispatch(logout());
+      navigate("/");
+    } catch (error) {
+      console.error("Error deleting user:", error);
     }
   };
 
@@ -159,5 +171,13 @@ const RemoveAccount: React.FC = () => {
     </CommonSettingsForm>
   );
 };
+
+function promptForCredentials(): AuthCredential {
+  const password = prompt("Please enter your password to continue.");
+  if (!auth.currentUser?.email || !password) {
+    throw new Error("Invalid email or password");
+  }
+  return EmailAuthProvider.credential(auth.currentUser.email, password);
+}
 
 export default SettingsPage;
