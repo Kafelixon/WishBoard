@@ -60,7 +60,7 @@ const dispatchLogin = (
   navigate: NavigateFunction,
   from: string
 ) => {
-  const { uid, email } = credential.user;
-  dispatch(login({ uid, email }));
+  const { uid, email, displayName } = credential.user;
+  dispatch(login({ uid, displayName, email }));
   navigate(from, { replace: true });
 };
