@@ -1,5 +1,5 @@
 // common.ts TODO: rename
-import { UserState } from "../src/types";
+import { UserState } from "@/lib/types";
 import { useSelector } from "react-redux";
 
 export const useUserId = (): string => {

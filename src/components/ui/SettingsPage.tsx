@@ -9,36 +9,30 @@ import {
   sendPasswordResetEmail,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
-import {
-  Button,
-  Typography,
-  Input,
-  FormLabel,
-  FormControl,
-  Divider,
-} from "@mui/joy";
-import toast from "react-hot-toast";
-import { auth } from "../src/firebaseSetup";
-import { logout } from "../redux/slices/userSlice";
-import StyledCard from "./StyledCard";
+import { auth } from "@/firebaseSetup";
+import { logout } from "@/redux/slices/userSlice";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import StyledStack from "./StyledStack";
+import { useToast } from "./use-toast";
 
 export const SettingsPage = () => {
   return (
     <StyledStack>
-      <StyledCard>
-        <Typography level="h3" mb={2}>
+      <Card className="glass divide-y ">
+        <h1 className="p-3 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
           Settings
-        </Typography>
+        </h1>
         {
           // TODO: Change Username component which will update the user's display name and author name in all the wishlists
         }
         <ResetPassword />
-        <Divider />
+        {/* <Divider /> */}
         <ChangeEmail />
-        <Divider />
+        {/* <Divider /> */}
         <RemoveAccount />
-      </StyledCard>
+      </Card>
     </StyledStack>
   );
 };
@@ -53,33 +47,40 @@ const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
   children,
 }) => {
   return (
-    <FormControl sx={{ width: "100%", flexDirection: "column", gap: 1 }}>
-      <FormLabel sx={{ m: 0 }}>{label}</FormLabel>
+    // <FormControl className="w-screen flex-col gap-1">
+    //   <FormLabel className="m-0">{label}</FormLabel>
+    <div className="p-3 flex flex-col gap-1.5">
+      <p>{label}</p>
       {children}
-    </FormControl>
+    </div> // </FormControl>
   );
 };
 
 const ResetPassword: React.FC = () => {
+  const { toast } = useToast();
+
   const resetPassword = async () => {
     if (!auth.currentUser?.email) {
       console.error("No user or email found.");
-      toast.error("Something went wrong. Please try again.");
+      toast({ title: "Something went wrong. Please try again." });
       return;
     }
 
     try {
       await sendPasswordResetEmail(auth, auth.currentUser.email);
-      toast.success("Password reset email sent successfully!");
+      toast({ title: "Password reset email sent successfully!" });
     } catch (error) {
       console.error("Error sending reset email:", error);
-      toast.error("Failed to send password reset email.");
+      toast({
+        title: "Failed to send password reset email.",
+        variant: "destructive",
+      });
     }
   };
 
   return (
     <CommonSettingsForm label="Reset Password">
-      <Button color="primary" onClick={() => void resetPassword()}>
+      <Button className="w-full" color="primary" onClick={() => void resetPassword()}>
         Send Password Reset Email
       </Button>
     </CommonSettingsForm>
@@ -87,6 +88,7 @@ const ResetPassword: React.FC = () => {
 };
 
 const ChangeEmail: React.FC = () => {
+  const { toast } = useToast();
   const [email, setEmail] = useState("");
   const [isValid, setIsValid] = useState(true);
 
@@ -105,7 +107,7 @@ const ChangeEmail: React.FC = () => {
 
   const changeEmail = async () => {
     if (!isValid) {
-      toast.error("Please enter a valid email address.");
+      toast({ title: "Please enter a valid email", variant: "destructive" });
       return;
     }
     const credential = promptForCredentials();
@@ -113,7 +115,7 @@ const ChangeEmail: React.FC = () => {
     if (auth.currentUser) {
       await reauthenticateWithCredential(auth.currentUser, credential);
       await verifyBeforeUpdateEmail(auth.currentUser, email);
-      toast.success("Verification email sent successfully to " + email);
+      toast({ title: "Verification email sent successfully to " + email });
     }
   };
 
@@ -128,6 +130,7 @@ const ChangeEmail: React.FC = () => {
         onBlur={validateEmail}
       />
       <Button
+        className="w-full"
         type="submit"
         disabled={!email || !isValid}
         color="primary"
@@ -140,6 +143,7 @@ const ChangeEmail: React.FC = () => {
 };
 
 const RemoveAccount: React.FC = () => {
+  const { toast } = useToast();
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -155,19 +159,20 @@ const RemoveAccount: React.FC = () => {
     try {
       await reauthenticateWithCredential(auth.currentUser, credential);
       await deleteUser(auth.currentUser);
-      toast.success("Account deleted successfully!");
+      toast({ title: "Account deleted" });
+
       dispatch(logout());
       navigate("/");
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast.error("Failed to delete account. Please try again.");
+      toast({ title: "Failed to delete account", variant: "destructive" });
     }
   };
 
   return (
     <CommonSettingsForm label="Delete Account">
       <Button
-        variant="outlined"
+        variant="outline"
         color="danger"
         onClick={() => void removeAccount()}
       >

@@ -1,3 +1,5 @@
+import dynamicIconImports from "lucide-react/dynamicIconImports";
+
 export type WishlistItem = {
   image: string;
   name: string;
@@ -7,7 +9,10 @@ export type WishlistItem = {
 
 export type Wishlist = {
   id: string;
-  name: string;
+  wishlistName: string;
+  author: string;
+  iconName: keyof typeof dynamicIconImports;
+  updateTimestamp: number;
 };
 
 export type UserState = {

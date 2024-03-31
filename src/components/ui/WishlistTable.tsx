@@ -1,12 +1,10 @@
-import { FormControl, Button, Input, Stack } from "@mui/joy";
-import Sheet from "@mui/joy/Sheet";
-import { WishlistItem } from "../src/types";
+import { WishlistItem } from "@/lib/types";
 import { useEffect, useState } from "react";
-import {
-  addItemToWishlist,
-  fetchWishlistItems,
-} from "../data/wishlistHandlers";
-import toast from "react-hot-toast";
+import { addItemToWishlist, fetchWishlistItems } from "@/lib/wishlistHandlers";
+import { useToast } from "@/components/ui/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Loader2 } from "lucide-react";
 
 interface WishlistItemsTableProps {
   isAddMode: boolean;
@@ -21,6 +19,7 @@ export default function WishlistItemsTable({
   wishlistId,
   userId,
 }: WishlistItemsTableProps) {
+  const { toast } = useToast();
   const [isAdding, setIsAdding] = useState(false);
   const [productName, setProductName] = useState("");
   const [averagePrice, setAveragePrice] = useState("");
@@ -53,12 +52,23 @@ export default function WishlistItemsTable({
             parseFloat(b.price.replace("~", ""))
         )
         .map((item) => (
-          <div className="wishlist-card">
-            <img src={item.image} alt="Product Image" />
-            <div className="info">
-              <h2>{item.name}</h2>
-              <p>Average Price: {item.price} zł</p>
-              <a href={item.link} target="_blank" rel="noopener noreferrer">
+          <div className="glass-fg flex items-center border pl-2.5 pr-5 py-2.5 rounded-lg border-solid border-gray-300">
+            <img
+              src={item.image}
+              alt="Product Image"
+              className="size-28 mr-2.5 object-cover bg-white border border-gray-300 rounded-lg"
+            />
+            <div className="flex flex-col">
+              <h2 className="font-semibold mt-0 mb-1 mx-0">{item.name}</h2>
+              <p className=" text-gray-500 mt-0 mb-[5px] mx-0">
+                Average Price: {item.price} zł
+              </p>
+              <a
+                className="no-underline text-blue-600"
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 Link
               </a>
             </div>
@@ -80,12 +90,15 @@ export default function WishlistItemsTable({
         image: "https://via.placeholder.com/150",
       });
       setIsAdding(false);
-      toast.success("Item added successfully.");
+      toast({ title: "Item added successfully." });
       await cancelAddMode();
     } catch (error) {
       setIsAdding(false);
       console.error(error);
-      toast.error("Failed to add item to wishlist.");
+      toast({
+        title: "Failed to add item to wishlist.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -97,68 +110,55 @@ export default function WishlistItemsTable({
   };
 
   const addCard = (
-    <div className="wishlist-card">
-      <img src="https://via.placeholder.com/150" alt="Product Image" />
-      <div className="info">
-        <FormControl sx={{ width: "100%", flexDirection: "column", gap: 1 }}>
+    <div className="glass-fg flex items-center justify-between border pl-2.5 pr-5 py-2.5 rounded-lg border-solid border-gray-300">
+      <div className="size-28 mr-2.5 bg-gray-300 border border-gray-300 rounded-lg"></div>
+      <div className="flex-grow">
+        <form className="flex flex-col gap-1">
           <Input
             type="text"
+            className="h-8"
             value={productName}
             onChange={(e) => setProductName(e.target.value)}
             placeholder="Product Name"
           />
           <Input
             type="number"
+            className="h-8"
             value={averagePrice}
             onChange={(e) => setAveragePrice(e.target.value)}
             placeholder="Average Price"
           />
           <Input
             type="text"
+            className="h-8"
             value={link}
             onChange={(e) => setLink(e.target.value)}
             placeholder="Link"
           />
-        </FormControl>
+        </form>
+      </div>
 
-        <Stack direction="row" justifyContent="space-between">
-          <Button color="primary" onClick={() => void cancelAddMode()}>
-            Cancel
-          </Button>
-          <Button
-            color="primary"
-            loading={isAdding}
-            onClick={() => void addListing()}
-          >
-            Add listing
-          </Button>
-        </Stack>
+      <div className="flex flex-grow flex-col justify-between min-h-full">
+        <Button color="primary" onClick={() => void cancelAddMode()}>
+          Cancel
+        </Button>
+        <Button color="primary" onClick={() => void addListing()}>
+          {isAdding ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            "Add listing"
+          )}
+        </Button>
       </div>
     </div>
   );
 
   return (
-    <Sheet
-      sx={{
-        borderRadius: "8px",
-        "--TableCell-height": "40px",
-        // the number is the amount of the header rows.
-        "--TableHeader-height": "calc(1 * var(--TableCell-height))",
-        maxHeight: "60vh",
-        overflow: "auto",
-        backgroundSize: "100% 40px",
-        backgroundRepeat: "no-repeat",
-        backgroundAttachment: "local, local, scroll, scroll",
-        backgroundPosition:
-          "0 var(--TableHeader-height), 0 100%, 0 var(--TableHeader-height), 0 100%",
-        backgroundColor: "rgba(255, 255, 255, 0.4)", // semi-transparent white
-        backdropFilter: "blur(10px)",
-        borderBottom: "1px solid rgba(255, 255, 255, 0.2)",
-        boxShadow: "0 8px 32px 0 rgba(31, 38, 31, 0.17)",
-      }}
+    <div
+      className="flex flex-col gap-2.5"
     >
       {isAddMode && userId && addCard}
       {isFetching ? "Loading..." : cards}
-    </Sheet>
+    </div>
   );
 }
