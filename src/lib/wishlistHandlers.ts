@@ -33,6 +33,11 @@ export const createWishlist = async (
   });
 };
 
+export const wishlistExists = async (wishlistId: string) => {
+  const wishlistData = await getDataFromFirestore("wishlists", wishlistId);
+  return wishlistData.exists();
+}
+
 export const addItemToWishlist = async (
   userId: string,
   wishlistId: string,
@@ -57,21 +62,11 @@ export const isUserWishlistOwner = async (
   if (!userId) throw new Error("User ID is not provided.");
   if (!wishlistId) throw new Error("Wishlist ID is not provided.");
 
-  const wishlistRef = doc(firestore, "wishlists", wishlistId);
-  const wishlistData = await getDoc(wishlistRef);
+  const wishlistData = await getDataFromFirestore("wishlists",wishlistId);
   if (!wishlistData.exists()) {
     throw new Error("Wishlist is invalid.");
   }
   return userId === wishlistData.data().ownerId;
-};
-
-export const fetchWishlistName = async (wishlistId: string) => {
-  const wishlistRef = doc(firestore, "wishlists", wishlistId);
-  const wishlistData = await getDoc(wishlistRef);
-  if (wishlistData.exists() && wishlistData.data().wishlistName) {
-    return String(wishlistData.data().wishlistName);
-  }
-  return "Wishlist";
 };
 
 // find wishlists with owner id
@@ -87,29 +82,18 @@ export const findWishlistsByOwner = async (userId: string) => {
       id: docSnap.id,
       wishlistName: String(docSnap.data().wishlistName),
       author: String(docSnap.data().author),
-      iconName: docSnap.data().iconName,
-      updateTimestamp: docSnap.data().updateTimestamp,
+      iconName: docSnap.data().iconName as keyof typeof dynamicIconImports,
+      updateTimestamp: docSnap.data().updateTimestamp as number,
     } as Wishlist;
   });
 };
 
 export const fetchWishlistItems = async (wishlistId: string) => {
-  const wishlistRef = doc(firestore, "wishlists", wishlistId);
-  const wishlistData = await getDoc(wishlistRef);
+  const wishlistData = await getDataFromFirestore("wishlists", wishlistId);
   if (wishlistData.exists()) {
     return wishlistData.data().items as WishlistItem[];
   }
   return null;
-};
-
-export const fetchWishlistAuthor = async (wishlistId: string) => {
-  const wishlistRef = doc(firestore, "wishlists", wishlistId);
-  const wishlistData = await getDoc(wishlistRef);
-  console.log(wishlistData.data());
-  if (wishlistData.exists()) {
-    return wishlistData.data().author as string;
-  }
-  return "";
 };
 
 // Follow Wishlist
@@ -218,11 +202,10 @@ const fetchWishlistsByIds = async (
  * @param wishlistId - The ID of the wishlist.
  * @returns The wishlist if it exists, otherwise null.
  */
-const fetchWishlistById = async (
+export const fetchWishlistById = async (
   wishlistId: string
 ): Promise<Wishlist | null> => {
-  const wishlistDocument = doc(firestore, "wishlists", wishlistId);
-  const wishlistData = await getDoc(wishlistDocument);
+  const wishlistData = await getDataFromFirestore("wishlists", wishlistId);
 
   if (wishlistData.exists()) {
     return wishlistData.data() as Wishlist;
@@ -230,3 +213,10 @@ const fetchWishlistById = async (
 
   return null;
 };
+
+async function getDataFromFirestore(collectionName: string, wishlistId: string) {
+  const wishlistRef = doc(firestore, collectionName, wishlistId);
+  const wishlistData = await getDoc(wishlistRef);
+  return wishlistData;
+}
+
