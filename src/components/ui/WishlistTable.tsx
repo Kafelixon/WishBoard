@@ -1,11 +1,15 @@
 import { WishlistItem } from "@/lib/types";
 import { useEffect, useState } from "react";
-import { addItemToWishlist, fetchWishlistItems } from "@/lib/wishlistHandlers";
+import {
+  addItemToWishlist,
+  fetchItemsFromWishlist,
+} from "@/lib/wishlistHandlers";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -31,18 +35,23 @@ export default function WishlistItemsTable({
   const [isAdding, setIsAdding] = useState(false);
   const [productName, setProductName] = useState("");
   const [averagePrice, setAveragePrice] = useState("");
+  const [image, setImage] = useState("");
+  const [itemPublic, setPublic] = useState(true);
   const [link, setLink] = useState("");
   const [userWishlist, setUserWishlist] = useState<WishlistItem[]>([]);
   const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
     if (wishlistId) {
-      void fetchWishlistItems(wishlistId).then((data) => {
-        if (data) setUserWishlist(data);
-        setIsFetching(false);
-      });
+      setIsFetching(true);
+      void fetchItemsFromWishlist( wishlistId, userId )
+        .then((data) => { 
+          if (data) {
+            setUserWishlist(data);
+          }
+        }).finally(() => setIsFetching(false));
     }
-  }, [wishlistId]);
+  }, [userId, wishlistId]);
 
   const cards = userWishlist
     ? [...userWishlist]
@@ -54,7 +63,9 @@ export default function WishlistItemsTable({
         .map((item, index) => (
           <div
             key={index}
-            className="glass-fg flex gap-2.5 items-center border pl-2.5 pr-5 py-2.5 rounded-lg border-solid border-gray-300"
+            className={`flex gap-2.5 items-center border pl-2.5 pr-5 py-2.5 rounded-lg border-solid border-gray-300 ${
+              item.public === false ? "bg-gray-200" : "glass-fg"
+            }`}
           >
             <img
               src={item.image}
@@ -88,6 +99,8 @@ export default function WishlistItemsTable({
     setProductName("");
     setAveragePrice("");
     setLink("");
+    setImage("https://via.placeholder.com/150"); //TODO: Change default image
+    setPublic(true);
 
     try {
       setIsAdding(true);
@@ -95,11 +108,12 @@ export default function WishlistItemsTable({
         name: productName.trim(),
         price: averagePrice,
         link: link,
-        image: "https://via.placeholder.com/150",
+        image: image,
+        public: itemPublic,
       });
       setIsAdding(false);
       toast({ title: "Item added successfully." });
-      await cancelAddMode();
+      cancelAddMode();
     } catch (error) {
       setIsAdding(false);
       console.error(error);
@@ -110,10 +124,14 @@ export default function WishlistItemsTable({
     }
   };
 
-  const cancelAddMode = async () => {
-    await fetchWishlistItems(wishlistId).then((data) => {
-      if (data) setUserWishlist(data);
-    });
+  const cancelAddMode = () => {
+    if (userId) {
+      void fetchItemsFromWishlist(wishlistId, userId).then((data) => {
+        if (data) {
+          setUserWishlist(data);
+        }
+      });
+    }
   };
 
   function addItem() {
@@ -167,18 +185,34 @@ export default function WishlistItemsTable({
                 className="col-span-3"
               />
             </div>
+            <div className="grid grid-cols-4 items-left gap-4">
+              <Label htmlFor="itemPublic" className="text-right">
+                Public
+              </Label>
+              <input
+                id="itemPublic"
+                type="checkbox"
+                checked={itemPublic}
+                onChange={(e) => setPublic(e.target.checked)}
+                className="col-span-3 place-self-start"
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button color="primary" onClick={() => void cancelAddMode()}>
-              Cancel
-            </Button>
-            <Button color="primary" onClick={() => void addListing()}>
-              {isAdding ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                "Add listing"
-              )}
-            </Button>
+            <DialogClose asChild>
+              <Button color="primary" onClick={() => void cancelAddMode()}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <DialogClose asChild>
+              <Button color="primary" onClick={() => void addListing()}>
+                {isAdding ? (
+                  <Loader2 className="mx-2 h-4 w-4 animate-spin" />
+                ) : (
+                  "Add listing"
+                )}
+              </Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>
