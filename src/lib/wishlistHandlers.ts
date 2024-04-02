@@ -13,6 +13,8 @@ import { firestore } from "@/firebaseSetup";
 import { WishlistItem, Wishlist } from "@/lib/types";
 import dynamicIconImports from "lucide-react/dynamicIconImports";
 
+const WISHLISTS_COLLECTION: string = "wishlists";
+
 export const createWishlist = async (
   userId: string,
   authorUserName: string,
@@ -23,7 +25,7 @@ export const createWishlist = async (
   if (!wishlistName) throw new Error("Wishlist name is not provided.");
 
   console.log(new Date().getTime());
-  const wishlistsCollection = collection(firestore, "wishlists");
+  const wishlistsCollection = collection(firestore, WISHLISTS_COLLECTION);
   await addDoc(wishlistsCollection, {
     wishlistName: wishlistName,
     ownerId: userId,
@@ -34,9 +36,9 @@ export const createWishlist = async (
 };
 
 export const wishlistExists = async (wishlistId: string) => {
-  const wishlistData = await getDataFromFirestore("wishlists", wishlistId);
+  const wishlistData = await fetchWishlistData(wishlistId);
   return wishlistData.exists();
-}
+};
 
 export const addItemToWishlist = async (
   userId: string,
@@ -46,8 +48,8 @@ export const addItemToWishlist = async (
   if (!userId) throw new Error("User ID is not provided.");
   if (!item) throw new Error("Item is not provided.");
 
-  const wishlistRef = doc(firestore, "wishlists", wishlistId);
-  const isOwner = await isUserWishlistOwner(userId, wishlistId);
+  const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
+  const isOwner = await isOwnerOfWishlist(userId, wishlistId);
   if (isOwner) {
     await setDoc(wishlistRef, { items: arrayUnion(item) }, { merge: true });
   } else {
@@ -55,14 +57,11 @@ export const addItemToWishlist = async (
   }
 };
 
-export const isUserWishlistOwner = async (
-  userId: string,
-  wishlistId: string
-) => {
+export const isOwnerOfWishlist = async (userId: string, wishlistId: string) => {
   if (!userId) throw new Error("User ID is not provided.");
   if (!wishlistId) throw new Error("Wishlist ID is not provided.");
 
-  const wishlistData = await getDataFromFirestore("wishlists",wishlistId);
+  const wishlistData = await fetchWishlistData(wishlistId);
   if (!wishlistData.exists()) {
     throw new Error("Wishlist is invalid.");
   }
@@ -72,7 +71,7 @@ export const isUserWishlistOwner = async (
 // find wishlists with owner id
 export const findWishlistsByOwner = async (userId: string) => {
   const q = query(
-    collection(firestore, "wishlists"),
+    collection(firestore, WISHLISTS_COLLECTION),
     where("ownerId", "==", userId)
   );
   const snapshot = await getDocs(q);
@@ -88,12 +87,26 @@ export const findWishlistsByOwner = async (userId: string) => {
   });
 };
 
-export const fetchWishlistItems = async (wishlistId: string) => {
-  const wishlistData = await getDataFromFirestore("wishlists", wishlistId);
-  if (wishlistData.exists()) {
-    return wishlistData.data().items as WishlistItem[];
-  }
-  return null;
+
+/**
+ * Fetches items from a wishlist.
+ * @param wishlistId - The ID of the wishlist.
+ * @param userId - The ID of the user.
+ * @returns A promise that resolves to an array of WishlistItem objects or null.
+ * @throws Error if wishlistId is not provided.
+ */
+export const fetchItemsFromWishlist = async (
+  wishlistId: string,
+  userId: string | null
+): Promise<WishlistItem[] | null> => {
+  if (!wishlistId) throw new Error("Wishlist ID is not provided.");
+
+  const wishlistData = await fetchWishlistData(wishlistId);
+  if (!wishlistData.exists()) return null;
+
+  const items = wishlistData.data().items as WishlistItem[];
+  if (userId && userId === wishlistData.data().ownerId) return items;
+  return items.filter(item => item.public);
 };
 
 // Follow Wishlist
@@ -200,23 +213,25 @@ const fetchWishlistsByIds = async (
 /**
  * Fetches a wishlist by its ID.
  * @param wishlistId - The ID of the wishlist.
- * @returns The wishlist if it exists, otherwise null.
+ * @returns A wishlist object or null.
  */
 export const fetchWishlistById = async (
   wishlistId: string
 ): Promise<Wishlist | null> => {
-  const wishlistData = await getDataFromFirestore("wishlists", wishlistId);
+  const wishlistData = await fetchWishlistData(wishlistId);
+  if (!wishlistData.exists()) return null;
 
-  if (wishlistData.exists()) {
-    return wishlistData.data() as Wishlist;
-  }
-
-  return null;
+  return wishlistData.data() as Wishlist;
 };
 
-async function getDataFromFirestore(collectionName: string, wishlistId: string) {
-  const wishlistRef = doc(firestore, collectionName, wishlistId);
+/**
+ * Fetches wishlist data from Firestore.
+ * 
+ * @param wishlistId - The ID of the wishlist to fetch.
+ * @returns A Promise that resolves to the wishlist data.
+ */
+async function fetchWishlistData(wishlistId: string) {
+  const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
   const wishlistData = await getDoc(wishlistRef);
   return wishlistData;
 }
-

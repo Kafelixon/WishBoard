@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   fetchWishlistById,
-  isUserWishlistOwner,
+  isOwnerOfWishlist,
   wishlistExists,
 } from "@/lib/wishlistHandlers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,7 +25,7 @@ export const WishlistPage: React.FC = () => {
         }
       });
       if (wishlistId) {
-        void isUserWishlistOwner(userId, wishlistId).then((isOwner) => {
+        void isOwnerOfWishlist(userId, wishlistId).then((isOwner) => {
           setIsWishlistOwner(isOwner);
         });
       }

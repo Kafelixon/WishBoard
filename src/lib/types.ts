@@ -5,6 +5,7 @@ export type WishlistItem = {
   name: string;
   price: string;
   link: string;
+  public?: boolean;
 };
 
 export type Wishlist = {
