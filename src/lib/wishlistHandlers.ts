@@ -21,8 +21,7 @@ export const createWishlist = async (
   wishlistName: string,
   iconName: keyof typeof dynamicIconImports
 ) => {
-  if (!userId) throw new Error("User ID is not provided.");
-  if (!wishlistName) throw new Error("Wishlist name is not provided.");
+  validateUserIdAndWishlistId(userId, wishlistName);
 
   console.log(new Date().getTime());
   const wishlistsCollection = collection(firestore, WISHLISTS_COLLECTION);
@@ -45,8 +44,7 @@ export const addItemToWishlist = async (
   wishlistId: string,
   item: WishlistItem
 ) => {
-  if (!userId) throw new Error("User ID is not provided.");
-  if (!item) throw new Error("Item is not provided.");
+  validateUserIdAndWishlistId(userId, wishlistId);
 
   const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
   const isOwner = await isOwnerOfWishlist(userId, wishlistId);
@@ -58,8 +56,7 @@ export const addItemToWishlist = async (
 };
 
 export const isOwnerOfWishlist = async (userId: string, wishlistId: string) => {
-  if (!userId) throw new Error("User ID is not provided.");
-  if (!wishlistId) throw new Error("Wishlist ID is not provided.");
+  validateUserIdAndWishlistId(userId, wishlistId);
 
   const wishlistData = await fetchWishlistData(wishlistId);
   if (!wishlistData.exists()) {
@@ -112,8 +109,7 @@ export const fetchItemsFromWishlist = async (
 // Follow Wishlist
 
 export const followWishlist = async (userId: string, wishlistId: string) => {
-  if (!userId) throw new Error("User ID is not provided.");
-  if (!wishlistId) throw new Error("Wishlist ID is not provided.");
+  validateUserIdAndWishlistId(userId, wishlistId);
 
   try {
     const followedRef = doc(firestore, "user_follows", userId);
@@ -137,31 +133,44 @@ export const followWishlist = async (userId: string, wishlistId: string) => {
   }
 };
 
+/**
+ * Unfollows a wishlist.
+ * @param userId - The ID of the user.
+ * @param wishlistId - The ID of the wishlist to unfollow.
+ * @throws Error if either user ID or wishlist ID is not provided or if the operation fails.
+ * @returns void
+ */
 export const unfollowWishlist = async (userId: string, wishlistId: string) => {
-  if (!userId) throw new Error("User ID is not provided.");
-  if (!wishlistId) throw new Error("Wishlist ID is not provided.");
+  validateUserIdAndWishlistId(userId, wishlistId);
 
   try {
-    const followedRef = doc(firestore, "user_follows", userId);
-    const followedData = await getDoc(followedRef);
-    if (followedData.exists()) {
-      const followed = followedData.data().follows as string[];
-      if (!followed.includes(wishlistId)) {
-        const newFollows = followed.filter((id: string) => id !== wishlistId);
-        await setDoc(followedRef, { follows: newFollows }, { merge: false });
+    const userFollowedWishlistsRef = doc(firestore, "user_follows", userId);
+    const userFollowedWishlistsData = await getDoc(userFollowedWishlistsRef);
+
+    if (userFollowedWishlistsData.exists()) {
+      const followedWishlistIds = userFollowedWishlistsData.data().follows as string[];
+      if (followedWishlistIds.includes(wishlistId)) {
+        const updatedFollowedWishlistIds = followedWishlistIds.filter((id: string) => id !== wishlistId);
+        await setDoc(userFollowedWishlistsRef, { follows: updatedFollowedWishlistIds });
       }
     }
-    await setDoc(
-      followedRef,
-      { follows: arrayUnion(wishlistId) },
-      { merge: true }
-    );
-    console.log("Wishlist unfollow transaction successfull!");
-  } catch (e) {
-    console.error("Transaction failed: ", e);
-    throw e;
+  } catch (error) {
+    console.error("Failed to remove wishlist from followed: ", error);
+    throw error;
   }
 };
+
+/**
+ * Validates user ID and wishlist ID.
+ * @param userId - The ID of the user.
+ * @param wishlistId - The ID of the wishlist.
+ * @throws Error if either user ID or wishlist ID is not provided.
+ * @returns void
+ */
+function validateUserIdAndWishlistId(userId: string, wishlistId: string) {
+  if (!userId) throw new Error("User ID is not provided.");
+  if (!wishlistId) throw new Error("Wishlist ID is not provided.");
+}
 
 /**
  * Fetches the wishlists followed by a user.
@@ -183,6 +192,23 @@ export const fetchFollowedWishlists = async (
 
   return [];
 };
+
+export const isFollowingWishlist = async (
+  userId: string,
+  wishlistId: string
+): Promise<boolean> => {
+  validateUserIdAndWishlistId(userId, wishlistId);
+
+  const userFollowsDocument = doc(firestore, "user_follows", userId);
+  const userFollowsData = await getDoc(userFollowsDocument);
+
+  if (userFollowsData.exists()) {
+    const followedWishlistIds = userFollowsData.data().follows as string[];
+    return followedWishlistIds.includes(wishlistId);
+  }
+
+  return false;
+}
 
 /**
  * Fetches wishlists by their IDs.
