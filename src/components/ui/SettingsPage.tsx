@@ -14,13 +14,11 @@ import { logout } from "@/redux/slices/userSlice";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import StyledStack from "./StyledStack";
 import { useToast } from "./use-toast";
 
 export const SettingsPage = () => {
   return (
-    <StyledStack>
-      <Card className="glass divide-y ">
+      <Card className="w-fit glass divide-y m-auto">
         <h1 className="p-3 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
           Settings
         </h1>
@@ -33,7 +31,6 @@ export const SettingsPage = () => {
         {/* <Divider /> */}
         <RemoveAccount />
       </Card>
-    </StyledStack>
   );
 };
 

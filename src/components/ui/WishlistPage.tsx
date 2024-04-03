@@ -110,7 +110,7 @@ export const WishlistPage: React.FC = () => {
   };
 
   return (
-    <Card className="my-32 shadow-lg glass w-[95vw] md:w-[60vw] lg:w-[45vw]">
+    <Card className="shadow-lg glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
       <CardHeader className="h-22 pb-0">
         <CardTitle className="flex justify-between items-center">
           <div className="flex flex-col align-top">

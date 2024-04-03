@@ -83,3 +83,7 @@
 .glass-fg {
   @apply bg-background shadow-md;
 }
+
+#root {
+  @apply flex flex-col gap-12 p-3 flex-grow h-full w-screen;
+}

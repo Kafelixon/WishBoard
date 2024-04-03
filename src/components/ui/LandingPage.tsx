@@ -1,10 +1,8 @@
 import { Card } from "@/components/ui/card";
-import StyledStack from "@/components/ui/StyledStack";
 
 export const LandingPage = () => {
   return (
-    <StyledStack>
-      <Card className="p-5 backdrop-blur-[10px] items-center max-w-[60vw] flex-grow glass">
+      <Card className="p-3 lg:p5 backdrop-blur-[10px] items-center w-full md:w-[60vw] lg:w-[45vw] flex-grow glass m-auto">
         <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl text-center p-4">
           Effortlessly Craft & Share Your Dream Wishlist
         </h1>
@@ -73,6 +71,5 @@ export const LandingPage = () => {
           </p>
         </section>
       </Card>
-    </StyledStack>
   );
 };

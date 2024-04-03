@@ -29,29 +29,29 @@ export function TopMenu() {
 
   const MenuButtons = () => {
     if (location.pathname === "/login") return;
-    if (!userId) return <Button onClick={navigateToLogin}>Sign up</Button>;
+    if (!userId) return <Button className="px-2 md:px-3 lg:px-4" onClick={navigateToLogin}>Sign up</Button>;
     return (
       <>
-        <Button onClick={navigateToWishlist}>Wishlists</Button>
-        <Button onClick={navigateToSettingsPage}>
+        <Button className="px-2 md:px-3 lg:px-4" onClick={navigateToWishlist}>Wishlists</Button>
+        <Button className="px-2 md:px-3 lg:px-4" onClick={navigateToSettingsPage}>
           <Settings />
         </Button>
-        <Button onClick={() => dispatch(logout())}>Logout</Button>
+        <Button className="px-2 md:px-3 lg:px-4" onClick={() => dispatch(logout())}>Logout</Button>
       </>
     );
   };
 
   return (
-    <div className="fixed top-0 left-0 p-3 w-screen flex items-center justify-between z-10">
+    <div className="top-0 left-0 w-full flex items-center justify-between z-10">
       <div>
         <h1
-          className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl"
+          className="text-3xl font-extrabold tracking-tight lg:text-4xl"
           onClick={navigateToHome}
         >
           WishBoard
         </h1>
       </div>
-      <div className="flex items-end justify-between gap-2">
+      <div className="flex items-end justify-between gap-1 lg:gap-2">
         <MenuButtons />
       </div>
     </div>
