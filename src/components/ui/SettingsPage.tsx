@@ -15,22 +15,24 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "./use-toast";
+import { changeUsername } from "@/lib/authHandlers";
+import { updateExistingWishlistsAuthor } from "@/lib/wishlistHandlers";
+import { useUserId } from "@/lib/common";
 
 export const SettingsPage = () => {
   return (
-      <Card className="w-fit glass divide-y m-auto">
-        <h1 className="p-3 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
-          Settings
-        </h1>
-        {
-          // TODO: Change Username component which will update the user's display name and author name in all the wishlists
-        }
-        <ResetPassword />
-        {/* <Divider /> */}
-        <ChangeEmail />
-        {/* <Divider /> */}
-        <RemoveAccount />
-      </Card>
+    <Card className="w-fit glass divide-y m-auto">
+      <h1 className="p-3 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
+        Settings
+      </h1>
+      {
+        // TODO: Change Username component which will update the user's display name and author name in all the wishlists
+      }
+      <ChangeUsername />
+      <ResetPassword />
+      <ChangeEmail />
+      <RemoveAccount />
+    </Card>
   );
 };
 
@@ -77,8 +79,70 @@ const ResetPassword: React.FC = () => {
 
   return (
     <CommonSettingsForm label="Reset Password">
-      <Button className="w-full" color="primary" onClick={() => void resetPassword()}>
+      <Button
+        className="w-full"
+        color="primary"
+        onClick={() => void resetPassword()}
+      >
         Send Password Reset Email
+      </Button>
+    </CommonSettingsForm>
+  );
+};
+
+const ChangeUsername: React.FC = () => {
+  const { toast } = useToast();
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const userId = useUserId();
+  const [username, setUsername] = useState("");
+
+  const submitNewUsername = () => {
+    if (!auth.currentUser) {
+      console.error("No user found.");
+      toast({ title: "Something went wrong. Please try again." });
+      return;
+    }
+    try {
+      changeUsername(username);
+      updateExistingWishlistsAuthor(userId, username)
+        .then(() => {
+          toast({
+            title: "Username updated successfully!",
+            description: "Please log in again.",
+          });
+          dispatch(logout());
+          navigate("/");
+        })
+        .catch((error) => {
+          console.error("Error updating author name in wishlists:", error);
+          toast({
+            title: "Failed to update author name in wishlists.",
+            variant: "destructive",
+          });
+        });
+    } catch (error) {
+      console.error("Error updating username:", error);
+      toast({ title: "Failed to update username.", variant: "destructive" });
+    }
+  };
+
+  return (
+    <CommonSettingsForm label="Change Username">
+      <Input
+        type="text"
+        placeholder="New Username"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+      <Button
+        className="w-full"
+        type="submit"
+        disabled={!username}
+        color="primary"
+        onClick={() => void submitNewUsername()}
+      >
+        Change Username
       </Button>
     </CommonSettingsForm>
   );

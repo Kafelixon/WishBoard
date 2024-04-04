@@ -261,3 +261,18 @@ async function fetchWishlistData(wishlistId: string) {
   const wishlistData = await getDoc(wishlistRef);
   return wishlistData;
 }
+
+export const updateExistingWishlistsAuthor = async (
+  userId: string,
+  newAuthorName: string
+) => {
+  const wishlists = await findWishlistsByOwner(userId);
+  for (const wishlist of wishlists) {
+    const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlist.id);
+    await setDoc(
+      wishlistRef,
+      { author: newAuthorName, updateTimestamp: new Date().getTime() },
+      { merge: true }
+    );
+  }
+}

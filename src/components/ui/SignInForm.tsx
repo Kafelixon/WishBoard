@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { loginUser, loginWithGoogle, registerUser } from "@/lib/authHandlers";
 import { Card } from "@/components/ui/card";
-import StyledStack from "@/components/ui/StyledStack";
 import { useToast } from "@/components/ui/use-toast";
 import { RotateCw } from "lucide-react";
 
@@ -16,6 +15,7 @@ interface LocationState {
 export const SignInForm = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [registered, setRegistered] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -25,14 +25,14 @@ export const SignInForm = () => {
   const from = (location.state as LocationState)?.from || "/";
   const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
       if (registered) {
-        await loginUser(email, password, dispatch, navigate, from);
+        loginUser(email, password, dispatch, navigate, from);
       } else {
-        await registerUser(email, password, dispatch, navigate, from);
+        registerUser(email, password, username, dispatch, navigate, from);
       }
     } catch (error) {
       handleLoginError(error, toast);
@@ -40,18 +40,17 @@ export const SignInForm = () => {
     setIsSubmitting(false);
   };
 
-  const handleGoogleLogin = async (e: React.FormEvent) => {
+  const handleGoogleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await loginWithGoogle(dispatch, navigate, from);
+      loginWithGoogle(dispatch, navigate, from);
     } catch (error) {
       handleLoginError(error, toast);
     }
   };
 
   return (
-    <StyledStack>
-      <Card className="p-5 glass">
+      <Card className="p-5 glass m-auto w-60">
         <form
           onSubmit={(e) => void handleSubmit(e)}
           style={{
@@ -61,6 +60,17 @@ export const SignInForm = () => {
             padding: "8px 0",
           }}
         >
+          {registered ? null : (
+            <Input
+              name="username"
+              autoComplete="username"
+              type="text"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="glass-fg"
+            />
+          )}
           {renderEmailInput(email, setEmail)}
           {renderPasswordInput(password, setPassword)}
           {renderSubmitButton(registered, isSubmitting)}
@@ -68,7 +78,6 @@ export const SignInForm = () => {
         </form>
         {renderToggleRegisterLogin(registered, setRegistered)}
       </Card>
-    </StyledStack>
   );
 };
 
@@ -115,13 +124,19 @@ function renderPasswordInput(
 function renderSubmitButton(registered: boolean, loggingIn: boolean) {
   return (
     <Button type="submit" className="shadow-md">
-      {loggingIn ? <RotateCw className="animate-spin"/> : registered ? "Sign in" : "Sign up"}
+      {loggingIn ? (
+        <RotateCw className="animate-spin" />
+      ) : registered ? (
+        "Sign in"
+      ) : (
+        "Sign up"
+      )}
     </Button>
   );
 }
 
 function renderGoogleLoginButton(handleGoogleLogin: {
-  (e: React.FormEvent): Promise<void>;
+  (e: React.FormEvent): void;
 }) {
   return (
     <Button
@@ -154,7 +169,10 @@ function renderToggleRegisterLogin(
   );
 }
 
-function handleLoginError(error: unknown, toast: ReturnType<typeof useToast>["toast"]) {
+function handleLoginError(
+  error: unknown,
+  toast: ReturnType<typeof useToast>["toast"]
+) {
   console.log("Toast type: ", typeof toast);
   console.error("Login Error: ", error);
   if (error !== null && error instanceof Error) {
