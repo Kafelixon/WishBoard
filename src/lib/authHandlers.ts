@@ -5,61 +5,86 @@ import {
   GoogleAuthProvider,
   UserCredential,
   sendEmailVerification,
+  updateProfile,
 } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
 import { login } from "../redux/slices/userSlice";
 import { Action, Dispatch } from "redux";
 import { NavigateFunction } from "react-router-dom";
 
-export const loginUser = async (
+export const loginUser = (
   email: string,
   password: string,
   dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
   from: string
 ) => {
-  try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    dispatchLogin(dispatch, userCredential, navigate, from);
-  } catch (error) {
-    throw new Error("Invalid email or password. Please try again.");
-  }
+  signInWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      dispatchLogin(dispatch, userCredential, navigate, from);
+    })
+    .catch((error) => {
+      console.error(error);
+      throw new Error("Invalid email or password. Please try again.");
+    });
 };
 
-export const registerUser = async (
+export const registerUser = (
   email: string,
   password: string,
+  username: string,
   dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
   from: string
 ) => {
-  try {
-    if (password.length < 6) {
-      throw new Error("Password must be at least 6 characters");
-    }
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
-    await sendEmailVerification(userCredential.user).catch((err) =>
-      console.log(err)
-    );
-    dispatchLogin(dispatch, userCredential, navigate, from);
-  } catch (error) {
-    throw new Error("Registration failed. Please try again.");
+  if (password.length < 6) {
+    throw new Error("Password must be at least 6 characters");
   }
+  createUserWithEmailAndPassword(auth, email, password)
+    .then((userCredential) => {
+      sendEmailVerification(userCredential.user).catch((err) =>
+        console.log(err)
+      );
+      changeUsername(username);
+      dispatchLogin(dispatch, userCredential, navigate, from);
+    })
+    .catch((error) => {
+      console.error(error);
+      throw new Error("Registration failed. Please try again.");
+    });
 };
 
-export const loginWithGoogle = async (
+export const changeUsername = (newUsername: string) => {
+  if (!auth.currentUser) {
+    throw new Error("User not found. Please log in again.");
+  }
+  updateProfile(auth.currentUser, {
+    displayName: newUsername,
+  })
+    .then(() => {
+      return;
+    })
+    .catch((error) => {
+      console.error(error);
+      throw new Error("Failed to update username. Please try again.");
+    });
+};
+
+export const loginWithGoogle = (
   dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
   from: string
 ) => {
   const provider = new GoogleAuthProvider();
 
-  const userCredential = await signInWithPopup(auth, provider);
-  dispatchLogin(dispatch, userCredential, navigate, from);
+  signInWithPopup(auth, provider)
+    .then((userCredential) => {
+      dispatchLogin(dispatch, userCredential, navigate, from);
+    })
+    .catch((error) => {
+      console.error(error);
+      throw new Error("Google login failed. Please try again.");
+    });
 };
 
 const dispatchLogin = (
