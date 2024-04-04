@@ -9,10 +9,15 @@ const TABS = {
 
 export const UserWishlistsOverview: React.FC = () => {
   return (
-    <Tabs defaultValue={TABS.USER_WISHLISTS} className="w-[400px]">
+    <Tabs
+      defaultValue={TABS.USER_WISHLISTS}
+      className="w-full md:w-[60vw] lg:w-[45vw] m-auto"
+    >
       <TabsList className="grid w-full grid-cols-2 glass">
         <TabsTrigger value={TABS.USER_WISHLISTS}>Your Wishlists</TabsTrigger>
-        <TabsTrigger value={TABS.FOLLOWED_WISHLISTS}>Followed Wishlists</TabsTrigger>
+        <TabsTrigger value={TABS.FOLLOWED_WISHLISTS}>
+          Followed Wishlists
+        </TabsTrigger>
       </TabsList>
       <TabsContent value={TABS.USER_WISHLISTS}>
         <UserWishlists />

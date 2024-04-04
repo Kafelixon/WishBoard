@@ -113,23 +113,19 @@ export default function WishlistItemsTable({
       });
       setIsAdding(false);
       toast({ title: "Item added successfully." });
-      cancelAddMode();
+      if (userId) {
+        void fetchItemsFromWishlist(wishlistId, userId).then((data) => {
+          if (data) {
+            setUserWishlist(data);
+          }
+        });
+      }
     } catch (error) {
       setIsAdding(false);
       console.error(error);
       toast({
         title: "Failed to add item to wishlist.",
         variant: "destructive",
-      });
-    }
-  };
-
-  const cancelAddMode = () => {
-    if (userId) {
-      void fetchItemsFromWishlist(wishlistId, userId).then((data) => {
-        if (data) {
-          setUserWishlist(data);
-        }
       });
     }
   };
@@ -142,7 +138,7 @@ export default function WishlistItemsTable({
             Add Item
           </Button>
         </DialogTrigger>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="w-full p-3 max-w-[95vw] m-auto rounded-lg">
           <DialogHeader>
             <DialogTitle>Add Item</DialogTitle>
             <DialogDescription>
@@ -200,12 +196,7 @@ export default function WishlistItemsTable({
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button color="primary" onClick={() => void cancelAddMode()}>
-                Cancel
-              </Button>
-            </DialogClose>
-            <DialogClose asChild>
-              <Button color="primary" onClick={() => void addListing()}>
+              <Button type="submit" color="primary" onClick={() => void addListing()}>
                 {isAdding ? (
                   <Loader2 className="mx-2 h-4 w-4 animate-spin" />
                 ) : (
