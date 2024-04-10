@@ -15,6 +15,7 @@ import { useUserId } from "@/lib/common";
 import { Wishlist } from "@/lib/types";
 import { Button } from "./button";
 import { useToast } from "@/components/ui/use-toast";
+import { Skeleton } from "./skeleton";
 
 export const WishlistPage: React.FC = () => {
   const { wishlistId: paramId } = useParams();
@@ -55,18 +56,14 @@ export const WishlistPage: React.FC = () => {
     return <div>Wishlist not found</div>;
   }
 
-  if (!wishlistInfo) {
-    return <div>Loading...</div>;
-  }
-
   const FollowButton: React.FC = () => {
     if (isWishlistOwner || !userId) {
       return null;
     }
+    
     void fetchFollowedWishlists(userId).then((wishlists) => {
       console.log("wishlists: ", wishlists);
     });
-    console.log("isFollowing: ", isFollowing);
 
     if (isFollowing) {
       return (
@@ -114,11 +111,20 @@ export const WishlistPage: React.FC = () => {
       <CardHeader className="h-22 pb-0">
         <CardTitle className="flex justify-between items-center">
           <div className="flex flex-col align-top">
-            <h2 className="font-semibold">{wishlistInfo.wishlistName}</h2>
-            {wishlistInfo.author && (
-              <p className="text-gray-500 text-sm text-left">
-                {wishlistInfo.author}
-              </p>
+            {!wishlistInfo ? (
+              <>
+                <Skeleton className="w-40 h-4 mb-2" />
+                <Skeleton className="w-10 h-4" />
+              </>
+            ) : (
+              <>
+                <h2 className="font-semibold">{wishlistInfo.wishlistName}</h2>
+                {wishlistInfo.author && (
+                  <p className="text-gray-500 text-sm text-left">
+                    {wishlistInfo.author}
+                  </p>
+                )}
+              </>
             )}
           </div>
           <div className="flex items-center">
