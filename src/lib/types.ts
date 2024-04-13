@@ -1,7 +1,7 @@
 import dynamicIconImports from "lucide-react/dynamicIconImports";
 
 export type WishlistItem = {
-  id?: number;
+  id: string;
   image: string;
   name: string;
   price: number;

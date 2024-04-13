@@ -13,6 +13,7 @@ import {
 import { firestore } from "@/firebaseSetup";
 import { WishlistItem, Wishlist } from "@/lib/types";
 import dynamicIconImports from "lucide-react/dynamicIconImports";
+import { v4 as uuid } from "uuid";
 
 const WISHLISTS_COLLECTION: string = "wishlists";
 
@@ -50,6 +51,8 @@ export const addItemToWishlist = async (
   const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
   const isOwner = await isOwnerOfWishlist(userId, wishlistId);
   if (isOwner) {
+    item.id = uuid();
+    console.log(item.id);
     await setDoc(wishlistRef, { items: arrayUnion(item) }, { merge: true });
   } else {
     throw new Error("You cannot modify this wishlist.");
@@ -78,8 +81,8 @@ export const updateWishlistItem = async (
     throw new Error("Wishlist is invalid.");
   }
 
-  const items = wishlistData.data().items as WishlistItem[];
-  items[item.id] = item;
+  let items = wishlistData.data().items as WishlistItem[];
+  items = items.map(element => element.id === item.id ? item : element);
 
   await updateDoc(wishlistRef, { items: items });
 };
@@ -87,7 +90,7 @@ export const updateWishlistItem = async (
 export const deleteWishlistItem = async (
   userId: string,
   wishlistId: string,
-  itemId: number
+  itemId: string
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
   
@@ -101,8 +104,8 @@ export const deleteWishlistItem = async (
     throw new Error("Wishlist is invalid.");
   }
 
-  const items = wishlistData.data().items as WishlistItem[];
-  items.splice(itemId, 1);
+  let items = wishlistData.data().items as WishlistItem[];
+  items = items.filter(element => element.id !== itemId);
 
   await updateDoc(wishlistRef, { items: items });
 };

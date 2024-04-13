@@ -11,10 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -35,18 +33,19 @@ export default function WishlistItemsTable({
   userId,
 }: WishlistItemsTableProps) {
   const { toast } = useToast();
-  const [isAdding, setIsAdding] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [userWishlist, setUserWishlist] = useState<WishlistItem[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const PLACEHOLDER_ITEM: WishlistItem = {
-    id: 0,
+    id: "",
     image: "https://via.placeholder.com/150",
     name: "",
     price: 0,
     link: "",
     public: true,
   };
-  const [isEditing, setIsEditing] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentItem, setCurrentItem] =
     useState<WishlistItem>(PLACEHOLDER_ITEM);
 
@@ -66,9 +65,9 @@ export default function WishlistItemsTable({
   const cards = userWishlist
     ? [...userWishlist]
         .sort((a, b) => a.price - b.price)
-        .map((item, index) => (
+        .map((item) => (
           <div
-            key={index}
+            key={item.id}
             className={`flex gap-2.5 justify-between border px-2.5 py-2.5 rounded-lg border-solid border-gray-300 max-w-full break-all ${
               item.public === false ? "bg-gray-200" : "glass-fg"
             }`}
@@ -99,8 +98,8 @@ export default function WishlistItemsTable({
                 variant="outline"
                 className="p-2 size-9"
                 onClick={() => {
-                  setCurrentItem({ ...item, id: index });
-                  setIsEditing(true);
+                  setCurrentItem({ ...item });
+                  setEditDialogOpen(true);
                 }}
               >
                 <Pencil />
@@ -124,7 +123,7 @@ export default function WishlistItemsTable({
     }
 
     try {
-      setIsAdding(true);
+      setIsSubmitting(true);
 
       // Add protocol to the url if not present
       if (
@@ -134,14 +133,10 @@ export default function WishlistItemsTable({
         currentItem.link = `http://${currentItem.link}`;
       }
 
-      await addItemToWishlist(userId, wishlistId, {
-        name: currentItem.name.trim(),
-        price: currentItem.price,
-        link: currentItem.link,
-        image: currentItem.image,
-        public: currentItem.public,
-      });
-      setIsAdding(false);
+      currentItem.name = currentItem.name.trim();
+
+      await addItemToWishlist(userId, wishlistId, { ...currentItem });
+      setIsSubmitting(false);
       toast({ title: "Item added successfully." });
       if (userId) {
         void fetchItemsFromWishlist(wishlistId, userId).then((data) => {
@@ -151,7 +146,7 @@ export default function WishlistItemsTable({
         });
       }
     } catch (error) {
-      setIsAdding(false);
+      setIsSubmitting(false);
       console.error(error);
       toast({
         title: "Failed to add item to wishlist.",
@@ -168,7 +163,7 @@ export default function WishlistItemsTable({
     }
 
     try {
-      setIsAdding(true);
+      setIsSubmitting(true);
 
       // Add protocol to the url if not present
       if (
@@ -186,7 +181,7 @@ export default function WishlistItemsTable({
         image: currentItem.image,
         public: currentItem.public,
       });
-      setIsAdding(false);
+      setIsSubmitting(false);
       toast({ title: "Item updated successfully." });
       if (userId) {
         void fetchItemsFromWishlist(wishlistId, userId).then((data) => {
@@ -196,7 +191,7 @@ export default function WishlistItemsTable({
         });
       }
     } catch (error) {
-      setIsAdding(false);
+      setIsSubmitting(false);
       console.error(error);
       toast({
         title: "Failed to update the item.",
@@ -207,14 +202,15 @@ export default function WishlistItemsTable({
   };
 
   const deleteItem = async () => {
+    console.log("Deleting item", currentItem.id);
     if (!userId || !wishlistId) {
       console.error("User ID or Wishlist ID is missing");
       return;
     }
 
     try {
-      await deleteWishlistItem(userId, wishlistId, currentItem.id as number);
-      setIsEditing(false);
+      await deleteWishlistItem(userId, wishlistId, currentItem.id);
+      setEditDialogOpen(false);
       toast({ title: "Item deleted successfully." });
       if (userId) {
         void fetchItemsFromWishlist(wishlistId, userId).then((data) => {
@@ -224,7 +220,7 @@ export default function WishlistItemsTable({
         });
       }
     } catch (error) {
-      setIsEditing(false);
+      setEditDialogOpen(false);
       console.error(error);
       toast({
         title: "Failed to delete the item.",
@@ -236,104 +232,106 @@ export default function WishlistItemsTable({
 
   function addItem() {
     return (
-      <Dialog>
+      <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" className="glass-fg">
             Add Item
           </Button>
         </DialogTrigger>
-        <DialogContent className="w-full p-3 max-w-[95vw] m-auto rounded-lg">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Item</DialogTitle>
             <DialogDescription>
               Add a new item to your wishlist. Click add when you're done.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            {/* //TODO: Add image upload or link */}
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="productName" className="text-right">
-                Product Name
-              </Label>
-              <Input
-                id="productName"
-                value={currentItem.name}
-                onChange={(e) =>
-                  setCurrentItem({ ...currentItem, name: e.target.value })
-                }
-                className="col-span-3"
-              />
+          <form
+            className="grid gap-4 py-4"
+            onSubmit={(event) => {
+              event.preventDefault();
+              addListing()
+                .then(() => setAddDialogOpen(false))
+                .catch((e: unknown) => console.error(e));
+            }}
+          >
+            <div className="grid gap-4 py-4">
+              {/* //TODO: Add image upload or link */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="productName" className="text-right">
+                  Product Name
+                </Label>
+                <Input
+                  id="productName"
+                  value={currentItem.name}
+                  onChange={(e) =>
+                    setCurrentItem({ ...currentItem, name: e.target.value })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="averagePrice" className="text-right">
+                  Average Price
+                </Label>
+                <Input
+                  id="averagePrice"
+                  type="number"
+                  value={currentItem.price}
+                  onChange={(e) => {
+                    setCurrentItem({
+                      ...currentItem,
+                      price: parseFloat(e.target.value),
+                    });
+                  }}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="link" className="text-right">
+                  Link
+                </Label>
+                <Input
+                  id="link"
+                  value={currentItem.link}
+                  onChange={(e) =>
+                    setCurrentItem({ ...currentItem, link: e.target.value })
+                  }
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-left gap-4">
+                <Label htmlFor="itemPublic" className="text-right">
+                  Public
+                </Label>
+                <input
+                  id="itemPublic"
+                  type="checkbox"
+                  checked={currentItem.public as boolean}
+                  onChange={() =>
+                    setCurrentItem({
+                      ...currentItem,
+                      public: !currentItem.public,
+                    })
+                  }
+                  className="col-span-3 place-self-start"
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="averagePrice" className="text-right">
-                Average Price
-              </Label>
-              <Input
-                id="averagePrice"
-                type="number"
-                value={currentItem.price}
-                onChange={(e) => {
-                  setCurrentItem({
-                    ...currentItem,
-                    price: parseFloat(e.target.value),
-                  });
-                }}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="link" className="text-right">
-                Link
-              </Label>
-              <Input
-                id="link"
-                value={currentItem.link}
-                onChange={(e) =>
-                  setCurrentItem({ ...currentItem, link: e.target.value })
-                }
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-left gap-4">
-              <Label htmlFor="itemPublic" className="text-right">
-                Public
-              </Label>
-              <input
-                id="itemPublic"
-                type="checkbox"
-                checked={currentItem.public as boolean}
-                onChange={() =>
-                  setCurrentItem({
-                    ...currentItem,
-                    public: !currentItem.public,
-                  })
-                }
-                className="col-span-3 place-self-start"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                type="submit"
-                color="primary"
-                onClick={() => void addListing()}
-              >
-                {isAdding ? (
-                  <Loader2 className="mx-2 h-4 w-4 animate-spin" />
-                ) : (
-                  "Add listing"
-                )}
-              </Button>
-            </DialogClose>
-          </DialogFooter>
+            <Button type="submit" color="primary">
+              {isSubmitting ? (
+                <Loader2 className="mx-2 h-4 w-4 animate-spin" />
+              ) : (
+                "Add listing"
+              )}
+            </Button>
+          </form>
         </DialogContent>
       </Dialog>
     );
   }
   function EditDialog() {
     return (
-      <Dialog open={isEditing} onOpenChange={setIsEditing}>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Wishlist Item</DialogTitle>
@@ -346,7 +344,7 @@ export default function WishlistItemsTable({
             onSubmit={(event) => {
               event.preventDefault();
               updateItem()
-                .then(() => setIsEditing(false))
+                .then(() => setEditDialogOpen(false))
                 .catch((e: unknown) => console.error(e));
             }}
           >
@@ -431,7 +429,7 @@ export default function WishlistItemsTable({
   return (
     <div className="flex flex-col gap-2.5">
       {canEditWishlist && userId && addItem()}
-      {isEditing && EditDialog()}
+      {editDialogOpen && EditDialog()}
       {isFetching ? cardsSkeleton : cards}
     </div>
   );
