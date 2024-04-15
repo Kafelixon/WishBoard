@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
-  fetchFollowedWishlists,
+  FollowStateChanger,
   fetchWishlistById,
   followWishlist,
   isFollowingWishlist,
@@ -15,6 +15,7 @@ import { useUserId } from "@/lib/common";
 import { Wishlist } from "@/lib/types";
 import { Button } from "./button";
 import { useToast } from "@/components/ui/use-toast";
+import { Skeleton } from "./skeleton";
 
 export const WishlistPage: React.FC = () => {
   const { wishlistId: paramId } = useParams();
@@ -55,56 +56,46 @@ export const WishlistPage: React.FC = () => {
     return <div>Wishlist not found</div>;
   }
 
-  if (!wishlistInfo) {
-    return <div>Loading...</div>;
-  }
-
   const FollowButton: React.FC = () => {
+    const handleFollowChange = (
+      followAction: FollowStateChanger,
+      successMessage: string,
+      errorMessage: string
+    ) => {
+      followAction(userId, wishlistId)
+        .then(() => {
+          return isFollowingWishlist(userId, wishlistId);
+        })
+        .then((following) => {
+          setIsFollowing(following);
+          toast({ title: successMessage });
+        })
+        .catch(() => {
+          toast({ title: errorMessage });
+        });
+    };
+
+    const handleFollow = () =>
+      handleFollowChange(
+        followWishlist,
+        "You are now following this wishlist",
+        "Failed to follow this wishlist"
+      );
+
+    const handleUnfollow = () =>
+      handleFollowChange(
+        unfollowWishlist,
+        "You are no longer following this wishlist",
+        "Failed to unfollow this wishlist"
+      );
+
     if (isWishlistOwner || !userId) {
       return null;
     }
-    void fetchFollowedWishlists(userId).then((wishlists) => {
-      console.log("wishlists: ", wishlists);
-    });
-    console.log("isFollowing: ", isFollowing);
-
-    if (isFollowing) {
-      return (
-        <Button
-          onClick={() => {
-            void unfollowWishlist(userId, wishlistId).then(() => {
-              void isFollowingWishlist(userId, wishlistId).then(
-                (isFollowing) => {
-                  setIsFollowing(isFollowing);
-                  if (!isFollowing) {
-                    toast({
-                      title: "You are no longer following this wishlist",
-                    });
-                  }
-                }
-              );
-            });
-          }}
-        >
-          Unfollow
-        </Button>
-      );
-    }
-
+    
     return (
-      <Button
-        onClick={() => {
-          void followWishlist(userId, wishlistId).then(() => {
-            void isFollowingWishlist(userId, wishlistId).then((isFollowing) => {
-              setIsFollowing(isFollowing);
-              if (isFollowing) {
-                toast({ title: "You are now following this wishlist" });
-              }
-            });
-          });
-        }}
-      >
-        Follow
+      <Button onClick={isFollowing ? handleUnfollow : handleFollow}>
+        {isFollowing ? "Unfollow" : "Follow"}
       </Button>
     );
   };
@@ -114,11 +105,20 @@ export const WishlistPage: React.FC = () => {
       <CardHeader className="h-22 pb-0">
         <CardTitle className="flex justify-between items-center">
           <div className="flex flex-col align-top">
-            <h2 className="font-semibold">{wishlistInfo.wishlistName}</h2>
-            {wishlistInfo.author && (
-              <p className="text-gray-500 text-sm text-left">
-                {wishlistInfo.author}
-              </p>
+            {!wishlistInfo ? (
+              <>
+                <Skeleton className="w-40 h-4 mb-2" />
+                <Skeleton className="w-10 h-4" />
+              </>
+            ) : (
+              <>
+                <h2 className="font-semibold">{wishlistInfo.wishlistName}</h2>
+                {wishlistInfo.author && (
+                  <p className="text-gray-500 text-sm text-left">
+                    {wishlistInfo.author}
+                  </p>
+                )}
+              </>
             )}
           </div>
           <div className="flex items-center">

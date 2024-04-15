@@ -43,7 +43,7 @@ export const registerUser = (
   createUserWithEmailAndPassword(auth, email, password)
     .then((userCredential) => {
       sendEmailVerification(userCredential.user).catch((err) =>
-        console.log(err)
+        console.error(err)
       );
       changeUsername(username);
       dispatchLogin(dispatch, userCredential, navigate, from);
