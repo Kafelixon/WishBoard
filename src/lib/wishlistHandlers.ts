@@ -73,7 +73,7 @@ export const updateWishlistItem = async (
   if (!(await isOwnerOfWishlist(userId, wishlistId))) {
     throw new Error("You cannot modify this wishlist.");
   }
-  
+
   const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
   const wishlistData = await getDoc(wishlistRef);
 
@@ -82,7 +82,7 @@ export const updateWishlistItem = async (
   }
 
   let items = wishlistData.data().items as WishlistItem[];
-  items = items.map(element => element.id === item.id ? item : element);
+  items = items.map((element) => (element.id === item.id ? item : element));
 
   await updateDoc(wishlistRef, { items: items });
 };
@@ -93,11 +93,11 @@ export const deleteWishlistItem = async (
   itemId: string
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
-  
+
   if (!(await isOwnerOfWishlist(userId, wishlistId))) {
     throw new Error("You cannot modify this wishlist.");
   }
-  
+
   const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
   const wishlistData = await getDoc(wishlistRef);
   if (!wishlistData.exists()) {
@@ -105,7 +105,7 @@ export const deleteWishlistItem = async (
   }
 
   let items = wishlistData.data().items as WishlistItem[];
-  items = items.filter(element => element.id !== itemId);
+  items = items.filter((element) => element.id !== itemId);
 
   await updateDoc(wishlistRef, { items: items });
 };
@@ -162,7 +162,15 @@ export const fetchItemsFromWishlist = async (
 
 // Follow Wishlist
 
-export const followWishlist = async (userId: string, wishlistId: string) => {
+export type FollowStateChanger = (
+  userId: string,
+  wishlistId: string
+) => Promise<void>;
+
+export const followWishlist: FollowStateChanger = async (
+  userId: string,
+  wishlistId: string
+) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
   try {
@@ -194,7 +202,10 @@ export const followWishlist = async (userId: string, wishlistId: string) => {
  * @throws Error if either user ID or wishlist ID is not provided or if the operation fails.
  * @returns void
  */
-export const unfollowWishlist = async (userId: string, wishlistId: string) => {
+export const unfollowWishlist: FollowStateChanger = async (
+  userId: string,
+  wishlistId: string
+) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
   try {
