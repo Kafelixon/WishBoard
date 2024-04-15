@@ -40,7 +40,13 @@ export const wishlistExists = async (wishlistId: string) => {
   return wishlistData.exists();
 };
 
-export const addItemToWishlist = async (
+export type WishlistItemChanger = (
+  userId: string,
+  wishlistId: string,
+  item: WishlistItem
+) => Promise<void>;
+
+export const addItemToWishlist: WishlistItemChanger = async (
   userId: string,
   wishlistId: string,
   item: WishlistItem
@@ -57,7 +63,7 @@ export const addItemToWishlist = async (
   }
 };
 
-export const updateWishlistItem = async (
+export const updateWishlistItem: WishlistItemChanger = async (
   userId: string,
   wishlistId: string,
   item: WishlistItem
