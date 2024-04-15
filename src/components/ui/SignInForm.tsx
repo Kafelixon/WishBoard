@@ -173,7 +173,6 @@ function handleLoginError(
   error: unknown,
   toast: ReturnType<typeof useToast>["toast"]
 ) {
-  console.log("Toast type: ", typeof toast);
   console.error("Login Error: ", error);
   if (error !== null && error instanceof Error) {
     console.error(error.message);

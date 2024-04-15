@@ -202,7 +202,6 @@ export default function WishlistItemsTable({
   };
 
   const deleteItem = async () => {
-    console.log("Deleting item", currentItem.id);
     if (!userId || !wishlistId) {
       console.error("User ID or Wishlist ID is missing");
       return;

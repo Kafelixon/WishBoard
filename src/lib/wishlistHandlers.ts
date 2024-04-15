@@ -25,7 +25,6 @@ export const createWishlist = async (
 ) => {
   validateUserIdAndWishlistId(userId, wishlistName);
 
-  console.log(new Date().getTime());
   const wishlistsCollection = collection(firestore, WISHLISTS_COLLECTION);
   await addDoc(wishlistsCollection, {
     wishlistName: wishlistName,
@@ -52,7 +51,6 @@ export const addItemToWishlist = async (
   const isOwner = await isOwnerOfWishlist(userId, wishlistId);
   if (isOwner) {
     item.id = uuid();
-    console.log(item.id);
     await setDoc(wishlistRef, { items: arrayUnion(item) }, { merge: true });
   } else {
     throw new Error("You cannot modify this wishlist.");
@@ -179,7 +177,6 @@ export const followWishlist: FollowStateChanger = async (
     if (followedData.exists()) {
       const followed = followedData.data().follows as string[];
       if (followed.includes(wishlistId)) {
-        console.log("Wishlist already followed!");
         return;
       }
     }
@@ -188,7 +185,6 @@ export const followWishlist: FollowStateChanger = async (
       { follows: arrayUnion(wishlistId) },
       { merge: true }
     );
-    console.log("Wishlist followed!");
   } catch (e) {
     console.error("Transaction failed: ", e);
     throw e;
