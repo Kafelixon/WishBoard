@@ -21,7 +21,7 @@ interface WishlistItemsTableProps {
 
 const PLACEHOLDER_ITEM: WishlistItem = {
   id: "",
-  image: "https://via.placeholder.com/150",
+  image: "",
   name: "",
   price: 0,
   link: "",
@@ -61,7 +61,7 @@ export default function WishlistItemsTable({
   };
 
   const handleProtocol = (link: string) =>
-    link.startsWith("http://") || link.startsWith("https://")
+    link === "" || link.startsWith("http://") || link.startsWith("https://")
       ? link
       : `http://${link}`;
 
@@ -81,6 +81,7 @@ export default function WishlistItemsTable({
     setIsSubmitting(true);
     const itemWithCorrectLink = {
       ...currentItem,
+      image: handleProtocol(currentItem.image),
       link: handleProtocol(currentItem.link),
       name: currentItem.name.trim(),
     };
@@ -212,7 +213,7 @@ const CardsList: FC<{
         >
           <div className="flex gap-2.5 items-center">
             <img
-              src={item.image}
+              src={item.image || "https://via.placeholder.com/150"}
               alt="Product"
               className="size-28 min-h-28 min-w-28 object-contain bg-white border border-gray-300 rounded-lg"
             />
