@@ -79,6 +79,16 @@ const ItemFormFields: FC<{
         className="col-span-3" />
     </div>
     <div className="grid grid-cols-4 items-center gap-4 h-10">
+      <Label htmlFor="image" className="text-right">
+        Image URL
+      </Label>
+      <Input
+        id="image"
+        value={currentItem.image}
+        onChange={(e) => handleItemChange({ image: e.target.value })}
+        className="col-span-3" />
+    </div>
+    <div className="grid grid-cols-4 items-center gap-4 h-10">
       <Label htmlFor="averagePrice" className="text-right">
         Average Price
       </Label>
