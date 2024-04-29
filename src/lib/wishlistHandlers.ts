@@ -1,4 +1,6 @@
 import {
+  DocumentData,
+  DocumentSnapshot,
   addDoc,
   arrayUnion,
   collection,
@@ -35,10 +37,11 @@ export const createWishlist = async (
   });
 };
 
-export const wishlistExists = async (wishlistId: string) => {
-  const wishlistData = await fetchWishlistData(wishlistId);
+export async function wishlistExists(wishlistId: string): Promise<boolean> {
+  const wishlistData: DocumentSnapshot<DocumentData, DocumentData> =
+    await fetchWishlistData(wishlistId);
   return wishlistData.exists();
-};
+}
 
 export type WishlistItemChanger = (
   userId: string,
