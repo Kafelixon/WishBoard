@@ -52,14 +52,14 @@ export const registerUser = (
     throw new Error("Password must be at least 6 characters");
   }
   createUserWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
+    .then((userCredential: UserCredential) => {
       sendEmailVerification(userCredential.user).catch((err) =>
         console.error(err)
       );
       changeUsername(username);
       dispatchLogin(dispatch, userCredential, navigate, from);
     })
-    .catch((error) => {
+    .catch((error: Error) => {
       console.error(error);
       throw new Error("Registration failed. Please try again.");
     });
