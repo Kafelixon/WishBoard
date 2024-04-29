@@ -20,13 +20,24 @@ export const loginUser = (
   from: string
 ) => {
   signInWithEmailAndPassword(auth, email, password)
-    .then((userCredential) => {
-      dispatchLogin(dispatch, userCredential, navigate, from);
-    })
-    .catch((error) => {
-      console.error(error);
-      throw new Error("Invalid email or password. Please try again.");
-    });
+    .then((userCredential: UserCredential) =>
+      handleLogin(dispatch, navigate, from, userCredential)
+    )
+    .catch(handleLoginError);
+};
+
+const handleLogin = (
+  dispatch: Dispatch<Action>,
+  navigate: NavigateFunction,
+  from: string,
+  userCredential: UserCredential
+) => {
+  dispatchLogin(dispatch, userCredential, navigate, from);
+};
+
+const handleLoginError = (error: Error) => {
+  console.error(error);
+  throw new Error("Login failed. Please try again.");
 };
 
 export const registerUser = (
@@ -75,16 +86,13 @@ export const loginWithGoogle = (
   navigate: NavigateFunction,
   from: string
 ) => {
-  const provider = new GoogleAuthProvider();
+  const provider: GoogleAuthProvider = new GoogleAuthProvider();
 
   signInWithPopup(auth, provider)
-    .then((userCredential) => {
-      dispatchLogin(dispatch, userCredential, navigate, from);
-    })
-    .catch((error) => {
-      console.error(error);
-      throw new Error("Google login failed. Please try again.");
-    });
+    .then((userCredential) =>
+      handleLogin(dispatch, navigate, from, userCredential)
+    )
+    .catch(handleLoginError);
 };
 
 const dispatchLogin = (
