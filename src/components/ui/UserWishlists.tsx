@@ -60,7 +60,7 @@ export const UserWishlists: React.FC = () => {
       <CardHeader className="h-22">
         <CardTitle className="h-10 flex justify-between items-center">
           Your Wishlists
-          {userId && <Button onClick={handleAddWishlist}>Add new</Button>}
+          {userId && <Button onClick={void handleAddWishlist}>Add new</Button>}
         </CardTitle>
       </CardHeader>
       <CardContent>

@@ -4,3 +4,7 @@ node_modules/
 dist/
 build/
 out/
+
+postcss.config.js
+tailwind.config.js
+vite.config.ts
