@@ -6,11 +6,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
-import { WishlistCard, WishlistCardSkeleton } from "@/components/ui/wishlist-card";
+import {
+  WishlistCard,
+  WishlistCardSkeleton,
+} from "@/components/ui/wishlist-card";
+import { WishlistEditDialog } from "./WishlistEditDialog";
 
 export const UserWishlists: React.FC = () => {
   const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currentItem, setCurrentItem] = useState<Wishlist>({
+    id: "",
+    name: "",
+    author: "",
+    icon: "shopping-cart",
+    updateTimestamp: Date.now(),
+  });
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const userId = useUserId();
   const userName = useUserName();
   const { toast } = useToast();
@@ -29,10 +41,13 @@ export const UserWishlists: React.FC = () => {
     });
   }, [userId]);
 
+  const handleItemChange = (changes: Partial<Wishlist>) =>
+    setCurrentItem((current) => ({ ...current, ...changes }));
+
   const handleAddWishlist = async () => {
     if (!userId) return;
 
-    const newWishlistName = prompt("Enter the name of the new wishlist:");
+    const newWishlistName = currentItem.name;
     if (!newWishlistName) return;
 
     setIsLoading(true);
@@ -64,9 +79,20 @@ export const UserWishlists: React.FC = () => {
       <CardHeader className="h-22">
         <CardTitle className="h-10 flex justify-between items-center">
           Your Wishlists
-          {userId && <Button onClick={handleAddWishlist}>Add new</Button>}
+          {userId && (
+            <Button onClick={() => setDialogOpen(true)}>Add new</Button>
+          )}
         </CardTitle>
       </CardHeader>
+      <WishlistEditDialog
+        isOpen={dialogOpen}
+        isSubmitting={false}
+        action="Add"
+        setDialogOpen={setDialogOpen}
+        handleAction={handleAddWishlist}
+        onUpdate={handleItemChange}
+        wishlist={currentItem}
+      />
       <CardContent>
         <ScrollArea className="h-72 w-full rounded-md border place-items-center glass-fg">
           {isLoading
