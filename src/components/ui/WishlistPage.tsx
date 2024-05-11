@@ -92,7 +92,7 @@ export const WishlistPage: React.FC = () => {
     if (isWishlistOwner || !userId) {
       return null;
     }
-    
+
     return (
       <Button onClick={isFollowing ? handleUnfollow : handleFollow}>
         {isFollowing ? "Unfollow" : "Follow"}
@@ -112,7 +112,7 @@ export const WishlistPage: React.FC = () => {
               </>
             ) : (
               <>
-                <h2 className="font-semibold">{wishlistInfo.wishlistName}</h2>
+                <h2 className="font-semibold">{wishlistInfo.name}</h2>
                 {wishlistInfo.author && (
                   <p className="text-gray-500 text-sm text-left">
                     {wishlistInfo.author}

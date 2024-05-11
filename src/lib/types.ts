@@ -11,9 +11,9 @@ export type WishlistItem = {
 
 export type Wishlist = {
   id: string;
-  wishlistName: string;
+  name: string;
   author: string;
-  iconName: keyof typeof dynamicIconImports;
+  icon: keyof typeof dynamicIconImports;
   updateTimestamp: number;
 };
 

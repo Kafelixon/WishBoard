@@ -135,9 +135,9 @@ export const findWishlistsByOwner = async (userId: string) => {
   return snapshot.docs.map((docSnap) => {
     return {
       id: docSnap.id,
-      wishlistName: String(docSnap.data().wishlistName),
+      name: String(docSnap.data().wishlistName),
       author: String(docSnap.data().author),
-      iconName: docSnap.data().iconName as keyof typeof dynamicIconImports,
+      icon: docSnap.data().iconName as keyof typeof dynamicIconImports,
       updateTimestamp: docSnap.data().updateTimestamp as number,
     } as Wishlist;
   });
@@ -297,9 +297,9 @@ const fetchWishlistsByIds = async (
     if (wishlist) {
       wishlists.push({
         id: wishlistId,
-        wishlistName: String(wishlist.wishlistName),
+        name: String(wishlist.name),
         author: String(wishlist.author),
-        iconName: wishlist.iconName,
+        icon: wishlist.icon,
         updateTimestamp: wishlist.updateTimestamp,
       });
     }
