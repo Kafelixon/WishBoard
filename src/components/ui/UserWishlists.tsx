@@ -49,7 +49,11 @@ export const UserWishlists: React.FC = () => {
     }
     if (wishlists) {
       return wishlists.map((wishlist) => (
-        <WishlistCard key={wishlist.id} wishlist={wishlist} />
+        <WishlistCard
+          key={wishlist.id}
+          wishlist={wishlist}
+          handleEdit={() => console.log("Edit Wishlist")}
+        ></WishlistCard>
       ));
     }
     return <p className="p-2">You don't have any wishlists yet.</p>;

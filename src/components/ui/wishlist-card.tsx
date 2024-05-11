@@ -3,12 +3,18 @@ import { Wishlist } from "@/lib/types";
 import Icon from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
+import { Pencil } from "lucide-react";
+import { Button } from "./button";
 
 type WishlistProps = {
   wishlist: Wishlist;
+  handleEdit: (wishlist: Wishlist) => void;
 };
 
-export const WishlistCard: React.FC<WishlistProps> = ({ wishlist }) => {
+export const WishlistCard: React.FC<WishlistProps> = ({
+  wishlist,
+  handleEdit,
+}) => {
   const navigate = useNavigate();
 
   return (
@@ -29,6 +35,15 @@ export const WishlistCard: React.FC<WishlistProps> = ({ wishlist }) => {
             {new Date(wishlist.updateTimestamp).toLocaleDateString()}
           </p>
         </div>
+        <Button
+          variant="outline"
+          className="p-2 size-9"
+          onClick={() => {
+            handleEdit(wishlist);
+          }}
+        >
+          <Pencil />
+        </Button>
       </div>
     </div>
   );
