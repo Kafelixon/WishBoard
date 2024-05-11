@@ -11,6 +11,7 @@ import {
   WishlistCardSkeleton,
 } from "@/components/ui/wishlist-card";
 import { WishlistEditDialog } from "./WishlistEditDialog";
+import { Pencil, X } from "lucide-react";
 
 export const UserWishlists: React.FC = () => {
   const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
@@ -23,6 +24,7 @@ export const UserWishlists: React.FC = () => {
     updateTimestamp: Date.now(),
   });
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [editMode, setEditMode] = useState<boolean>(false);
   const userId = useUserId();
   const userName = useUserName();
   const { toast } = useToast();
@@ -67,6 +69,7 @@ export const UserWishlists: React.FC = () => {
         <WishlistCard
           key={wishlist.id}
           wishlist={wishlist}
+          editMode={editMode}
           handleEdit={() => console.log("Edit Wishlist")}
         ></WishlistCard>
       ));
@@ -80,7 +83,16 @@ export const UserWishlists: React.FC = () => {
         <CardTitle className="h-10 flex justify-between items-center">
           Your Wishlists
           {userId && (
-            <Button onClick={() => setDialogOpen(true)}>Add new</Button>
+            <div className="flex gap-1">
+              <Button onClick={() => setDialogOpen(true)}>Add new</Button>
+              <Button
+                className="p-2"
+                variant={!editMode ? "default" : "destructive"}
+                onClick={() => setEditMode(!editMode)}
+              >
+                {editMode ? <X /> : <Pencil />}
+              </Button>
+            </div>
           )}
         </CardTitle>
       </CardHeader>
