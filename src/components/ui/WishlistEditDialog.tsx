@@ -14,43 +14,36 @@ interface WishlistDialogProps {
   wishlist: Wishlist;
   isOpen: boolean;
   isSubmitting: boolean;
-  action: "Add" | "Update";
+  actionType: "Add" | "Update";
+  dialogTitle: string;
+  handleAction: (wishlist: Wishlist) => void;
   setDialogOpen: (open: boolean) => void;
-  handleAction: () => void;
   handleDelete?: () => void;
-  onUpdate: (wishlist: Wishlist) => void;
+  handleItemChange: (changes: Partial<Wishlist>) => void;
 }
 
 export const WishlistEditDialog: FC<WishlistDialogProps> = ({
   wishlist,
   isOpen,
   isSubmitting,
-  action,
-  setDialogOpen,
+  actionType,
+  dialogTitle,
   handleAction,
+  setDialogOpen,
   handleDelete,
-  onUpdate,
+  handleItemChange,
 }) => {
-  const handleUpdate = (key: string, value: string) => {
-    onUpdate({ ...wishlist, [key]: value });
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={setDialogOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {action === "Add"
-              ? "Add a new wishlist"
-              : "Update your " + wishlist.name + " wishlist"}
-          </DialogTitle>
+          <DialogTitle>{dialogTitle}</DialogTitle>
         </DialogHeader>
         <form
           className="grid gap-4 pt-4"
           onSubmit={(event) => {
             event.preventDefault();
-            console.log("submitting");
-            handleAction();
+            handleAction(wishlist);
             setDialogOpen(false);
           }}
         >
@@ -58,18 +51,23 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
             id="name"
             value={wishlist.name}
             placeholder="Wishtlist Name"
-            onChange={(e) => handleUpdate("name", e.target.value)}
+            onChange={(e) => {
+              handleItemChange({ name: e.target.value });
+            }}
           />
           <div
             className={`flex flex-row ${
-              action === "Update" ? "justify-end" : "justify-between"
+              actionType === "Add" ? "justify-end" : "justify-between"
             } mt-4`}
           >
-            {action === "Update" && (
+            {actionType === "Update" && handleDelete && (
               <Button
                 type="button"
                 variant="destructive"
-                onClick={handleDelete}
+                onClick={() => {
+                  handleDelete();
+                  setDialogOpen(false);
+                }}
               >
                 Delete Item
               </Button>
@@ -78,7 +76,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
               {isSubmitting ? (
                 <Loader2 className="mx-2 h-4 w-4 animate-spin" />
               ) : (
-                action
+                "Submit"
               )}
             </Button>
           </div>

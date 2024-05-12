@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { createWishlist, findWishlistsByOwner } from "@/lib/wishlistHandlers";
+import {
+  createWishlist,
+  deleteWishlist,
+  findWishlistsByOwner,
+  updateWishlist,
+} from "@/lib/wishlistHandlers";
 import { Wishlist } from "@/lib/types";
 import { useUserId, useUserName } from "@/lib/common";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,19 +19,27 @@ import { WishlistEditDialog } from "./WishlistEditDialog";
 import { Pencil, X } from "lucide-react";
 
 export const UserWishlists: React.FC = () => {
-  const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [currentItem, setCurrentItem] = useState<Wishlist>({
+  const PLACEHOLDER_ITEM: Wishlist = {
     id: "",
     name: "",
-    author: "",
+    author: useUserName(),
     icon: "shopping-cart",
     updateTimestamp: Date.now(),
-  });
+  };
+
+  const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [currentItem, setCurrentItem] = useState<Wishlist>(PLACEHOLDER_ITEM);
+
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
+  const [actionType, setActionType] = useState<"Add" | "Update">("Add");
+  const [dialogTitle, setDialogTitle] = useState<string>("");
+  const [handleAction, setHandleAction] = useState<
+    (wishlist: Wishlist) => void
+  >(() => {});
   const [editMode, setEditMode] = useState<boolean>(false);
   const userId = useUserId();
-  const userName = useUserName();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,18 +59,48 @@ export const UserWishlists: React.FC = () => {
   const handleItemChange = (changes: Partial<Wishlist>) =>
     setCurrentItem((current) => ({ ...current, ...changes }));
 
-  const handleAddWishlist = async () => {
+  const handleAddWishlist = async (wishlistToAdd: Wishlist) => {
     if (!userId) return;
 
-    const newWishlistName = currentItem.name;
+    const newWishlistName = wishlistToAdd.name;
     if (!newWishlistName) return;
 
+    setIsSubmitting(true);
+    await createWishlist(userId, wishlistToAdd);
+    setIsSubmitting(false);
+
     setIsLoading(true);
-    await createWishlist(userId, userName, newWishlistName, "shopping-cart");
-    const updatedWishlists = await findWishlistsByOwner(userId);
-    setWishlists(updatedWishlists);
+    setWishlists(await findWishlistsByOwner(userId));
     setIsLoading(false);
+
     toast({ title: "Wishlist created" });
+  };
+
+  const handleEditWishlist = async (wishlistToUpdate: Wishlist) => {
+    if (!userId) return;
+
+    setIsSubmitting(true);
+    await updateWishlist(userId, wishlistToUpdate);
+    setIsSubmitting(false);
+
+    setIsLoading(true);
+    setWishlists(await findWishlistsByOwner(userId));
+    setIsLoading(false);
+
+    toast({ title: "Wishlist updated" });
+  };
+
+  const handleDelete = async () => {
+    if (!userId) return;
+
+    setIsSubmitting(true);
+    await deleteWishlist(userId, currentItem.id);
+    setIsSubmitting(false);
+    setIsLoading(true);
+    const refreshedWishlists = await findWishlistsByOwner(userId);
+    setWishlists(refreshedWishlists);
+    setIsLoading(false);
+    toast({ title: "Wishlist deleted" });
   };
 
   const renderWishlists = () => {
@@ -70,7 +113,13 @@ export const UserWishlists: React.FC = () => {
           key={wishlist.id}
           wishlist={wishlist}
           editMode={editMode}
-          handleEdit={() => console.log("Edit Wishlist")}
+          handleEdit={(wishlist) => {
+            setCurrentItem(wishlist);
+            setActionType("Update");
+            setDialogTitle("Edit Your Wishlist");
+            setHandleAction(() => handleEditWishlist);
+            setDialogOpen(true);
+          }}
         ></WishlistCard>
       ));
     }
@@ -84,7 +133,17 @@ export const UserWishlists: React.FC = () => {
           Your Wishlists
           {userId && (
             <div className="flex gap-1">
-              <Button onClick={() => setDialogOpen(true)}>Add new</Button>
+              <Button
+                onClick={() => {
+                  setCurrentItem(PLACEHOLDER_ITEM);
+                  setActionType("Add");
+                  setDialogTitle("Add New Wishlist");
+                  setHandleAction(() => handleAddWishlist);
+                  setDialogOpen(true);
+                }}
+              >
+                Add new
+              </Button>
               <Button
                 className="p-2"
                 variant={!editMode ? "default" : "destructive"}
@@ -98,11 +157,13 @@ export const UserWishlists: React.FC = () => {
       </CardHeader>
       <WishlistEditDialog
         isOpen={dialogOpen}
-        isSubmitting={false}
-        action="Add"
+        isSubmitting={isSubmitting}
+        actionType={actionType}
+        dialogTitle={dialogTitle}
+        handleAction={handleAction}
         setDialogOpen={setDialogOpen}
-        handleAction={handleAddWishlist}
-        onUpdate={handleItemChange}
+        handleItemChange={handleItemChange}
+        handleDelete={handleDelete}
         wishlist={currentItem}
       />
       <CardContent>

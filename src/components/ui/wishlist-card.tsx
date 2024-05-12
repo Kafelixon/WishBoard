@@ -34,7 +34,9 @@ export const WishlistCard: React.FC<WishlistProps> = ({
         <div className="flex items-center space-x-3">
           <Icon name={wishlist.icon} className="w-6 h-6" />
           <div>
-            <p className="font-semibold">{wishlist.name}</p>
+            <p className="font-semibold break-words max-w-96">
+              {wishlist.name}
+            </p>
             <p className="text-gray-500 text-sm text-left">{wishlist.author}</p>
           </div>
         </div>
