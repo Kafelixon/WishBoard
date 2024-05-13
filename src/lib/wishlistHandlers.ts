@@ -97,7 +97,10 @@ export const addItemToWishlist: WishlistItemChanger = async (
   const isOwner = await isOwnerOfWishlist(userId, wishlistId);
   if (isOwner) {
     item.id = uuid();
-    await setDoc(wishlistRef, { items: arrayUnion(item) }, { merge: true });
+    await updateDoc(wishlistRef, {
+      items: arrayUnion(item),
+      updateTimestamp: new Date().getTime(),
+    });
   } else {
     throw new Error("You cannot modify this wishlist.");
   }
@@ -128,7 +131,10 @@ export const updateWishlistItem: WishlistItemChanger = async (
   let items = wishlistData.data().items as WishlistItem[];
   items = items.map((element) => (element.id === item.id ? item : element));
 
-  await updateDoc(wishlistRef, { items: items });
+  await updateDoc(wishlistRef, {
+    items: items,
+    updateTimestamp: new Date().getTime(),
+  });
 };
 
 export const deleteWishlistItem = async (
@@ -151,7 +157,10 @@ export const deleteWishlistItem = async (
   let items = wishlistData.data().items as WishlistItem[];
   items = items.filter((element) => element.id !== itemId);
 
-  await updateDoc(wishlistRef, { items: items });
+  await updateDoc(wishlistRef, {
+    items: items,
+    updateTimestamp: new Date().getTime(),
+  });
 };
 
 export const isOwnerOfWishlist = async (userId: string, wishlistId: string) => {
