@@ -347,6 +347,15 @@ const fetchWishlistsByIds = async (
   return wishlists;
 };
 
+type WishlistData = {
+  id: string;
+  wishlistName: string;
+  author: string;
+  iconName: string;
+  wishlist: number;
+  updateTimestamp: number;
+};
+
 /**
  * Fetches a wishlist by its ID.
  * @param wishlistId - The ID of the wishlist.
@@ -357,8 +366,16 @@ export const fetchWishlistById = async (
 ): Promise<Wishlist | null> => {
   const wishlistData = await fetchWishlistData(wishlistId);
   if (!wishlistData.exists()) return null;
+  const { wishlistName, author, iconName, updateTimestamp } =
+    wishlistData.data() as WishlistData;
 
-  return wishlistData.data() as Wishlist;
+  return {
+    id: wishlistId,
+    name: wishlistName,
+    author,
+    icon: iconName,
+    updateTimestamp,
+  } as Wishlist;
 };
 
 /**
