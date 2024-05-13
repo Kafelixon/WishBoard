@@ -3,34 +3,61 @@ import { Wishlist } from "@/lib/types";
 import Icon from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
+import { Pencil } from "lucide-react";
+import { Button } from "./button";
 
 type WishlistProps = {
   wishlist: Wishlist;
+  editMode: boolean;
+  handleEdit: (wishlist: Wishlist) => void;
 };
 
-export const WishlistCard: React.FC<WishlistProps> = ({ wishlist }) => {
+export const WishlistCard: React.FC<WishlistProps> = ({
+  wishlist,
+  editMode,
+  handleEdit,
+}) => {
   const navigate = useNavigate();
 
   return (
     <div
-      className="space-y-1 cursor-pointer"
-      onClick={() => navigate(`/wishlist/${wishlist.id}`)}
+      className={`space-y-1 ${!editMode ? "cursor-pointer" : ""}`}
+      onClick={() => {
+        if (!editMode) {
+          navigate(`/wishlist/${wishlist.id}`);
+        }
+      }}
     >
-      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-100">
+      <div
+        className={`flex items-center justify-between p-4 rounded-lg ${!editMode ? "hover:bg-gray-100" : "hover:bg-gray-50"}`}
+      >
         <div className="flex items-center space-x-3">
-          <Icon name={wishlist.iconName} className="w-6 h-6" />
+          <Icon name={wishlist.icon} className="w-6 h-6" />
           <div>
-            <p className="font-semibold">{wishlist.wishlistName}</p>
-            <p className="text-gray-500 text-sm text-left">
-              {wishlist.author}
+            <p className="font-semibold break-words max-w-96">
+              {wishlist.name}
             </p>
+            <p className="text-gray-500 text-sm text-left">{wishlist.author}</p>
           </div>
         </div>
-        <div>
-          <p className="text-gray-400 text-sm">
-            {new Date(wishlist.updateTimestamp).toLocaleDateString()}
-          </p>
-        </div>
+
+        {editMode ? (
+          <Button
+            variant="outline"
+            className="p-2 size-9"
+            onClick={() => {
+              handleEdit(wishlist);
+            }}
+          >
+            <Pencil />
+          </Button>
+        ) : (
+          <div>
+            <p className="text-gray-400 text-sm">
+              {new Date(wishlist.updateTimestamp).toLocaleDateString()}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import {
   addDoc,
   arrayUnion,
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
@@ -17,22 +18,61 @@ import { v4 as uuid } from "uuid";
 
 const WISHLISTS_COLLECTION: string = "wishlists";
 
-export const createWishlist = async (
+export type WishlistChanger = (
   userId: string,
-  authorUserName: string,
-  wishlistName: string,
-  iconName: keyof typeof dynamicIconImports
-) => {
-  validateUserIdAndWishlistId(userId, wishlistName);
+  wishlist: Wishlist,
+) => Promise<void>;
 
-  const wishlistsCollection = collection(firestore, WISHLISTS_COLLECTION);
-  await addDoc(wishlistsCollection, {
-    wishlistName: wishlistName,
+export const createWishlist: WishlistChanger = async (
+  userId: string,
+  wishlist: Wishlist,
+) => {
+  if (!userId) throw new Error("User ID is not provided.");
+  if (!wishlist.name) throw new Error("Wishlist name is not provided.");
+
+  try {
+    const wishlistsCollection = collection(firestore, WISHLISTS_COLLECTION);
+    await addDoc(wishlistsCollection, {
+      wishlistName: wishlist.name,
+      ownerId: userId,
+      author: wishlist.author,
+      iconName: wishlist.icon,
+      updateTimestamp: new Date().getTime(),
+    });
+  } catch (error) {
+    console.error("Error adding wishlist: ", error);
+  }
+};
+
+export const updateWishlist: WishlistChanger = async (
+  userId: string,
+  wishlist: Wishlist,
+) => {
+  validateUserIdAndWishlistId(userId, wishlist.id);
+
+  if (!(await isOwnerOfWishlist(userId, wishlist.id))) {
+    throw new Error("You cannot modify this wishlist.");
+  }
+
+  const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlist.id);
+
+  await updateDoc(wishlistRef, {
+    wishlistName: wishlist.name,
     ownerId: userId,
-    author: authorUserName,
-    iconName: iconName,
+    author: wishlist.author,
+    iconName: wishlist.icon,
     updateTimestamp: new Date().getTime(),
   });
+};
+
+export const deleteWishlist = async (userId: string, wishlistId: string) => {
+  validateUserIdAndWishlistId(userId, wishlistId);
+
+  if (!(await isOwnerOfWishlist(userId, wishlistId))) {
+    throw new Error("You cannot modify this wishlist.");
+  }
+
+  await deleteDoc(doc(firestore, WISHLISTS_COLLECTION, wishlistId));
 };
 
 export const wishlistExists = async (wishlistId: string) => {
@@ -43,13 +83,13 @@ export const wishlistExists = async (wishlistId: string) => {
 export type WishlistItemChanger = (
   userId: string,
   wishlistId: string,
-  item: WishlistItem
+  item: WishlistItem,
 ) => Promise<void>;
 
 export const addItemToWishlist: WishlistItemChanger = async (
   userId: string,
   wishlistId: string,
-  item: WishlistItem
+  item: WishlistItem,
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
@@ -66,7 +106,7 @@ export const addItemToWishlist: WishlistItemChanger = async (
 export const updateWishlistItem: WishlistItemChanger = async (
   userId: string,
   wishlistId: string,
-  item: WishlistItem
+  item: WishlistItem,
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
@@ -94,7 +134,7 @@ export const updateWishlistItem: WishlistItemChanger = async (
 export const deleteWishlistItem = async (
   userId: string,
   wishlistId: string,
-  itemId: string
+  itemId: string,
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
@@ -124,20 +164,19 @@ export const isOwnerOfWishlist = async (userId: string, wishlistId: string) => {
   return userId === wishlistData.data().ownerId;
 };
 
-// find wishlists with owner id
 export const findWishlistsByOwner = async (userId: string) => {
   const q = query(
     collection(firestore, WISHLISTS_COLLECTION),
-    where("ownerId", "==", userId)
+    where("ownerId", "==", userId),
   );
   const snapshot = await getDocs(q);
 
   return snapshot.docs.map((docSnap) => {
     return {
       id: docSnap.id,
-      wishlistName: String(docSnap.data().wishlistName),
+      name: String(docSnap.data().wishlistName),
       author: String(docSnap.data().author),
-      iconName: docSnap.data().iconName as keyof typeof dynamicIconImports,
+      icon: docSnap.data().iconName as keyof typeof dynamicIconImports,
       updateTimestamp: docSnap.data().updateTimestamp as number,
     } as Wishlist;
   });
@@ -152,7 +191,7 @@ export const findWishlistsByOwner = async (userId: string) => {
  */
 export const fetchItemsFromWishlist = async (
   wishlistId: string,
-  userId: string | null
+  userId: string | null,
 ): Promise<WishlistItem[] | null> => {
   if (!wishlistId) throw new Error("Wishlist ID is not provided.");
 
@@ -168,12 +207,12 @@ export const fetchItemsFromWishlist = async (
 
 export type FollowStateChanger = (
   userId: string,
-  wishlistId: string
+  wishlistId: string,
 ) => Promise<void>;
 
 export const followWishlist: FollowStateChanger = async (
   userId: string,
-  wishlistId: string
+  wishlistId: string,
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
@@ -189,7 +228,7 @@ export const followWishlist: FollowStateChanger = async (
     await setDoc(
       followedRef,
       { follows: arrayUnion(wishlistId) },
-      { merge: true }
+      { merge: true },
     );
   } catch (e) {
     console.error("Transaction failed: ", e);
@@ -206,7 +245,7 @@ export const followWishlist: FollowStateChanger = async (
  */
 export const unfollowWishlist: FollowStateChanger = async (
   userId: string,
-  wishlistId: string
+  wishlistId: string,
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
@@ -219,7 +258,7 @@ export const unfollowWishlist: FollowStateChanger = async (
         .follows as string[];
       if (followedWishlistIds.includes(wishlistId)) {
         const updatedFollowedWishlistIds = followedWishlistIds.filter(
-          (id: string) => id !== wishlistId
+          (id: string) => id !== wishlistId,
         );
         await setDoc(userFollowedWishlistsRef, {
           follows: updatedFollowedWishlistIds,
@@ -250,7 +289,7 @@ function validateUserIdAndWishlistId(userId: string, wishlistId: string) {
  * @returns An array of wishlists followed by the user.
  */
 export const fetchFollowedWishlists = async (
-  userId: string
+  userId: string,
 ): Promise<Wishlist[]> => {
   if (!userId) throw new Error("User ID is not provided.");
 
@@ -267,7 +306,7 @@ export const fetchFollowedWishlists = async (
 
 export const isFollowingWishlist = async (
   userId: string,
-  wishlistId: string
+  wishlistId: string,
 ): Promise<boolean> => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
@@ -288,7 +327,7 @@ export const isFollowingWishlist = async (
  * @returns An array of wishlists.
  */
 const fetchWishlistsByIds = async (
-  wishlistIds: string[]
+  wishlistIds: string[],
 ): Promise<Wishlist[]> => {
   const wishlists: Wishlist[] = [];
 
@@ -297,9 +336,9 @@ const fetchWishlistsByIds = async (
     if (wishlist) {
       wishlists.push({
         id: wishlistId,
-        wishlistName: String(wishlist.wishlistName),
+        name: String(wishlist.name),
         author: String(wishlist.author),
-        iconName: wishlist.iconName,
+        icon: wishlist.icon,
         updateTimestamp: wishlist.updateTimestamp,
       });
     }
@@ -314,7 +353,7 @@ const fetchWishlistsByIds = async (
  * @returns A wishlist object or null.
  */
 export const fetchWishlistById = async (
-  wishlistId: string
+  wishlistId: string,
 ): Promise<Wishlist | null> => {
   const wishlistData = await fetchWishlistData(wishlistId);
   if (!wishlistData.exists()) return null;
@@ -336,7 +375,7 @@ async function fetchWishlistData(wishlistId: string) {
 
 export const updateExistingWishlistsAuthor = async (
   userId: string,
-  newAuthorName: string
+  newAuthorName: string,
 ) => {
   const wishlists = await findWishlistsByOwner(userId);
   for (const wishlist of wishlists) {
@@ -344,7 +383,7 @@ export const updateExistingWishlistsAuthor = async (
     await setDoc(
       wishlistRef,
       { author: newAuthorName, updateTimestamp: new Date().getTime() },
-      { merge: true }
+      { merge: true },
     );
   }
 };

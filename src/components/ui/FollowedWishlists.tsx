@@ -35,7 +35,12 @@ export const FollowedWishlists: React.FC = () => {
   const renderWishlists = () => {
     if (wishlists) {
       return wishlists.map((wishlist) => (
-        <WishlistCard key={wishlist.id} wishlist={wishlist} />
+        <WishlistCard
+          key={wishlist.id}
+          wishlist={wishlist}
+          editMode={false}
+          handleEdit={() => console.log("Not Implemented")}
+        /> // TODO: Implement handleEdit
       ));
     }
     return <p>You are not following any wishlists yet.</p>;
