@@ -21,13 +21,10 @@ import { useUserId } from "@/lib/common";
 
 export const SettingsPage = () => {
   return (
-    <Card className="w-fit glass divide-y m-auto">
+    <Card className="w-fit glass divide-y m-auto p-2 md:p-2">
       <h1 className="p-3 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
         Settings
       </h1>
-      {
-        // TODO: Change Username component which will update the user's display name and author name in all the wishlists
-      }
       <ChangeUsername />
       <ResetPassword />
       <ChangeEmail />
@@ -46,12 +43,10 @@ const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
   children,
 }) => {
   return (
-    // <FormControl className="w-screen flex-col gap-1">
-    //   <FormLabel className="m-0">{label}</FormLabel>
     <div className="p-3 flex flex-col gap-1.5">
       <p>{label}</p>
       {children}
-    </div> // </FormControl>
+    </div>
   );
 };
 
@@ -210,7 +205,7 @@ const RemoveAccount: React.FC = () => {
 
   const removeAccount = async () => {
     const confirmDelete = window.confirm(
-      "Are you sure you want to delete your account? This cannot be undone."
+      "Are you sure you want to delete your account? This cannot be undone.",
     );
     if (!confirmDelete) return;
 

@@ -60,7 +60,7 @@ export const WishlistPage: React.FC = () => {
     const handleFollowChange = (
       followAction: FollowStateChanger,
       successMessage: string,
-      errorMessage: string
+      errorMessage: string,
     ) => {
       followAction(userId, wishlistId)
         .then(() => {
@@ -79,14 +79,14 @@ export const WishlistPage: React.FC = () => {
       handleFollowChange(
         followWishlist,
         "You are now following this wishlist",
-        "Failed to follow this wishlist"
+        "Failed to follow this wishlist",
       );
 
     const handleUnfollow = () =>
       handleFollowChange(
         unfollowWishlist,
         "You are no longer following this wishlist",
-        "Failed to unfollow this wishlist"
+        "Failed to unfollow this wishlist",
       );
 
     if (isWishlistOwner || !userId) {
@@ -104,7 +104,7 @@ export const WishlistPage: React.FC = () => {
     <Card className="shadow-lg glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
       <CardHeader className="h-22 pb-0">
         <CardTitle className="flex justify-between items-center">
-          <div className="flex flex-col align-top">
+          <div className="flex flex-col gap-1 align-top">
             {!wishlistInfo ? (
               <>
                 <Skeleton className="w-40 h-4 mb-2" />
@@ -112,7 +112,10 @@ export const WishlistPage: React.FC = () => {
               </>
             ) : (
               <>
-                <h2 className="font-semibold">{wishlistInfo.name}</h2>
+                <h1 className="font-semibold">
+                  {wishlistInfo.name[0].toUpperCase() +
+                    wishlistInfo.name.slice(1)}
+                </h1>
                 {wishlistInfo.author && (
                   <p className="text-gray-500 text-sm text-left">
                     {wishlistInfo.author}
@@ -126,7 +129,7 @@ export const WishlistPage: React.FC = () => {
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-2 md:p-5">
+      <CardContent>
         <WishlistItemsTable
           canEditWishlist={isWishlistOwner}
           userId={userId}
