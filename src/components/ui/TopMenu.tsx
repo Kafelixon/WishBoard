@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { logout } from "@/redux/slices/userSlice";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { useUserId } from "@/lib/common";
 import {
   DropdownMenu,
@@ -19,10 +19,12 @@ export function TopMenu() {
   const location = useLocation();
   const dispatch = useDispatch();
   const userId = useUserId();
-  const profilePictureUrl = getUserProfilePic();
-  const userInitials = getUserDisplayName()
-    .split(" ")
-    .map((n) => n[0]);
+
+  const getUserInitials = () => {
+    return getUserDisplayName()
+      .split(" ")
+      .map((n) => n[0]);
+  };
 
   const navigateToLogin = () => {
     navigate("/login");
@@ -55,17 +57,23 @@ export function TopMenu() {
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Avatar>
-              <AvatarImage src={profilePictureUrl} />
-              <AvatarFallback>{userInitials}</AvatarFallback>
+              <AvatarImage src={getUserProfilePic()} />
+              <AvatarFallback>{getUserInitials()}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem onClick={navigateToSettingsPage}>
-              Account settings
+            <DropdownMenuItem
+              onClick={navigateToSettingsPage}
+              className="gap-1"
+            >
+              <Settings /> Settings
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => dispatch(logout())}>
-              Log out
+            <DropdownMenuItem
+              onClick={() => dispatch(logout())}
+              className="gap-1"
+            >
+              <LogOut /> Log out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
