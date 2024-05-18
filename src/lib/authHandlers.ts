@@ -70,20 +70,6 @@ export const changeUsername = (newUsername: string) => {
     });
 };
 
-export const getUserProfilePic = () => {
-  if (!auth.currentUser) {
-    throw new Error("User not found. Please log in again.");
-  }
-  return auth.currentUser.photoURL as string;
-};
-
-export const getUserDisplayName = () => {
-  if (!auth.currentUser) {
-    throw new Error("User not found. Please log in again.");
-  }
-  return auth.currentUser.displayName as string;
-};
-
 export const loginWithGoogle = (
   dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
@@ -107,7 +93,7 @@ const dispatchLogin = (
   navigate: NavigateFunction,
   from: string,
 ) => {
-  const { uid, email, displayName } = credential.user;
-  dispatch(login({ uid, displayName, email }));
+  const { uid, email, displayName, photoURL } = credential.user;
+  dispatch(login({ uid, displayName, email, photoURL }));
   navigate(from, { replace: true });
 };

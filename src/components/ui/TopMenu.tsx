@@ -3,7 +3,7 @@ import { logout } from "@/redux/slices/userSlice";
 import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react";
-import { useUserId } from "@/lib/common";
+import { useUser } from "@/lib/common";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,18 +12,17 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
-import { getUserDisplayName, getUserProfilePic } from "@/lib/authHandlers";
 
 export function TopMenu() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
-  const userId = useUserId();
+  const user = useUser();
+  const userAvatar = user?.photoURL as string;
 
   const getUserInitials = () => {
-    return getUserDisplayName()
-      .split(" ")
-      .map((n) => n[0]);
+    if (!user || !user.displayName) return "?";
+    return user.displayName.split(" ").map((n) => n[0]);
   };
 
   const navigateToLogin = () => {
@@ -44,7 +43,7 @@ export function TopMenu() {
 
   const NavButtons = () => {
     if (location.pathname === "/login") return;
-    if (!userId) return <Button onClick={navigateToLogin}>Sign up</Button>;
+    if (!user) return <Button onClick={navigateToLogin}>Sign up</Button>;
     return (
       <>
         <Button
@@ -57,7 +56,7 @@ export function TopMenu() {
         <DropdownMenu>
           <DropdownMenuTrigger>
             <Avatar>
-              <AvatarImage src={getUserProfilePic()} />
+              <AvatarImage src={userAvatar} />
               <AvatarFallback>{getUserInitials()}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
