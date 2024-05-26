@@ -1,4 +1,5 @@
 import { FC } from "react";
+import { useFormContext } from "react-hook-form";
 import { WishlistItem } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,67 +13,58 @@ interface ItemFormFieldsProps {
 export const ItemFormFields: FC<ItemFormFieldsProps> = ({
   currentItem,
   handleItemChange,
-}) => (
-  <>
-    {[
-      {
-        label: "Product Name",
-        id: "productName",
-        value: currentItem.name,
-        type: "text",
-        field: "name",
-      },
-      {
-        label: "Image URL",
-        id: "image",
-        value: currentItem.image,
-        type: "text",
-        field: "image",
-      },
-      {
-        label: "Average Price",
-        id: "averagePrice",
-        value: currentItem.price,
-        type: "number",
-        field: "price",
-      },
-      {
-        label: "Link",
-        id: "link",
-        value: currentItem.link,
-        type: "text",
-        field: "link",
-      },
-    ].map(({ label, id, value, type, field }) => (
-      <div className="grid grid-cols-4 items-center gap-4 h-10" key={id}>
-        <Label htmlFor={id} className="text-right">
-          {label}
+}) => {
+  const {
+    register,
+    formState: { errors },
+    watch,
+  } = useFormContext();
+  const publicField = watch("public", currentItem.public) as boolean;
+
+  return (
+    <>
+      {[
+        {
+          label: "Product Name",
+          id: "productName",
+          field: "name",
+          type: "text",
+        },
+        { label: "Image URL", id: "image", field: "image", type: "text" },
+        {
+          label: "Average Price",
+          id: "averagePrice",
+          field: "price",
+          type: "number",
+        },
+        { label: "Link", id: "link", field: "link", type: "text" },
+      ].map(({ label, id, field, type }) => (
+        <div className="grid grid-cols-4 items-center gap-4 h-10" key={id}>
+          <Label htmlFor={id} className="text-right">
+            {label}
+          </Label>
+          <Input
+            id={id}
+            type={type}
+            {...register(field)}
+            onChange={(e) => handleItemChange({ [field]: e.target.value })}
+            className="col-span-3"
+          />
+          <span className="text-red-600">
+            {errors[field]?.message as string}
+          </span>
+        </div>
+      ))}
+      <div className="grid grid-cols-4 items-center gap-4 h-10">
+        <Label htmlFor="itemPublic" className="text-right">
+          Public
         </Label>
-        <Input
-          id={id}
-          type={type}
-          value={value}
-          onChange={(e) =>
-            handleItemChange({
-              [field]:
-                type === "number" ? parseFloat(e.target.value) : e.target.value,
-            })
-          }
-          className="col-span-3"
+        <Switch
+          id="itemPublic"
+          checked={publicField}
+          onCheckedChange={() => handleItemChange({ public: !publicField })}
         />
       </div>
-    ))}
-    <div className="grid grid-cols-4 items-center gap-4 h-10">
-      <Label htmlFor="itemPublic" className="text-right">
-        Public
-      </Label>
-      <Switch
-        id="itemPublic"
-        checked={currentItem.public}
-        onCheckedChange={() =>
-          handleItemChange({ public: !currentItem.public })
-        }
-      />
-    </div>
-  </>
-);
+    </>
+  );
+};
