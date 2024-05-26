@@ -65,13 +65,22 @@ export default function WishlistItemsTable({
       ? link
       : `http://${link}`;
 
-  const handleItemChange = (changes: Partial<WishlistItem>) =>
+  const handleItemChange = (changes: Partial<WishlistItem>) => {
+    if (!currentItem) {
+      return;
+    }
+    if (changes.price) {
+      changes.price = parseFloat(
+        changes.price.toString().replace(/^0+(?=\.|$)/, ""),
+      );
+    }
     setCurrentItem((current) => ({ ...current, ...changes }));
+  };
 
   const handleAddOrUpdateItem = (
     itemAction: WishlistItemChanger,
     successMessage: string,
-    errorMessage: string
+    errorMessage: string,
   ) => {
     if (!userId || !wishlistId) {
       console.error("User ID or Wishlist ID is missing");
@@ -147,7 +156,7 @@ export default function WishlistItemsTable({
           handleAddOrUpdateItem(
             addItemToWishlist,
             "Item added successfully.",
-            "Failed to add item to wishlist."
+            "Failed to add item to wishlist.",
           )
         }
         isSubmitting={isSubmitting}
@@ -165,7 +174,7 @@ export default function WishlistItemsTable({
             handleAddOrUpdateItem(
               updateWishlistItem,
               "Item updated successfully.",
-              "Failed to update item in wishlist."
+              "Failed to update item in wishlist.",
             )
           }
           handleDelete={handleDeleteItem}

@@ -9,6 +9,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
 
 interface WishlistDialogProps {
   wishlist: Wishlist;
@@ -22,6 +25,14 @@ interface WishlistDialogProps {
   handleItemChange: (changes: Partial<Wishlist>) => void;
 }
 
+type WishlistForm = {
+  name: string;
+};
+
+const wishlistSchema = yup.object().shape({
+  name: yup.string().required("Wishlist name is required"),
+});
+
 export const WishlistEditDialog: FC<WishlistDialogProps> = ({
   wishlist,
   isOpen,
@@ -33,6 +44,15 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
   handleDelete,
   handleItemChange,
 }) => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<WishlistForm>({
+    values: wishlist,
+    resolver: yupResolver(wishlistSchema),
+  });
+
   return (
     <Dialog open={isOpen} onOpenChange={setDialogOpen}>
       <DialogContent>
@@ -41,20 +61,22 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
         </DialogHeader>
         <form
           className="grid gap-4 pt-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            handleAction(wishlist);
+          onSubmit={handleSubmit((data) => {
+            const newWishlist = { ...wishlist, ...data } as Wishlist;
+            handleAction(newWishlist);
             setDialogOpen(false);
-          }}
+          })}
         >
           <Input
             id="name"
-            value={wishlist.name}
-            placeholder="Wishtlist Name"
+            {...register("name")}
             onChange={(e) => {
               handleItemChange({ name: e.target.value });
             }}
+            placeholder="Wishlist Name"
+            className={errors.name ? "border-red-500" : ""}
           />
+          {errors.name && <p className="text-red-500">{errors.name.message}</p>}
           <div
             className={`flex flex-row ${
               actionType === "Add" ? "justify-end" : "justify-between"
