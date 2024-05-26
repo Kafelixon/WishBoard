@@ -39,8 +39,15 @@ const schema = yup.object().shape({
   image: yup.string(),
   price: yup
     .number()
+    .min(0, "Price must be positive")
     .positive("Price must be positive")
-    .required("Average Price is required"),
+    .required("Average Price is required")
+    .transform((value, originalValue) => {
+      if (originalValue === "") {
+        return undefined;
+      }
+      return value as number;
+    }),
   link: yup.string(),
   public: yup.boolean(),
 });

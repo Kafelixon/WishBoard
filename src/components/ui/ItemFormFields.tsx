@@ -39,7 +39,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
         },
         { label: "Link", id: "link", field: "link", type: "text" },
       ].map(({ label, id, field, type }) => (
-        <div className="grid grid-cols-4 items-center gap-4 h-10" key={id}>
+        <div className="grid grid-cols-4 items-center gap-x-4 gap-y-1" key={id}>
           <Label htmlFor={id} className="text-right">
             {label}
           </Label>
@@ -48,14 +48,14 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
             type={type}
             {...register(field)}
             onChange={(e) => handleItemChange({ [field]: e.target.value })}
-            className="col-span-3"
+            className={`col-span-3 ${errors[field] ? "border-red-500" : ""}`}
           />
-          <span className="text-red-600">
+          <span className="col-start-2 col-span-3 text-red-500 text-xs">
             {errors[field]?.message as string}
           </span>
         </div>
       ))}
-      <div className="grid grid-cols-4 items-center gap-4 h-10">
+      <div className="grid grid-cols-4 items-center gap-x-4 gap-y-1">
         <Label htmlFor="itemPublic" className="text-right">
           Public
         </Label>
