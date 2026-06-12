@@ -26,17 +26,11 @@ interface ItemDialogProps {
   actionLabel: string;
 }
 
-type ItemSchema = {
-  name: string;
-  image?: string | undefined;
-  price: number;
-  link?: string | undefined;
-  public?: boolean | undefined;
-};
+type ItemSchema = Omit<WishlistItem, "id">;
 
-const schema = yup.object().shape({
+const schema: yup.ObjectSchema<ItemSchema> = yup.object({
   name: yup.string().required("Product Name is required"),
-  image: yup.string(),
+  image: yup.string().defined(),
   price: yup
     .number()
     .min(0, "Price must be positive")
@@ -48,7 +42,7 @@ const schema = yup.object().shape({
       }
       return value as number;
     }),
-  link: yup.string(),
+  link: yup.string().defined(),
   public: yup.boolean(),
 });
 
@@ -69,7 +63,7 @@ export const ItemDialog: FC<ItemDialogProps> = ({
   });
 
   const onSubmit = (data: ItemSchema) => {
-    const wishlistItem = { id: currentItem.id, ...data } as WishlistItem;
+    const wishlistItem = { id: currentItem.id, ...data };
     handleAction(wishlistItem);
     setDialogOpen(false);
   };
