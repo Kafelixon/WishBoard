@@ -3,8 +3,9 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import { store, persistor } from "@/redux/store";
 import { Toaster } from "@/components/ui/toaster";
+import { SpeedInsights } from "@vercel/speed-insights/react"
+import { Analytics } from "@vercel/analytics/react"
 
-// import { CssVarsProvider } from "@mui/joy/styles";
 import { TopMenu } from "@/components/ui/TopMenu";
 import { SignInForm } from "@/components/ui/SignInForm";
 import { WishlistPage } from "@/components/ui/WishlistPage";
@@ -16,7 +17,6 @@ const App = () => {
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        {/* <CssVarsProvider theme={theme}> */}
           <TopMenu />
           <Routes>
             <Route element={<Outlet />}>
@@ -28,7 +28,8 @@ const App = () => {
             </Route>
           </Routes>
           <Toaster />
-        {/* </CssVarsProvider> */}
+        <SpeedInsights />
+        <Analytics />
       </PersistGate>
     </Provider>
   );
