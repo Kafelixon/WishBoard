@@ -7,19 +7,19 @@ export const useUser = (): User | null => {
     (state: { user: UserState }) => state.user,
   );
   console.log("userState", userState);
-  return userState.user || null;
+  return userState.user ?? null;
 };
 
 export const useUserId = (): string => {
   const userState: UserState = useSelector(
     (state: { user: UserState }) => state.user,
   );
-  return userState.user?.uid || "";
+  return userState.user?.uid ?? "";
 };
 
 export const useUserName = (): string => {
   const userState: UserState = useSelector(
     (state: { user: UserState }) => state.user,
   );
-  return userState.user?.displayName || "";
+  return userState.user?.displayName ?? "";
 };

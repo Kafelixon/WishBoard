@@ -66,9 +66,6 @@ export default function WishlistItemsTable({
       : `http://${link}`;
 
   const handleItemChange = (changes: Partial<WishlistItem>) => {
-    if (!currentItem) {
-      return;
-    }
     if (changes.price) {
       changes.price = parseFloat(
         changes.price.toString().replace(/^0+(?=\.|$)/, ""),
@@ -99,7 +96,7 @@ export default function WishlistItemsTable({
       .then(() => {
         toast({ title: successMessage });
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error(error);
         toast({
           title: errorMessage,
@@ -132,7 +129,7 @@ export default function WishlistItemsTable({
           setUserWishlist(data);
         }
       })
-      .catch((error) => {
+      .catch((error: unknown) => {
         console.error(error);
         toast({ title: "Failed to delete the item.", variant: "destructive" });
       });
@@ -153,11 +150,11 @@ export default function WishlistItemsTable({
         currentItem={currentItem}
         handleItemChange={handleItemChange}
         handleAction={() =>
-          handleAddOrUpdateItem(
+          { handleAddOrUpdateItem(
             addItemToWishlist,
             "Item added successfully.",
             "Failed to add item to wishlist.",
-          )
+          ); }
         }
         isSubmitting={isSubmitting}
         dialogTitle="Add Item"
@@ -171,11 +168,11 @@ export default function WishlistItemsTable({
           currentItem={currentItem}
           handleItemChange={handleItemChange}
           handleAction={() =>
-            handleAddOrUpdateItem(
+            { handleAddOrUpdateItem(
               updateWishlistItem,
               "Item updated successfully.",
               "Failed to update item in wishlist.",
-            )
+            ); }
           }
           handleDelete={handleDeleteItem}
           isSubmitting={isSubmitting}

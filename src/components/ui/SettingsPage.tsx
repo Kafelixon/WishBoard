@@ -33,10 +33,10 @@ export const SettingsPage = () => {
   );
 };
 
-type CommonSettingsFormProps = {
+interface CommonSettingsFormProps {
   label: string;
   children: React.ReactNode;
-};
+}
 
 const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
   label,
@@ -92,30 +92,21 @@ const ChangeUsername: React.FC = () => {
   const userId = useUserId();
   const [username, setUsername] = useState("");
 
-  const submitNewUsername = () => {
+  const submitNewUsername = async () => {
     if (!auth.currentUser) {
       console.error("No user found.");
       toast({ title: "Something went wrong. Please try again." });
       return;
     }
     try {
-      changeUsername(username);
-      updateExistingWishlistsAuthor(userId, username)
-        .then(() => {
-          toast({
-            title: "Username updated successfully!",
-            description: "Please log in again.",
-          });
-          dispatch(logout());
-          navigate("/");
-        })
-        .catch((error) => {
-          console.error("Error updating author name in wishlists:", error);
-          toast({
-            title: "Failed to update author name in wishlists.",
-            variant: "destructive",
-          });
-        });
+      await changeUsername(username);
+      await updateExistingWishlistsAuthor(userId, username);
+      toast({
+        title: "Username updated successfully!",
+        description: "Please log in again.",
+      });
+      dispatch(logout());
+      void navigate("/");
     } catch (error) {
       console.error("Error updating username:", error);
       toast({ title: "Failed to update username.", variant: "destructive" });
@@ -128,14 +119,14 @@ const ChangeUsername: React.FC = () => {
         type="text"
         placeholder="New Username"
         value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        onChange={(e) => { setUsername(e.target.value); }}
       />
       <Button
         className="w-full"
         type="submit"
         disabled={!username}
         color="primary"
-        onClick={() => void submitNewUsername()}
+        onClick={() => { void submitNewUsername(); }}
       >
         Change Username
       </Button>
@@ -218,7 +209,7 @@ const RemoveAccount: React.FC = () => {
       toast({ title: "Account deleted" });
 
       dispatch(logout());
-      navigate("/");
+      void navigate("/");
     } catch (error) {
       console.error("Error deleting user:", error);
       toast({ title: "Failed to delete account", variant: "destructive" });

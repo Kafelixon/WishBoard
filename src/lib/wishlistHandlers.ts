@@ -16,7 +16,7 @@ import { WishlistItem, Wishlist } from "@/lib/types";
 import { toWishlistIconName } from "@/lib/wishlistIcons";
 import { v4 as uuid } from "uuid";
 
-const WISHLISTS_COLLECTION: string = "wishlists";
+const WISHLISTS_COLLECTION = "wishlists";
 
 export type WishlistChanger = (
   userId: string,
@@ -113,7 +113,7 @@ export const updateWishlistItem: WishlistItemChanger = async (
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
-  if (item.id === undefined || item.id === null) {
+  if (!item.id) {
     throw new Error("Item ID is not provided.");
   }
 
@@ -345,8 +345,8 @@ const fetchWishlistsByIds = async (
     if (wishlist) {
       wishlists.push({
         id: wishlistId,
-        name: String(wishlist.name),
-        author: String(wishlist.author),
+        name: wishlist.name,
+        author: wishlist.author,
         icon: wishlist.icon,
         updateTimestamp: wishlist.updateTimestamp,
       });
@@ -356,14 +356,14 @@ const fetchWishlistsByIds = async (
   return wishlists;
 };
 
-type WishlistData = {
+interface WishlistData {
   id: string;
   wishlistName: string;
   author: string;
   iconName: string;
   wishlist: number;
   updateTimestamp: number;
-};
+}
 
 /**
  * Fetches a wishlist by its ID.

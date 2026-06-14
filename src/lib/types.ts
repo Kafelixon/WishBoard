@@ -1,25 +1,25 @@
 import type { WishlistIconName } from "@/lib/wishlistIcons";
 
-export type WishlistItem = {
+export interface WishlistItem {
   id: string;
   image: string;
   name: string;
   price: number;
   link: string;
   public?: boolean;
-};
+}
 
-export type Wishlist = {
+export interface Wishlist {
   id: string;
   name: string;
   author: string;
   icon: WishlistIconName;
   updateTimestamp: number;
-};
+}
 
-export type UserState = {
+export interface UserState {
   user: User | null;
-};
+}
 
 export interface User {
   uid: string;

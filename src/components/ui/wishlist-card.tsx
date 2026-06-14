@@ -6,11 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { Pencil } from "lucide-react";
 import { Button } from "./button";
 
-type WishlistProps = {
+interface WishlistProps {
   wishlist: Wishlist;
   editMode: boolean;
   handleEdit: (wishlist: Wishlist) => void;
-};
+}
 
 export const WishlistCard: React.FC<WishlistProps> = ({
   wishlist,
@@ -20,11 +20,12 @@ export const WishlistCard: React.FC<WishlistProps> = ({
   const navigate = useNavigate();
 
   return (
-    <div
-      className={`space-y-1 ${!editMode ? "cursor-pointer" : ""}`}
+    <button
+      type="button"
+      className={`space-y-1 w-full text-left bg-transparent border-0 p-0 ${!editMode ? "cursor-pointer" : ""}`}
       onClick={() => {
         if (!editMode) {
-          navigate(`/wishlist/${wishlist.id}`);
+          void navigate(`/wishlist/${wishlist.id}`);
         }
       }}
     >
@@ -59,7 +60,7 @@ export const WishlistCard: React.FC<WishlistProps> = ({
           </div>
         )}
       </div>
-    </div>
+    </button>
   );
 };
 

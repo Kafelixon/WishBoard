@@ -47,7 +47,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
             id={id}
             type={type}
             {...register(field)}
-            onChange={(e) => handleItemChange({ [field]: e.target.value })}
+            onChange={(e) => { handleItemChange({ [field]: e.target.value }); }}
             className={`col-span-3 ${errors[field] ? "border-red-500" : ""}`}
           />
           <span className="col-start-2 col-span-3 text-red-500 text-xs">
@@ -62,7 +62,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
         <Switch
           id="itemPublic"
           checked={publicField}
-          onCheckedChange={() => handleItemChange({ public: !publicField })}
+          onCheckedChange={() => { handleItemChange({ public: !publicField }); }}
         />
       </div>
     </>

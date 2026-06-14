@@ -1,7 +1,9 @@
 import { configureStore } from "@reduxjs/toolkit";
 import { persistReducer, persistStore } from "redux-persist";
-import storage from "redux-persist/lib/storage";
+import createWebStorage from "redux-persist/es/storage/createWebStorage";
 import userReducer from "./slices/userSlice";
+
+const storage = createWebStorage("local");
 
 const persistConfig = {
   key: "root",
