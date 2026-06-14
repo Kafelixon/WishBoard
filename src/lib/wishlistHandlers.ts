@@ -13,7 +13,7 @@ import {
 } from "firebase/firestore";
 import { firestore } from "@/firebaseSetup";
 import { WishlistItem, Wishlist } from "@/lib/types";
-import dynamicIconImports from "lucide-react/dynamicIconImports";
+import { toWishlistIconName } from "@/lib/wishlistIcons";
 import { v4 as uuid } from "uuid";
 
 const WISHLISTS_COLLECTION: string = "wishlists";
@@ -185,9 +185,9 @@ export const findWishlistsByOwner = async (userId: string) => {
       id: docSnap.id,
       name: String(docSnap.data().wishlistName),
       author: String(docSnap.data().author),
-      icon: docSnap.data().iconName as keyof typeof dynamicIconImports,
+      icon: toWishlistIconName(String(docSnap.data().iconName)),
       updateTimestamp: docSnap.data().updateTimestamp as number,
-    } as Wishlist;
+    };
   });
 };
 
@@ -382,9 +382,9 @@ export const fetchWishlistById = async (
     id: wishlistId,
     name: wishlistName,
     author,
-    icon: iconName,
+    icon: toWishlistIconName(iconName),
     updateTimestamp,
-  } as Wishlist;
+  };
 };
 
 /**
