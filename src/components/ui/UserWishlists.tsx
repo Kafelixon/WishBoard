@@ -24,7 +24,7 @@ export const UserWishlists: React.FC = () => {
     name: "",
     author: useUserName(),
     icon: "shopping-cart",
-    updateTimestamp: Date.now(),
+    updateTimestamp: 0,
   };
 
   const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
@@ -37,19 +37,16 @@ export const UserWishlists: React.FC = () => {
   const [dialogTitle, setDialogTitle] = useState<string>("");
   const [handleAction, setHandleAction] = useState<
     (wishlist: Wishlist) => void
-  >(() => {});
+  >(() => {
+    return undefined;
+  });
   const [editMode, setEditMode] = useState<boolean>(false);
   const userId = useUserId();
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!userId) {
-      setWishlists(null);
-      setIsLoading(false);
-      return;
-    }
+    if (!userId) return;
 
-    setIsLoading(true);
     void findWishlistsByOwner(userId).then((data) => {
       setWishlists(data);
       setIsLoading(false);
@@ -169,9 +166,9 @@ export const UserWishlists: React.FC = () => {
       <CardContent>
         <ScrollArea className="h-72 w-full rounded-md border place-items-center glass-fg">
           {isLoading
-            ? Array(3)
-                .fill(null)
-                .map((_, index) => <WishlistCardSkeleton key={index} />)
+            ? ["user-skeleton-1", "user-skeleton-2", "user-skeleton-3"].map((key) => (
+                <WishlistCardSkeleton key={key} />
+              ))
             : renderWishlists()}
         </ScrollArea>
       </CardContent>

@@ -113,7 +113,7 @@ export const updateWishlistItem: WishlistItemChanger = async (
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
-  if (item.id === undefined || item.id === null) {
+  if (!item.id) {
     throw new Error("Item ID is not provided.");
   }
 
@@ -345,8 +345,8 @@ const fetchWishlistsByIds = async (
     if (wishlist) {
       wishlists.push({
         id: wishlistId,
-        name: String(wishlist.name),
-        author: String(wishlist.author),
+        name: wishlist.name,
+        author: wishlist.author,
         icon: wishlist.icon,
         updateTimestamp: wishlist.updateTimestamp,
       });

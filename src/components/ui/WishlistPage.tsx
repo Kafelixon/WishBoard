@@ -17,9 +17,71 @@ import { Button } from "./button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "./skeleton";
 
+interface FollowButtonProps {
+  isWishlistOwner: boolean;
+  isFollowing: boolean;
+  userId: string;
+  wishlistId: string;
+  setIsFollowing: React.Dispatch<React.SetStateAction<boolean>>;
+  toast: ReturnType<typeof useToast>["toast"];
+}
+
+function FollowButton({
+  isWishlistOwner,
+  isFollowing,
+  userId,
+  wishlistId,
+  setIsFollowing,
+  toast,
+}: FollowButtonProps) {
+  const handleFollowChange = (
+    followAction: FollowStateChanger,
+    successMessage: string,
+    errorMessage: string,
+  ) => {
+    void followAction(userId, wishlistId)
+      .then(() => {
+        return isFollowingWishlist(userId, wishlistId);
+      })
+      .then((following) => {
+        setIsFollowing(following);
+        toast({ title: successMessage });
+      })
+      .catch(() => {
+        toast({ title: errorMessage });
+      });
+  };
+
+  const handleFollow = () => {
+    handleFollowChange(
+      followWishlist,
+      "You are now following this wishlist",
+      "Failed to follow this wishlist",
+    );
+  };
+
+  const handleUnfollow = () => {
+    handleFollowChange(
+      unfollowWishlist,
+      "You are no longer following this wishlist",
+      "Failed to unfollow this wishlist",
+    );
+  };
+
+  if (isWishlistOwner || !userId) {
+    return null;
+  }
+
+  return (
+    <Button onClick={isFollowing ? handleUnfollow : handleFollow}>
+      {isFollowing ? "Unfollow" : "Follow"}
+    </Button>
+  );
+}
+
 export const WishlistPage: React.FC = () => {
   const { wishlistId: paramId } = useParams();
-  const [wishlistId, setWishlistId] = useState<string | null>(paramId || null);
+  const [wishlistId, setWishlistId] = useState<string | null>(paramId ?? null);
   const [isWishlistOwner, setIsWishlistOwner] = useState<boolean>(false);
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
   const [wishlistInfo, setWishlistInfo] = useState<Wishlist | null>(null);
@@ -37,8 +99,8 @@ export const WishlistPage: React.FC = () => {
         void isOwnerOfWishlist(userId, wishlistId).then((isOwner) => {
           setIsWishlistOwner(isOwner);
         });
-        void isFollowingWishlist(userId, wishlistId).then((isFollowing) => {
-          setIsFollowing(isFollowing);
+        void isFollowingWishlist(userId, wishlistId).then((following) => {
+          setIsFollowing(following);
         });
       }
     }
@@ -55,50 +117,6 @@ export const WishlistPage: React.FC = () => {
   if (!wishlistId) {
     return <div>Wishlist not found</div>;
   }
-
-  const FollowButton: React.FC = () => {
-    const handleFollowChange = (
-      followAction: FollowStateChanger,
-      successMessage: string,
-      errorMessage: string,
-    ) => {
-      followAction(userId, wishlistId)
-        .then(() => {
-          return isFollowingWishlist(userId, wishlistId);
-        })
-        .then((following) => {
-          setIsFollowing(following);
-          toast({ title: successMessage });
-        })
-        .catch(() => {
-          toast({ title: errorMessage });
-        });
-    };
-
-    const handleFollow = () =>
-      { handleFollowChange(
-        followWishlist,
-        "You are now following this wishlist",
-        "Failed to follow this wishlist",
-      ); };
-
-    const handleUnfollow = () =>
-      { handleFollowChange(
-        unfollowWishlist,
-        "You are no longer following this wishlist",
-        "Failed to unfollow this wishlist",
-      ); };
-
-    if (isWishlistOwner || !userId) {
-      return null;
-    }
-
-    return (
-      <Button onClick={isFollowing ? handleUnfollow : handleFollow}>
-        {isFollowing ? "Unfollow" : "Follow"}
-      </Button>
-    );
-  };
 
   return (
     <Card className="shadow-lg glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
@@ -125,7 +143,14 @@ export const WishlistPage: React.FC = () => {
             )}
           </div>
           <div className="flex items-center">
-            <FollowButton />
+            <FollowButton
+              isWishlistOwner={isWishlistOwner}
+              isFollowing={isFollowing}
+              userId={userId}
+              wishlistId={wishlistId}
+              setIsFollowing={setIsFollowing}
+              toast={toast}
+            />
           </div>
         </CardTitle>
       </CardHeader>

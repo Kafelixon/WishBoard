@@ -15,13 +15,8 @@ export const FollowedWishlists: React.FC = () => {
   const userId = useUserId();
 
   useEffect(() => {
-    if (!userId) {
-      setWishlists(null);
-      setIsLoading(false);
-      return;
-    }
+    if (!userId) return;
 
-    setIsLoading(true);
     void fetchFollowedWishlists(userId).then((data) => {
       setWishlists(data);
       setIsLoading(false);
@@ -56,9 +51,9 @@ export const FollowedWishlists: React.FC = () => {
       <CardContent>
         <ScrollArea className="h-72 w-full rounded-md border place-items-center glass-fg">
           {isLoading
-            ? Array(3)
-                .fill(null)
-                .map((_, index) => <WishlistCardSkeleton key={index} />)
+            ? ["followed-skeleton-1", "followed-skeleton-2", "followed-skeleton-3"].map((key) => (
+                <WishlistCardSkeleton key={key} />
+              ))
             : renderWishlists()}
         </ScrollArea>
       </CardContent>

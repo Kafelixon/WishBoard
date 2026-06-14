@@ -22,28 +22,29 @@ export const SignInForm = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as LocationState)?.from || "/";
+  const from = (location.state as LocationState | null)?.from ?? "/";
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
       if (registered) {
-        loginUser(email, password, dispatch, navigate, from);
+        await loginUser(email, password, dispatch, navigate, from);
       } else {
-        registerUser(email, password, username, dispatch, navigate, from);
+        await registerUser(email, password, username, dispatch, navigate, from);
       }
     } catch (error) {
       handleLoginError(error, toast);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
-  const handleGoogleLogin = (e: React.FormEvent) => {
+  const handleGoogleLogin = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     try {
-      loginWithGoogle(dispatch, navigate, from);
+      await loginWithGoogle(dispatch, navigate, from);
     } catch (error) {
       handleLoginError(error, toast);
     }
@@ -52,7 +53,7 @@ export const SignInForm = () => {
   return (
       <Card className="p-5 glass m-auto w-60">
         <form
-          onSubmit={(e) => { handleSubmit(e); }}
+          onSubmit={(e) => { void handleSubmit(e); }}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -83,10 +84,7 @@ export const SignInForm = () => {
 
 function renderEmailInput(
   email: string,
-  setEmail: {
-    (value: React.SetStateAction<string>): void;
-    (arg0: string): void;
-  }
+  setEmail: React.Dispatch<React.SetStateAction<string>>
 ) {
   return (
     <Input
@@ -103,10 +101,7 @@ function renderEmailInput(
 
 function renderPasswordInput(
   password: string,
-  setPassword: {
-    (value: React.SetStateAction<string>): void;
-    (arg0: string): void;
-  }
+  setPassword: React.Dispatch<React.SetStateAction<string>>
 ) {
   return (
     <Input
@@ -135,10 +130,12 @@ function renderSubmitButton(registered: boolean, loggingIn: boolean) {
   );
 }
 
-function renderGoogleLoginButton(handleGoogleLogin: (e: React.FormEvent) => void) {
+function renderGoogleLoginButton(
+  handleGoogleLogin: (e: React.SyntheticEvent) => Promise<void>,
+) {
   return (
     <Button
-      onClick={(e) => { handleGoogleLogin(e); }}
+      onClick={(e) => { void handleGoogleLogin(e); }}
       variant="outline"
       className="glass-fg"
     >
@@ -149,20 +146,18 @@ function renderGoogleLoginButton(handleGoogleLogin: (e: React.FormEvent) => void
 
 function renderToggleRegisterLogin(
   registered: boolean,
-  setRegistered: {
-    (value: React.SetStateAction<boolean>): void;
-    (arg0: boolean): void;
-  }
+  setRegistered: React.Dispatch<React.SetStateAction<boolean>>
 ) {
   return (
     <small className="text-center -mb-1">
       {registered ? "Don't have an account? " : "Already have an account? "}
-      <a
+      <button
+        type="button"
         onClick={() => { setRegistered(!registered); }}
-        className="text-violet-500 cursor-pointer"
+        className="text-violet-500 cursor-pointer bg-transparent border-0 p-0"
       >
         {registered ? "Sign up" : "Sign in"}
-      </a>
+      </button>
     </small>
   );
 }

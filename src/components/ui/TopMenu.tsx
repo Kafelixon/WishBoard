@@ -12,13 +12,68 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
+import { User } from "@/lib/types";
+
+interface NavButtonsProps {
+  isLoginPage: boolean;
+  user: User | null;
+  userAvatar: string | undefined;
+  userInitials: string[] | string;
+  navigateToLogin: () => void;
+  navigateToWishlist: () => void;
+  navigateToSettingsPage: () => void;
+  onLogout: () => void;
+}
+
+function NavButtons({
+  isLoginPage,
+  user,
+  userAvatar,
+  userInitials,
+  navigateToLogin,
+  navigateToWishlist,
+  navigateToSettingsPage,
+  onLogout,
+}: NavButtonsProps) {
+  if (isLoginPage) return null;
+  if (!user) return <Button onClick={navigateToLogin}>Sign up</Button>;
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        className="text-stone-600 px-2 md:px-3 lg:px-4"
+        onClick={navigateToWishlist}
+      >
+        Wishlists
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger>
+          <Avatar>
+            <AvatarImage src={userAvatar} />
+            <AvatarFallback>{userInitials}</AvatarFallback>
+          </Avatar>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={navigateToSettingsPage} className="gap-1">
+            <Settings /> Settings
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onLogout} className="gap-1">
+            <LogOut /> Log out
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </>
+  );
+}
 
 export function TopMenu() {
   const navigate = useNavigate();
   const location = useLocation();
   const dispatch = useDispatch();
   const user = useUser();
-  const userAvatar = user?.photoURL!;
+  const userAvatar = user?.photoURL ?? undefined;
 
   const getUserInitials = () => {
     if (!user?.displayName) return "?";
@@ -26,72 +81,47 @@ export function TopMenu() {
   };
 
   const navigateToLogin = () => {
-    navigate("/login");
+    void navigate("/login");
   };
 
   const navigateToHome = () => {
-    navigate("/");
+    void navigate("/");
   };
 
   const navigateToWishlist = () => {
-    navigate("/wishlists");
+    void navigate("/wishlists");
   };
 
   const navigateToSettingsPage = () => {
-    navigate("/settings");
+    void navigate("/settings");
   };
 
-  const NavButtons = () => {
-    if (location.pathname === "/login") return;
-    if (!user) return <Button onClick={navigateToLogin}>Sign up</Button>;
-    return (
-      <>
-        <Button
-          variant="ghost"
-          className="text-stone-600 px-2 md:px-3 lg:px-4"
-          onClick={navigateToWishlist}
-        >
-          Wishlists
-        </Button>
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Avatar>
-              <AvatarImage src={userAvatar} />
-              <AvatarFallback>{getUserInitials()}</AvatarFallback>
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
-            <DropdownMenuItem
-              onClick={navigateToSettingsPage}
-              className="gap-1"
-            >
-              <Settings /> Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => dispatch(logout())}
-              className="gap-1"
-            >
-              <LogOut /> Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </>
-    );
+  const handleLogout = () => {
+    dispatch(logout());
   };
 
   return (
     <div className="top-0 left-0 w-full flex items-center justify-between z-10">
       <div>
-        <h1
-          className="text-3xl font-extrabold tracking-tight lg:text-4xl"
+        <button
+          type="button"
+          className="text-3xl font-extrabold tracking-tight lg:text-4xl bg-transparent border-0 p-0 cursor-pointer"
           onClick={navigateToHome}
         >
           WishBoard
-        </h1>
+        </button>
       </div>
       <div className="flex items-end justify-between gap-1 lg:gap-2">
-        <NavButtons />
+        <NavButtons
+          isLoginPage={location.pathname === "/login"}
+          user={user}
+          userAvatar={userAvatar}
+          userInitials={getUserInitials()}
+          navigateToLogin={navigateToLogin}
+          navigateToWishlist={navigateToWishlist}
+          navigateToSettingsPage={navigateToSettingsPage}
+          onLogout={handleLogout}
+        />
       </div>
     </div>
   );
