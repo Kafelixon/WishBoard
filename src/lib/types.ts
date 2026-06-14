@@ -1,4 +1,4 @@
-import dynamicIconImports from "lucide-react/dynamicIconImports";
+import type { WishlistIconName } from "@/lib/wishlistIcons";
 
 export type WishlistItem = {
   id: string;
@@ -13,7 +13,7 @@ export type Wishlist = {
   id: string;
   name: string;
   author: string;
-  icon: keyof typeof dynamicIconImports;
+  icon: WishlistIconName;
   updateTimestamp: number;
 };
 

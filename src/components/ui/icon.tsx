@@ -1,25 +1,18 @@
-import { lazy, Suspense } from "react";
-import { LucideProps } from "lucide-react";
-import dynamicIconImports from "lucide-react/dynamicIconImports";
-
-const fallback = <div style={{ background: "#ddd", width: 24, height: 24 }} />;
+import type { LucideProps } from "lucide-react";
+import {
+  toWishlistIconName,
+  wishlistIcons,
+} from "@/lib/wishlistIcons";
+import type { WishlistIconName } from "@/lib/wishlistIcons";
 
 interface IconProps extends Omit<LucideProps, "ref"> {
-  name: keyof typeof dynamicIconImports;
+  name: WishlistIconName;
 }
 
 const Icon = ({ name, ...props }: IconProps) => {
-  const LucideIcon = lazy(
-    dynamicIconImports[name]
-      ? dynamicIconImports[name]
-      : dynamicIconImports["shopping-cart"]
-  );
+  const LucideIcon = wishlistIcons[toWishlistIconName(name)];
 
-  return (
-    <Suspense fallback={fallback}>
-      <LucideIcon {...props} />
-    </Suspense>
-  );
+  return <LucideIcon {...props} />;
 };
 
 export default Icon;
