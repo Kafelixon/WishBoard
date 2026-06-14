@@ -6,11 +6,11 @@ import { useNavigate } from "react-router-dom";
 import { Pencil } from "lucide-react";
 import { Button } from "./button";
 
-type WishlistProps = {
+interface WishlistProps {
   wishlist: Wishlist;
   editMode: boolean;
   handleEdit: (wishlist: Wishlist) => void;
-};
+}
 
 export const WishlistCard: React.FC<WishlistProps> = ({
   wishlist,

@@ -39,7 +39,7 @@ export const FollowedWishlists: React.FC = () => {
           key={wishlist.id}
           wishlist={wishlist}
           editMode={false}
-          handleEdit={() => console.log("Not Implemented")}
+          handleEdit={() => { console.log("Not Implemented"); }}
         /> // TODO: Implement handleEdit
       ));
     }

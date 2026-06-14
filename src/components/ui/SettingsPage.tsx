@@ -33,10 +33,10 @@ export const SettingsPage = () => {
   );
 };
 
-type CommonSettingsFormProps = {
+interface CommonSettingsFormProps {
   label: string;
   children: React.ReactNode;
-};
+}
 
 const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
   label,
@@ -128,14 +128,14 @@ const ChangeUsername: React.FC = () => {
         type="text"
         placeholder="New Username"
         value={username}
-        onChange={(e) => setUsername(e.target.value)}
+        onChange={(e) => { setUsername(e.target.value); }}
       />
       <Button
         className="w-full"
         type="submit"
         disabled={!username}
         color="primary"
-        onClick={() => void submitNewUsername()}
+        onClick={() => { submitNewUsername(); }}
       >
         Change Username
       </Button>

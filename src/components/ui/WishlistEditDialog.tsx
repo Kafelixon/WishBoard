@@ -25,9 +25,9 @@ interface WishlistDialogProps {
   handleItemChange: (changes: Partial<Wishlist>) => void;
 }
 
-type WishlistForm = {
+interface WishlistForm {
   name: string;
-};
+}
 
 const wishlistSchema = yup.object().shape({
   name: yup.string().required("Wishlist name is required"),
@@ -62,7 +62,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
         <form
           className="grid gap-4 pt-4"
           onSubmit={handleSubmit((data) => {
-            const newWishlist = { ...wishlist, ...data } as Wishlist;
+            const newWishlist = { ...wishlist, ...data };
             handleAction(newWishlist);
             setDialogOpen(false);
           })}

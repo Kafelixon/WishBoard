@@ -52,7 +52,7 @@ export const SignInForm = () => {
   return (
       <Card className="p-5 glass m-auto w-60">
         <form
-          onSubmit={(e) => void handleSubmit(e)}
+          onSubmit={(e) => { handleSubmit(e); }}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -67,7 +67,7 @@ export const SignInForm = () => {
               type="text"
               placeholder="Username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={(e) => { setUsername(e.target.value); }}
               className="glass-fg"
             />
           )}
@@ -95,7 +95,7 @@ function renderEmailInput(
       type="email"
       placeholder="Email"
       value={email}
-      onChange={(e) => setEmail(e.target.value)}
+      onChange={(e) => { setEmail(e.target.value); }}
       className="glass-fg"
     />
   );
@@ -115,7 +115,7 @@ function renderPasswordInput(
       type="password"
       placeholder="Password"
       value={password}
-      onChange={(e) => setPassword(e.target.value)}
+      onChange={(e) => { setPassword(e.target.value); }}
       className="glass-fg"
     />
   );
@@ -135,12 +135,10 @@ function renderSubmitButton(registered: boolean, loggingIn: boolean) {
   );
 }
 
-function renderGoogleLoginButton(handleGoogleLogin: {
-  (e: React.FormEvent): void;
-}) {
+function renderGoogleLoginButton(handleGoogleLogin: (e: React.FormEvent) => void) {
   return (
     <Button
-      onClick={(e) => void handleGoogleLogin(e)}
+      onClick={(e) => { handleGoogleLogin(e); }}
       variant="outline"
       className="glass-fg"
     >
@@ -160,7 +158,7 @@ function renderToggleRegisterLogin(
     <small className="text-center -mb-1">
       {registered ? "Don't have an account? " : "Already have an account? "}
       <a
-        onClick={() => setRegistered(!registered)}
+        onClick={() => { setRegistered(!registered); }}
         className="text-violet-500 cursor-pointer"
       >
         {registered ? "Sign up" : "Sign in"}

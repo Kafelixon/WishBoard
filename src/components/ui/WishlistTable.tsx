@@ -153,11 +153,11 @@ export default function WishlistItemsTable({
         currentItem={currentItem}
         handleItemChange={handleItemChange}
         handleAction={() =>
-          handleAddOrUpdateItem(
+          { handleAddOrUpdateItem(
             addItemToWishlist,
             "Item added successfully.",
             "Failed to add item to wishlist.",
-          )
+          ); }
         }
         isSubmitting={isSubmitting}
         dialogTitle="Add Item"
@@ -171,11 +171,11 @@ export default function WishlistItemsTable({
           currentItem={currentItem}
           handleItemChange={handleItemChange}
           handleAction={() =>
-            handleAddOrUpdateItem(
+            { handleAddOrUpdateItem(
               updateWishlistItem,
               "Item updated successfully.",
               "Failed to update item in wishlist.",
-            )
+            ); }
           }
           handleDelete={handleDeleteItem}
           isSubmitting={isSubmitting}

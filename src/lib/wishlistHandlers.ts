@@ -16,7 +16,7 @@ import { WishlistItem, Wishlist } from "@/lib/types";
 import { toWishlistIconName } from "@/lib/wishlistIcons";
 import { v4 as uuid } from "uuid";
 
-const WISHLISTS_COLLECTION: string = "wishlists";
+const WISHLISTS_COLLECTION = "wishlists";
 
 export type WishlistChanger = (
   userId: string,
@@ -356,14 +356,14 @@ const fetchWishlistsByIds = async (
   return wishlists;
 };
 
-type WishlistData = {
+interface WishlistData {
   id: string;
   wishlistName: string;
   author: string;
   iconName: string;
   wishlist: number;
   updateTimestamp: number;
-};
+}
 
 /**
  * Fetches a wishlist by its ID.

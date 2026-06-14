@@ -18,10 +18,10 @@ export function TopMenu() {
   const location = useLocation();
   const dispatch = useDispatch();
   const user = useUser();
-  const userAvatar = user?.photoURL as string;
+  const userAvatar = user?.photoURL!;
 
   const getUserInitials = () => {
-    if (!user || !user.displayName) return "?";
+    if (!user?.displayName) return "?";
     return user.displayName.split(" ").map((n) => n[0]);
   };
 

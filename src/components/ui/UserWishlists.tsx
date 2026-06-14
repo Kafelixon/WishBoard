@@ -57,7 +57,7 @@ export const UserWishlists: React.FC = () => {
   }, [userId]);
 
   const handleItemChange = (changes: Partial<Wishlist>) =>
-    setCurrentItem((current) => ({ ...current, ...changes }));
+    { setCurrentItem((current) => ({ ...current, ...changes })); };
 
   const handleAddWishlist = async (wishlistToAdd: Wishlist) => {
     if (!userId) return;
@@ -147,7 +147,7 @@ export const UserWishlists: React.FC = () => {
               <Button
                 className="p-2"
                 variant={!editMode ? "default" : "destructive"}
-                onClick={() => setEditMode(!editMode)}
+                onClick={() => { setEditMode(!editMode); }}
               >
                 {editMode ? <X /> : <Pencil />}
               </Button>

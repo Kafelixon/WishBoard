@@ -76,18 +76,18 @@ export const WishlistPage: React.FC = () => {
     };
 
     const handleFollow = () =>
-      handleFollowChange(
+      { handleFollowChange(
         followWishlist,
         "You are now following this wishlist",
         "Failed to follow this wishlist",
-      );
+      ); };
 
     const handleUnfollow = () =>
-      handleFollowChange(
+      { handleFollowChange(
         unfollowWishlist,
         "You are no longer following this wishlist",
         "Failed to unfollow this wishlist",
-      );
+      ); };
 
     if (isWishlistOwner || !userId) {
       return null;
