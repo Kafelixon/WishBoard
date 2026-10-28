@@ -6,8 +6,8 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL,
 });
 await pool.query(readFileSync("db/schema.sql", "utf8"));
-const { rows } = await pool.query(
+const { rows } = await pool.query<{ table_name: string }>(
   "select table_name from information_schema.tables where table_schema = 'public' order by 1",
 );
-console.log(rows.map((r) => String(r.table_name)).join(", "));
+console.log(rows.map((r) => r.table_name).join(", "));
 await pool.end();
