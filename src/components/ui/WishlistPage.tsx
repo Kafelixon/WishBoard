@@ -193,7 +193,7 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
 
 
   return (
-    <Card className="shadow-lg glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
+    <Card className="glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
       <CardHeader className="h-22 pb-0">
         <CardTitle className="flex justify-between items-center">
           <div className="flex flex-col gap-1 align-top">
@@ -204,11 +204,11 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
               </>
             ) : (
               <>
-                <h1 className="font-semibold">
+                <h1 className="font-display text-2xl font-semibold">
                   {wishlistInfo.name}
                 </h1>
                 {wishlistInfo.author && (
-                  <p className="text-gray-500 text-sm text-left">
+                  <p className="text-muted-foreground text-sm text-left">
                     {wishlistInfo.author}
                   </p>
                 )}

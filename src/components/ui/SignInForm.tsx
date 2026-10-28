@@ -84,7 +84,7 @@ export const SignInForm = () => {
           {renderEmailInput(email, setEmail)}
           {renderPasswordInput(password, setPassword, registered)}
           {formError && (
-            <p role="alert" className="text-red-600 text-xs">
+            <p role="alert" className="text-destructive text-xs">
               {formError}
             </p>
           )}
@@ -171,7 +171,7 @@ function renderToggleRegisterLogin(
       <button
         type="button"
         onClick={() => { setRegistered(!registered); }}
-        className="text-violet-500 cursor-pointer bg-transparent border-0 p-0"
+        className="text-primary underline underline-offset-2 cursor-pointer bg-transparent border-0 p-0"
       >
         {registered ? "Sign up" : "Sign in"}
       </button>

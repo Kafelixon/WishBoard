@@ -44,7 +44,7 @@ function NavButtons({
     <>
       <Button
         variant="ghost"
-        className="text-stone-600 px-2 md:px-3 lg:px-4"
+        className="text-muted-foreground px-2 md:px-3 lg:px-4"
         onClick={navigateToWishlist}
       >
         Wishlists
@@ -114,7 +114,7 @@ export function TopMenu() {
       <div>
         <button
           type="button"
-          className="text-3xl font-extrabold tracking-tight lg:text-4xl bg-transparent border-0 p-0 cursor-pointer"
+          className="font-display text-3xl font-semibold tracking-tight lg:text-4xl bg-transparent border-0 p-0 cursor-pointer"
           onClick={navigateToHome}
         >
           WishBoard

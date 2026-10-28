@@ -53,7 +53,7 @@ export const FollowedWishlists: React.FC = () => {
   };
 
   return (
-    <Card className="shadow-lg glass">
+    <Card className="glass">
       <CardHeader className="h-22">
         <CardTitle className="h-10 flex justify-start items-center">
           Your Followed Wishlists

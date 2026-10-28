@@ -14,12 +14,12 @@ export const NotFound = ({
 }: NotFoundProps) => {
   usePageTitle(title);
   return (
-  <Card className="shadow-lg glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
+  <Card className="glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
     <CardHeader>
       <CardTitle>{title}</CardTitle>
     </CardHeader>
     <CardContent className="flex flex-col gap-4 items-start">
-      <p className="text-gray-500">{message}</p>
+      <p className="text-muted-foreground">{message}</p>
       <Button asChild>
         <Link to="/wishlists">Back to your wishlists</Link>
       </Button>

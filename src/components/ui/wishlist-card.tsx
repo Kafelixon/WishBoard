@@ -24,7 +24,7 @@ export const WishlistCard: React.FC<WishlistProps> = ({
       <Icon name={wishlist.icon} className="w-6 h-6" />
       <div>
         <p className="font-semibold break-words max-w-96">{wishlist.name}</p>
-        <p className="text-gray-500 text-sm text-left">{wishlist.author}</p>
+        <p className="text-muted-foreground text-sm text-left">{wishlist.author}</p>
       </div>
     </div>
   );
@@ -34,7 +34,7 @@ export const WishlistCard: React.FC<WishlistProps> = ({
   if (editMode) {
     return (
       <div className="space-y-1 w-full">
-        <div className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
+        <div className="flex items-center justify-between p-4 rounded-lg hover:bg-secondary">
           {summary}
           <Button
             variant="outline"
@@ -59,10 +59,10 @@ export const WishlistCard: React.FC<WishlistProps> = ({
         void navigate(`/wishlist/${wishlist.id}`);
       }}
     >
-      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-100">
+      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-secondary">
         {summary}
         <div>
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             {new Date(wishlist.updateTimestamp).toLocaleDateString()}
           </p>
         </div>

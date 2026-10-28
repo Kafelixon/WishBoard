@@ -5,7 +5,7 @@ export const LandingPage = () => {
   usePageTitle();
   return (
       <Card className="p-3 lg:p5 backdrop-blur-[10px] items-center w-full md:w-[60vw] lg:w-[45vw] flex-grow glass m-auto">
-        <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl text-center p-4">
+        <h1 className="scroll-m-20 font-display text-3xl font-semibold tracking-tight lg:text-4xl text-center p-4">
           Effortlessly Craft & Share Your Dream Wishlist
         </h1>
         <p className="leading-7 text-center pt-2 pb-4">
@@ -15,7 +15,7 @@ export const LandingPage = () => {
           goodbye to the hassle and hello to a new world of seamless sharing.
         </p>
         <section className="mainDescription p-4 pb-8">
-          <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
+          <h3 className="scroll-m-20 font-display text-2xl font-semibold tracking-tight">
             Create, Share, and Stay up-to-date with Ease
           </h3>
           <ul className="leading-7 space-y-6 [&:not(:first-child)]:mt-6">
@@ -47,7 +47,7 @@ export const LandingPage = () => {
           </ul>
         </section>
         <section className="aboutSection p-4 pb-8">
-          <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
+          <h3 className="scroll-m-20 font-display text-2xl font-semibold tracking-tight">
             WishBoard: Where Wishes Come Alive
           </h3>
           <p className="leading-7 space-y-4 [&:not(:first-child)]:mt-6">
@@ -59,7 +59,7 @@ export const LandingPage = () => {
           </p>
         </section>
         <section className="supportSection p-4">
-          <h3 className="scroll-m-20 text-2xl font-semibold tracking-tight">
+          <h3 className="scroll-m-20 font-display text-2xl font-semibold tracking-tight">
             We're Here to Support You
           </h3>
           <p className="leading-7 space-y-4 [&:not(:first-child)]:mt-6">
@@ -70,7 +70,7 @@ export const LandingPage = () => {
               href="https://www.linkedin.com/in/piotrszkafel/"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-violet-700 underline underline-offset-2"
+              className="text-primary underline underline-offset-2"
             >
               www.linkedin.com/in/piotrszkafel
             </a>

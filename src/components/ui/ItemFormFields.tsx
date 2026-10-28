@@ -72,12 +72,12 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
             aria-describedby={errors[field] ? `${id}-error` : undefined}
             {...register(field)}
             onChange={(e) => { handleItemChange({ [field]: e.target.value }); }}
-            className={`col-span-3 ${errors[field] ? "border-red-500" : ""}`}
+            className={`col-span-3 ${errors[field] ? "border-destructive" : ""}`}
           />
           <span
             id={`${id}-error`}
             role={errors[field] ? "alert" : undefined}
-            className="col-start-2 col-span-3 text-red-500 text-xs"
+            className="col-start-2 col-span-3 text-destructive text-xs"
           >
             {errors[field]?.message as string}
           </span>

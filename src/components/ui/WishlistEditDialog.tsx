@@ -74,9 +74,9 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
               handleItemChange({ name: e.target.value });
             }}
             placeholder="Wishlist Name"
-            className={errors.name ? "border-red-500" : ""}
+            className={errors.name ? "border-destructive" : ""}
           />
-          {errors.name && <p className="text-red-500">{errors.name.message}</p>}
+          {errors.name && <p className="text-destructive">{errors.name.message}</p>}
           <div
             className={`flex flex-row ${
               actionType === "Add" ? "justify-end" : "justify-between"

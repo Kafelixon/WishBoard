@@ -27,7 +27,7 @@ export const SettingsPage = () => {
   usePageTitle("Settings");
   return (
     <Card className="w-fit glass divide-y m-auto p-2 md:p-2">
-      <h1 className="p-3 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">
+      <h1 className="p-3 scroll-m-20 font-display text-3xl font-semibold tracking-tight lg:text-4xl">
         Settings
       </h1>
       <ChangeUsername />

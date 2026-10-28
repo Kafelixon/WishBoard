@@ -185,7 +185,7 @@ export default function WishlistItemsTable({
       {isLoading ? (
         <CardsSkeletonLoader />
       ) : sortedItems.length === 0 ? (
-        <p className="text-center text-gray-500 py-6">
+        <p className="text-center text-muted-foreground py-6">
           {canEditWishlist
             ? "No items yet. Use Add Item to add your first wish."
             : "This wishlist has no public items yet."}
@@ -212,14 +212,14 @@ const CardsSkeletonLoader = () => (
 const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
   const [failed, setFailed] = useState(false);
   const frame =
-    "size-28 min-h-28 min-w-28 rounded-lg border border-solid border-gray-300";
+    "size-28 min-h-28 min-w-28 rounded-lg border border-solid border-border";
 
   if (!src || failed) {
     return (
       <div
         role="img"
         aria-label={`No image for ${name}`}
-        className={`${frame} flex items-center justify-center bg-gray-100 text-gray-400`}
+        className={`${frame} flex items-center justify-center bg-secondary text-muted-foreground`}
       >
         <Gift className="size-8" aria-hidden="true" />
       </div>
@@ -236,7 +236,7 @@ const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
       onError={() => {
         setFailed(true);
       }}
-      className={`${frame} object-contain bg-white`}
+      className={`${frame} object-contain bg-card`}
     />
   );
 };
@@ -253,15 +253,15 @@ const CardsList: FC<{
       return (
         <div
           key={item.id}
-          className={`flex gap-2.5 justify-between border px-2.5 py-2.5 rounded-lg border-solid border-gray-300 max-w-full break-words ${
-            isPrivate ? "bg-gray-200" : "glass-fg"
+          className={`flex gap-2.5 justify-between border px-2.5 py-2.5 rounded-lg border-solid border-border max-w-full break-words ${
+            isPrivate ? "bg-secondary" : "glass-fg"
           }`}
         >
           <div className="flex gap-2.5 items-center min-w-0">
             <ItemImage src={item.image} name={item.name} />
             <div className="flex flex-col min-w-0">
               <h2 className="font-semibold mt-0 mb-1 mx-0">{item.name}</h2>
-              <p className="text-gray-500 mt-0 mb-[5px] mx-0">
+              <p className="text-muted-foreground mt-0 mb-[5px] mx-0">
                 {item.price > 0 ? (
                   <>
                     Average Price:{" "}
@@ -272,7 +272,7 @@ const CardsList: FC<{
                 )}
               </p>
               {isPrivate && (
-                <p className="flex items-center gap-1 text-xs text-gray-600 mb-1">
+                <p className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
                   <Lock className="size-3" aria-hidden="true" />
                   Private, only you can see this
                 </p>
@@ -280,7 +280,7 @@ const CardsList: FC<{
               {item.link && (
                 <a
                   href={item.link}
-                  className="inline-flex items-center gap-1 no-underline text-blue-700 hover:underline"
+                  className="inline-flex items-center gap-1 no-underline text-primary underline-offset-4 hover:underline"
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`View ${item.name} online (opens in a new tab)`}
