@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { fetchFollowedWishlists } from "@/lib/wishlistHandlers";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserId } from "@/lib/common";
+import { useToast } from "@/components/ui/use-toast";
 import { Wishlist } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -13,14 +14,24 @@ export const FollowedWishlists: React.FC = () => {
   const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const userId = useUserId();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!userId) return;
 
-    void fetchFollowedWishlists(userId).then((data) => {
-      setWishlists(data);
-      setIsLoading(false);
-    });
+    fetchFollowedWishlists(userId)
+      .then(setWishlists)
+      .catch((error: unknown) => {
+        console.error(error);
+        toast({
+          title: "Failed to load followed wishlists",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable; reload only when the user changes
   }, [userId]);
 
   if (!userId) {
@@ -28,7 +39,7 @@ export const FollowedWishlists: React.FC = () => {
   }
 
   const renderWishlists = () => {
-    if (wishlists) {
+    if (wishlists && wishlists.length > 0) {
       return wishlists.map((wishlist) => (
         <WishlistCard
           key={wishlist.id}

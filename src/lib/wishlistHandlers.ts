@@ -1,15 +1,18 @@
 import {
   addDoc,
+  arrayRemove,
   arrayUnion,
   collection,
-  deleteDoc,
   doc,
   getDoc,
   getDocs,
   query,
+  runTransaction,
   setDoc,
-  updateDoc,
   where,
+  type DocumentData,
+  type DocumentReference,
+  type Transaction,
 } from "firebase/firestore";
 import { firestore } from "@/firebaseSetup";
 import { WishlistItem, Wishlist } from "@/lib/types";
@@ -30,148 +33,114 @@ export const createWishlist: WishlistChanger = async (
   if (!userId) throw new Error("User ID is not provided.");
   if (!wishlist.name) throw new Error("Wishlist name is not provided.");
 
-  try {
-    const wishlistsCollection = collection(firestore, WISHLISTS_COLLECTION);
-    await addDoc(wishlistsCollection, {
-      wishlistName: wishlist.name,
-      ownerId: userId,
-      author: wishlist.author,
-      iconName: wishlist.icon,
-      updateTimestamp: new Date().getTime(),
-    });
-  } catch (error) {
-    console.error("Error adding wishlist: ", error);
-  }
+  await addDoc(collection(firestore, WISHLISTS_COLLECTION), {
+    wishlistName: wishlist.name,
+    ownerId: userId,
+    author: wishlist.author,
+    iconName: wishlist.icon,
+    items: [],
+    updateTimestamp: new Date().getTime(),
+  });
 };
+
+/**
+ * Reads a wishlist inside a transaction, verifies the caller owns it and
+ * lets `apply` stage the writes. One round trip for the read, one for the
+ * commit, and concurrent writers are retried instead of overwriting each other.
+ */
+async function withOwnedWishlist<T>(
+  userId: string,
+  wishlistId: string,
+  apply: (
+    data: DocumentData,
+    tx: Transaction,
+    ref: DocumentReference,
+  ) => T,
+): Promise<T> {
+  validateUserIdAndWishlistId(userId, wishlistId);
+  const ref = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
+
+  return runTransaction(firestore, async (tx) => {
+    const snapshot = await tx.get(ref);
+    if (!snapshot.exists()) throw new Error("Wishlist is invalid.");
+    const data = snapshot.data();
+    if (data.ownerId !== userId) {
+      throw new Error("You cannot modify this wishlist.");
+    }
+    return apply(data, tx, ref);
+  });
+}
+
+const readItems = (data: DocumentData): WishlistItem[] =>
+  Array.isArray(data.items) ? (data.items as WishlistItem[]) : [];
 
 export const updateWishlist: WishlistChanger = async (
   userId: string,
   wishlist: Wishlist,
 ) => {
-  validateUserIdAndWishlistId(userId, wishlist.id);
-
-  if (!(await isOwnerOfWishlist(userId, wishlist.id))) {
-    throw new Error("You cannot modify this wishlist.");
-  }
-
-  const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlist.id);
-
-  await updateDoc(wishlistRef, {
-    wishlistName: wishlist.name,
-    ownerId: userId,
-    author: wishlist.author,
-    iconName: wishlist.icon,
-    updateTimestamp: new Date().getTime(),
+  await withOwnedWishlist(userId, wishlist.id, (_data, tx, ref) => {
+    tx.update(ref, {
+      wishlistName: wishlist.name,
+      author: wishlist.author,
+      iconName: wishlist.icon,
+      updateTimestamp: new Date().getTime(),
+    });
   });
 };
 
 export const deleteWishlist = async (userId: string, wishlistId: string) => {
-  validateUserIdAndWishlistId(userId, wishlistId);
-
-  if (!(await isOwnerOfWishlist(userId, wishlistId))) {
-    throw new Error("You cannot modify this wishlist.");
-  }
-
-  await deleteDoc(doc(firestore, WISHLISTS_COLLECTION, wishlistId));
+  await withOwnedWishlist(userId, wishlistId, (_data, tx, ref) => {
+    tx.delete(ref);
+  });
 };
 
-export const wishlistExists = async (wishlistId: string) => {
-  const wishlistData = await fetchWishlistData(wishlistId);
-  return wishlistData.exists();
-};
-
+/** Item writers resolve with the wishlist's full, updated item list. */
 export type WishlistItemChanger = (
   userId: string,
   wishlistId: string,
   item: WishlistItem,
-) => Promise<void>;
+) => Promise<WishlistItem[]>;
 
-export const addItemToWishlist: WishlistItemChanger = async (
+const writeItems = (
   userId: string,
   wishlistId: string,
-  item: WishlistItem,
-) => {
-  validateUserIdAndWishlistId(userId, wishlistId);
-
-  const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
-  const isOwner = await isOwnerOfWishlist(userId, wishlistId);
-  if (isOwner) {
-    item.id = uuid();
-    await updateDoc(wishlistRef, {
-      items: arrayUnion(item),
-      updateTimestamp: new Date().getTime(),
-    });
-  } else {
-    throw new Error("You cannot modify this wishlist.");
-  }
-};
-
-export const updateWishlistItem: WishlistItemChanger = async (
-  userId: string,
-  wishlistId: string,
-  item: WishlistItem,
-) => {
-  validateUserIdAndWishlistId(userId, wishlistId);
-
-  if (!item.id) {
-    throw new Error("Item ID is not provided.");
-  }
-
-  if (!(await isOwnerOfWishlist(userId, wishlistId))) {
-    throw new Error("You cannot modify this wishlist.");
-  }
-
-  const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
-  const wishlistData = await getDoc(wishlistRef);
-
-  if (!wishlistData.exists()) {
-    throw new Error("Wishlist is invalid.");
-  }
-
-  let items = wishlistData.data().items as WishlistItem[];
-  items = items.map((element) => (element.id === item.id ? item : element));
-
-  await updateDoc(wishlistRef, {
-    items: items,
-    updateTimestamp: new Date().getTime(),
+  change: (items: WishlistItem[]) => WishlistItem[],
+): Promise<WishlistItem[]> =>
+  withOwnedWishlist(userId, wishlistId, (data, tx, ref) => {
+    const items = change(readItems(data));
+    tx.update(ref, { items, updateTimestamp: new Date().getTime() });
+    return items;
   });
+
+export const addItemToWishlist: WishlistItemChanger = (
+  userId,
+  wishlistId,
+  item,
+) =>
+  writeItems(userId, wishlistId, (items) => [
+    ...items,
+    { ...item, id: uuid() },
+  ]);
+
+export const updateWishlistItem: WishlistItemChanger = (
+  userId,
+  wishlistId,
+  item,
+) => {
+  if (!item.id) return Promise.reject(new Error("Item ID is not provided."));
+  return writeItems(userId, wishlistId, (items) =>
+    items.map((element) => (element.id === item.id ? item : element)),
+  );
 };
 
-export const deleteWishlistItem = async (
+export const deleteWishlistItem = (
   userId: string,
   wishlistId: string,
   itemId: string,
-) => {
-  validateUserIdAndWishlistId(userId, wishlistId);
-
-  if (!(await isOwnerOfWishlist(userId, wishlistId))) {
-    throw new Error("You cannot modify this wishlist.");
-  }
-
-  const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlistId);
-  const wishlistData = await getDoc(wishlistRef);
-  if (!wishlistData.exists()) {
-    throw new Error("Wishlist is invalid.");
-  }
-
-  let items = wishlistData.data().items as WishlistItem[];
-  items = items.filter((element) => element.id !== itemId);
-
-  await updateDoc(wishlistRef, {
-    items: items,
-    updateTimestamp: new Date().getTime(),
-  });
-};
-
-export const isOwnerOfWishlist = async (userId: string, wishlistId: string) => {
-  validateUserIdAndWishlistId(userId, wishlistId);
-
-  const wishlistData = await fetchWishlistData(wishlistId);
-  if (!wishlistData.exists()) {
-    throw new Error("Wishlist is invalid.");
-  }
-  return userId === wishlistData.data().ownerId;
-};
+): Promise<WishlistItem[]> =>
+  writeItems(userId, wishlistId, (items) =>
+    items.filter((element) => element.id !== itemId),
+  );
 
 export const findWishlistsByOwner = async (userId: string) => {
   const q = query(
@@ -191,25 +160,35 @@ export const findWishlistsByOwner = async (userId: string) => {
   });
 };
 
+export interface WishlistView {
+  info: Wishlist;
+  isOwner: boolean;
+  /** Everything for the owner, only public items for everyone else. */
+  items: WishlistItem[];
+}
+
 /**
- * Fetches items from a wishlist.
- * @param wishlistId - The ID of the wishlist.
- * @param userId - The ID of the user.
- * @returns A promise that resolves to an array of WishlistItem objects or null.
- * @throws Error if wishlistId is not provided.
+ * Loads a wishlist page's data with a single document read.
+ * @returns The view, or null when the wishlist does not exist.
  */
-export const fetchItemsFromWishlist = async (
+export const fetchWishlistView = async (
   wishlistId: string,
   userId: string | null,
-): Promise<WishlistItem[] | null> => {
+): Promise<WishlistView | null> => {
   if (!wishlistId) throw new Error("Wishlist ID is not provided.");
 
-  const wishlistData = await fetchWishlistData(wishlistId);
-  if (!wishlistData.exists()) return null;
+  const snapshot = await fetchWishlistData(wishlistId);
+  if (!snapshot.exists()) return null;
 
-  const items = wishlistData.data().items as WishlistItem[];
-  if (userId && userId === wishlistData.data().ownerId) return items;
-  return items.filter((item) => item.public);
+  const data = snapshot.data();
+  const isOwner = !!userId && userId === data.ownerId;
+  const items = readItems(data);
+
+  return {
+    info: toWishlist(wishlistId, data as WishlistData),
+    isOwner,
+    items: isOwner ? items : items.filter((item) => item.public),
+  };
 };
 
 // Follow Wishlist
@@ -225,24 +204,11 @@ export const followWishlist: FollowStateChanger = async (
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
-  try {
-    const followedRef = doc(firestore, "user_follows", userId);
-    const followedData = await getDoc(followedRef);
-    if (followedData.exists()) {
-      const followed = followedData.data().follows as string[];
-      if (followed.includes(wishlistId)) {
-        return;
-      }
-    }
-    await setDoc(
-      followedRef,
-      { follows: arrayUnion(wishlistId) },
-      { merge: true },
-    );
-  } catch (e) {
-    console.error("Transaction failed: ", e);
-    throw e;
-  }
+  await setDoc(
+    doc(firestore, "user_follows", userId),
+    { follows: arrayUnion(wishlistId) },
+    { merge: true },
+  );
 };
 
 /**
@@ -250,7 +216,6 @@ export const followWishlist: FollowStateChanger = async (
  * @param userId - The ID of the user.
  * @param wishlistId - The ID of the wishlist to unfollow.
  * @throws Error if either user ID or wishlist ID is not provided or if the operation fails.
- * @returns void
  */
 export const unfollowWishlist: FollowStateChanger = async (
   userId: string,
@@ -258,26 +223,11 @@ export const unfollowWishlist: FollowStateChanger = async (
 ) => {
   validateUserIdAndWishlistId(userId, wishlistId);
 
-  try {
-    const userFollowedWishlistsRef = doc(firestore, "user_follows", userId);
-    const userFollowedWishlistsData = await getDoc(userFollowedWishlistsRef);
-
-    if (userFollowedWishlistsData.exists()) {
-      const followedWishlistIds = userFollowedWishlistsData.data()
-        .follows as string[];
-      if (followedWishlistIds.includes(wishlistId)) {
-        const updatedFollowedWishlistIds = followedWishlistIds.filter(
-          (id: string) => id !== wishlistId,
-        );
-        await setDoc(userFollowedWishlistsRef, {
-          follows: updatedFollowedWishlistIds,
-        });
-      }
-    }
-  } catch (error) {
-    console.error("Failed to remove wishlist from followed: ", error);
-    throw error;
-  }
+  await setDoc(
+    doc(firestore, "user_follows", userId),
+    { follows: arrayRemove(wishlistId) },
+    { merge: true },
+  );
 };
 
 /**
@@ -338,22 +288,15 @@ export const isFollowingWishlist = async (
 const fetchWishlistsByIds = async (
   wishlistIds: string[],
 ): Promise<Wishlist[]> => {
-  const wishlists: Wishlist[] = [];
-
-  for (const wishlistId of wishlistIds) {
-    const wishlist = await fetchWishlistById(wishlistId);
-    if (wishlist) {
-      wishlists.push({
-        id: wishlistId,
-        name: wishlist.name,
-        author: wishlist.author,
-        icon: wishlist.icon,
-        updateTimestamp: wishlist.updateTimestamp,
-      });
-    }
-  }
-
-  return wishlists;
+  const results = await Promise.all(
+    wishlistIds.map((wishlistId) =>
+      fetchWishlistById(wishlistId).catch((error: unknown) => {
+        console.error(`Failed to load followed wishlist ${wishlistId}`, error);
+        return null;
+      }),
+    ),
+  );
+  return results.filter((wishlist) => wishlist !== null);
 };
 
 interface WishlistData {
@@ -375,17 +318,16 @@ export const fetchWishlistById = async (
 ): Promise<Wishlist | null> => {
   const wishlistData = await fetchWishlistData(wishlistId);
   if (!wishlistData.exists()) return null;
-  const { wishlistName, author, iconName, updateTimestamp } =
-    wishlistData.data() as WishlistData;
-
-  return {
-    id: wishlistId,
-    name: wishlistName,
-    author,
-    icon: toWishlistIconName(iconName),
-    updateTimestamp,
-  };
+  return toWishlist(wishlistId, wishlistData.data() as WishlistData);
 };
+
+const toWishlist = (wishlistId: string, data: WishlistData): Wishlist => ({
+  id: wishlistId,
+  name: data.wishlistName,
+  author: data.author,
+  icon: toWishlistIconName(data.iconName),
+  updateTimestamp: data.updateTimestamp,
+});
 
 /**
  * Fetches wishlist data from Firestore.
@@ -404,12 +346,13 @@ export const updateExistingWishlistsAuthor = async (
   newAuthorName: string,
 ) => {
   const wishlists = await findWishlistsByOwner(userId);
-  for (const wishlist of wishlists) {
-    const wishlistRef = doc(firestore, WISHLISTS_COLLECTION, wishlist.id);
-    await setDoc(
-      wishlistRef,
-      { author: newAuthorName, updateTimestamp: new Date().getTime() },
-      { merge: true },
-    );
-  }
+  await Promise.all(
+    wishlists.map((wishlist) =>
+      setDoc(
+        doc(firestore, WISHLISTS_COLLECTION, wishlist.id),
+        { author: newAuthorName, updateTimestamp: new Date().getTime() },
+        { merge: true },
+      ),
+    ),
+  );
 };

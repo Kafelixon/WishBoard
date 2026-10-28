@@ -47,64 +47,71 @@ export const UserWishlists: React.FC = () => {
   useEffect(() => {
     if (!userId) return;
 
-    void findWishlistsByOwner(userId).then((data) => {
-      setWishlists(data);
-      setIsLoading(false);
-    });
+    findWishlistsByOwner(userId)
+      .then(setWishlists)
+      .catch((error: unknown) => {
+        console.error(error);
+        toast({ title: "Failed to load your wishlists", variant: "destructive" });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable; reload only when the user changes
   }, [userId]);
+
+  const runWishlistWrite = async (
+    write: () => Promise<void>,
+    successMessage: string,
+    errorMessage: string,
+  ) => {
+    if (!userId) return;
+
+    setIsSubmitting(true);
+    try {
+      await write();
+      setWishlists(await findWishlistsByOwner(userId));
+      toast({ title: successMessage });
+    } catch (error) {
+      console.error(error);
+      toast({ title: errorMessage, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleItemChange = (changes: Partial<Wishlist>) =>
     { setCurrentItem((current) => ({ ...current, ...changes })); };
 
   const handleAddWishlist = async (wishlistToAdd: Wishlist) => {
-    if (!userId) return;
-
-    const newWishlistName = wishlistToAdd.name;
-    if (!newWishlistName) return;
-
-    setIsSubmitting(true);
-    await createWishlist(userId, wishlistToAdd);
-    setIsSubmitting(false);
-
-    setIsLoading(true);
-    setWishlists(await findWishlistsByOwner(userId));
-    setIsLoading(false);
-
-    toast({ title: "Wishlist created" });
+    if (!wishlistToAdd.name) return;
+    await runWishlistWrite(
+      () => createWishlist(userId, wishlistToAdd),
+      "Wishlist created",
+      "Failed to create the wishlist",
+    );
   };
 
   const handleEditWishlist = async (wishlistToUpdate: Wishlist) => {
-    if (!userId) return;
-
-    setIsSubmitting(true);
-    await updateWishlist(userId, wishlistToUpdate);
-    setIsSubmitting(false);
-
-    setIsLoading(true);
-    setWishlists(await findWishlistsByOwner(userId));
-    setIsLoading(false);
-
-    toast({ title: "Wishlist updated" });
+    await runWishlistWrite(
+      () => updateWishlist(userId, wishlistToUpdate),
+      "Wishlist updated",
+      "Failed to update the wishlist",
+    );
   };
 
   const handleDelete = async () => {
-    if (!userId) return;
-
-    setIsSubmitting(true);
-    await deleteWishlist(userId, currentItem.id);
-    setIsSubmitting(false);
-    setIsLoading(true);
-    const refreshedWishlists = await findWishlistsByOwner(userId);
-    setWishlists(refreshedWishlists);
-    setIsLoading(false);
-    toast({ title: "Wishlist deleted" });
+    await runWishlistWrite(
+      () => deleteWishlist(userId, currentItem.id),
+      "Wishlist deleted",
+      "Failed to delete the wishlist",
+    );
   };
 
   const renderWishlists = () => {
     if (!userId) {
       return <p className="p-2">Please sign in to view your wishlists.</p>;
     }
-    if (wishlists) {
+    if (wishlists && wishlists.length > 0) {
       return wishlists.map((wishlist) => (
         <WishlistCard
           key={wishlist.id}

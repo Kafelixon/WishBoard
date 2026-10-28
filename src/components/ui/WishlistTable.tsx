@@ -1,11 +1,10 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useMemo, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 import { WishlistItem } from "@/lib/types";
 import {
   WishlistItemChanger,
   addItemToWishlist,
   deleteWishlistItem,
-  fetchItemsFromWishlist,
   updateWishlistItem,
 } from "@/lib/wishlistHandlers";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,9 @@ import { useToast } from "@/components/ui/use-toast";
 
 interface WishlistItemsTableProps {
   canEditWishlist: boolean;
+  isLoading: boolean;
+  items: WishlistItem[];
+  onItemsChange: (items: WishlistItem[]) => void;
   wishlistId: string;
   userId: string | null;
 }
@@ -30,30 +32,48 @@ const PLACEHOLDER_ITEM: WishlistItem = {
 
 export default function WishlistItemsTable({
   canEditWishlist,
+  isLoading,
+  items,
+  onItemsChange,
   wishlistId,
   userId,
 }: WishlistItemsTableProps) {
   const { toast } = useToast();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [userWishlist, setUserWishlist] = useState<WishlistItem[]>([]);
-  const [isFetching, setIsFetching] = useState(true);
+  const [pendingWrites, setPendingWrites] = useState(0);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [currentItem, setCurrentItem] =
     useState<WishlistItem>(PLACEHOLDER_ITEM);
+  // Saves run one after another so a slow write can never overwrite a newer
+  // list, and the form is only reset when a dialog opens, never when a save ends.
+  const writeQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const isSubmitting = pendingWrites > 0;
 
-  useEffect(() => {
-    const fetchWishlist = async () => {
-      if (wishlistId) {
-        setIsFetching(true);
-        const data = await fetchItemsFromWishlist(wishlistId, userId);
-        setUserWishlist(data ?? []);
-        setIsFetching(false);
-      }
-    };
+  const sortedItems = useMemo(
+    () => [...items].sort((a, b) => a.price - b.price),
+    [items],
+  );
 
-    void fetchWishlist();
-  }, [userId, wishlistId]);
+  const enqueueWrite = (
+    write: () => Promise<WishlistItem[]>,
+    successMessage: string,
+    errorMessage: string,
+  ) => {
+    setPendingWrites((count) => count + 1);
+    writeQueueRef.current = writeQueueRef.current
+      .then(write)
+      .then((updatedItems) => {
+        onItemsChange(updatedItems);
+        toast({ title: successMessage });
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        toast({ title: errorMessage, variant: "destructive" });
+      })
+      .finally(() => {
+        setPendingWrites((count) => count - 1);
+      });
+  };
 
   const openAddDialog = () => {
     setCurrentItem(PLACEHOLDER_ITEM);
@@ -84,7 +104,6 @@ export default function WishlistItemsTable({
       return;
     }
 
-    setIsSubmitting(true);
     const itemWithCorrectLink = {
       ...currentItem,
       image: handleProtocol(currentItem.image),
@@ -92,26 +111,11 @@ export default function WishlistItemsTable({
       name: currentItem.name.trim(),
     };
 
-    itemAction(userId, wishlistId, itemWithCorrectLink)
-      .then(() => {
-        toast({ title: successMessage });
-      })
-      .catch((error: unknown) => {
-        console.error(error);
-        toast({
-          title: errorMessage,
-          variant: "destructive",
-        });
-      })
-      .finally(() => {
-        void fetchItemsFromWishlist(wishlistId, userId).then((data) => {
-          if (data) {
-            setUserWishlist(data);
-          }
-        });
-        setIsSubmitting(false);
-        setCurrentItem(PLACEHOLDER_ITEM);
-      });
+    enqueueWrite(
+      () => itemAction(userId, wishlistId, itemWithCorrectLink),
+      successMessage,
+      errorMessage,
+    );
   };
 
   const handleDeleteItem = () => {
@@ -119,21 +123,12 @@ export default function WishlistItemsTable({
       console.error("User ID or Wishlist ID is missing");
       return;
     }
-    deleteWishlistItem(userId, wishlistId, currentItem.id)
-      .then(() => {
-        toast({ title: "Item deleted successfully." });
-        return fetchItemsFromWishlist(wishlistId, userId);
-      })
-      .then((data) => {
-        if (data) {
-          setUserWishlist(data);
-        }
-      })
-      .catch((error: unknown) => {
-        console.error(error);
-        toast({ title: "Failed to delete the item.", variant: "destructive" });
-      });
-    setCurrentItem(PLACEHOLDER_ITEM);
+    const itemId = currentItem.id;
+    enqueueWrite(
+      () => deleteWishlistItem(userId, wishlistId, itemId),
+      "Item deleted successfully.",
+      "Failed to delete the item.",
+    );
     setEditDialogOpen(false);
   };
 
@@ -180,11 +175,11 @@ export default function WishlistItemsTable({
           actionLabel="Save change"
         />
       )}
-      {isFetching ? (
+      {isLoading ? (
         <CardsSkeletonLoader />
       ) : (
         <CardsList
-          items={userWishlist}
+          items={sortedItems}
           canEditWishlist={canEditWishlist}
           setCurrentItem={setCurrentItem}
           setEditDialogOpen={setEditDialogOpen}
@@ -208,9 +203,7 @@ const CardsList: FC<{
   setEditDialogOpen: (open: boolean) => void;
 }> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen }) => (
   <>
-    {items
-      .sort((a, b) => a.price - b.price)
-      .map((item) => (
+    {items.map((item) => (
         <div
           key={item.id}
           className={`flex gap-2.5 justify-between border px-2.5 py-2.5 rounded-lg border-solid border-gray-300 max-w-full break-all ${

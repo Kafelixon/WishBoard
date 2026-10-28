@@ -6,7 +6,6 @@ export const useUser = (): User | null => {
   const userState: UserState = useSelector(
     (state: { user: UserState }) => state.user,
   );
-  console.log("userState", userState);
   return userState.user ?? null;
 };
 
