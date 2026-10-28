@@ -40,7 +40,7 @@ export function WishlistCard({ wishlist, onEdit }: WishlistCardProps) {
   };
 
   return (
-    <div className="group relative flex min-h-44 flex-col justify-between gap-6 rounded-2xl border border-border bg-card p-5 shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift">
+    <div className="group relative flex min-h-44 flex-col justify-between gap-6 rounded-xl border border-border bg-card p-5 shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-start justify-between">
         <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon name={wishlist.icon} className="size-6" aria-hidden="true" />
@@ -72,7 +72,7 @@ export function WishlistCard({ wishlist, onEdit }: WishlistCardProps) {
         <h2 className="break-words font-display text-xl font-semibold leading-snug tracking-tight">
           <Link
             to={`/wishlist/${wishlist.id}`}
-            className="rounded-sm after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+            className="rounded-sm after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
           >
             {wishlist.name}
           </Link>
@@ -88,7 +88,7 @@ export function WishlistCard({ wishlist, onEdit }: WishlistCardProps) {
 
 export function WishlistCardSkeleton() {
   return (
-    <div className="flex min-h-44 flex-col justify-between rounded-2xl border border-border bg-card p-5">
+    <div className="flex min-h-44 flex-col justify-between rounded-xl border border-border bg-card p-5">
       <Skeleton className="size-12" />
       <div className="space-y-2">
         <Skeleton className="h-5 w-3/4" />

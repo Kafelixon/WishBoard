@@ -26,7 +26,7 @@ export function PageHeader({
     >
       <div className="min-w-0 space-y-2">
         {eyebrow && (
-          <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+          <p className="text-sm italic text-muted-foreground">
             {eyebrow}
           </p>
         )}
@@ -51,8 +51,8 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon, title, description, action }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-input px-6 py-14 text-center">
-      <div className="flex size-12 items-center justify-center rounded-2xl bg-secondary text-primary [&_svg]:size-6">
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-input px-6 py-14 text-center">
+      <div className="flex size-12 items-center justify-center rounded-xl bg-secondary text-primary [&_svg]:size-6">
         {icon}
       </div>
       <h2 className="font-display text-2xl font-semibold tracking-tight">{title}</h2>

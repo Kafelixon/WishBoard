@@ -237,7 +237,7 @@ const Stat: FC<{ label: string; value: string }> = ({ label, value }) => (
 const CardsSkeletonLoader = () => (
   <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true">
     {["a", "b", "c", "d"].map((key) => (
-      <li key={key} className="overflow-hidden rounded-2xl border border-border bg-card">
+      <li key={key} className="overflow-hidden rounded-xl border border-border bg-card">
         <Skeleton className="aspect-[4/3] rounded-none" />
         <div className="space-y-2 p-4">
           <Skeleton className="h-5 w-3/4" />
@@ -288,7 +288,7 @@ const CardsList: FC<{
       return (
         <li
           key={item.id}
-          className="group relative flex animate-rise flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
+          className="group relative flex animate-rise flex-col overflow-hidden rounded-xl border border-border bg-card shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
         >
           <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-secondary">
             <ItemImage src={item.image} name={item.name} />
