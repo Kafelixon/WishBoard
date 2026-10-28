@@ -1,5 +1,5 @@
 import { FC, useMemo, useRef, useState } from "react";
-import { ExternalLink, Gift, Lock, Pencil } from "lucide-react";
+import { ExternalLink, Gift, Lock, Pencil, Plus } from "lucide-react";
 import { WishlistItem } from "@/lib/types";
 import {
   WishlistItemChanger,
@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ItemDialog } from "@/components/ui/ItemDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EmptyState } from "@/components/ui/page";
 import { useToast } from "@/components/ui/use-toast";
 import { normalizeUrl } from "@/lib/url";
 
@@ -137,12 +138,26 @@ export default function WishlistItemsTable({
     setEditDialogOpen(false);
   };
 
+  const total = items.reduce((sum, item) => sum + item.price, 0);
+  const privateCount = items.filter((item) => item.public === false).length;
+
   return (
-    <div className="flex flex-col gap-2.5">
-      {canEditWishlist && userId && (
-        <Button variant="outline" className="glass-fg" onClick={openAddDialog}>
-          Add Item
-        </Button>
+    <section aria-label="Items" className="flex flex-col gap-8">
+      {!isLoading && items.length > 0 && (
+        <div className="flex flex-wrap items-end justify-between gap-4 border-y border-border py-4">
+          <dl className="flex flex-wrap gap-x-10 gap-y-3">
+            <Stat label={items.length === 1 ? "item" : "items"} value={String(items.length)} />
+            {total > 0 && <Stat label="total" value={formatPrice(total)} />}
+            {canEditWishlist && privateCount > 0 && (
+              <Stat label="private" value={String(privateCount)} />
+            )}
+          </dl>
+          {canEditWishlist && userId && (
+            <Button onClick={openAddDialog}>
+              <Plus aria-hidden="true" /> Add item
+            </Button>
+          )}
+        </div>
       )}
       <ItemDialog
         dialogOpen={addDialogOpen}
@@ -157,9 +172,9 @@ export default function WishlistItemsTable({
           ); }
         }
         isSubmitting={isSubmitting}
-        dialogTitle="Add Item"
-        dialogDescription="Add a new item to your wishlist. Image, price and link are optional."
-        actionLabel="Add listing"
+        dialogTitle="Add an item"
+        dialogDescription="Only the name is required. Add an image, price and link if you have them."
+        actionLabel="Add item"
       />
 
       {editDialogOpen && (
@@ -177,7 +192,7 @@ export default function WishlistItemsTable({
           }
           handleDelete={handleDeleteItem}
           isSubmitting={isSubmitting}
-          dialogTitle="Edit Wishlist Item"
+          dialogTitle="Edit item"
           dialogDescription="Update this item, then save your changes."
           actionLabel="Save changes"
         />
@@ -185,11 +200,22 @@ export default function WishlistItemsTable({
       {isLoading ? (
         <CardsSkeletonLoader />
       ) : sortedItems.length === 0 ? (
-        <p className="text-center text-muted-foreground py-6">
-          {canEditWishlist
-            ? "No items yet. Use Add Item to add your first wish."
-            : "This wishlist has no public items yet."}
-        </p>
+        <EmptyState
+          icon={<Gift aria-hidden="true" />}
+          title={canEditWishlist ? "Add your first wish" : "Nothing here yet"}
+          description={
+            canEditWishlist
+              ? "Add something you'd love to receive, with a photo and a link to where to buy it."
+              : "This wishlist has no public items yet."
+          }
+          action={
+            canEditWishlist && userId ? (
+              <Button onClick={openAddDialog}>
+                <Plus aria-hidden="true" /> Add item
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <CardsList
           items={sortedItems}
@@ -198,30 +224,45 @@ export default function WishlistItemsTable({
           setEditDialogOpen={setEditDialogOpen}
         />
       )}
-    </div>
+    </section>
   );
 }
 
+const formatPrice = (price: number) =>
+  `${price.toLocaleString(undefined, { maximumFractionDigits: 2 })} zł`;
+
+const Stat: FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex items-baseline gap-1.5">
+    <dd className="tabular order-first font-display text-2xl font-semibold">{value}</dd>
+    <dt className="text-muted-foreground">{label}</dt>
+  </div>
+);
+
 const CardsSkeletonLoader = () => (
-  <>
-    <Skeleton className="30vw h-32" />
-    <Skeleton className="30vw h-32" />
-  </>
+  <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true">
+    {["a", "b", "c", "d"].map((key) => (
+      <li key={key} className="overflow-hidden rounded-2xl border border-border bg-card">
+        <Skeleton className="aspect-[4/3] rounded-none" />
+        <div className="space-y-2 p-4">
+          <Skeleton className="h-5 w-3/4" />
+          <Skeleton className="h-4 w-1/3" />
+        </div>
+      </li>
+    ))}
+  </ul>
 );
 
 const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
   const [failed, setFailed] = useState(false);
-  const frame =
-    "size-28 min-h-28 min-w-28 rounded-lg border border-solid border-border";
 
   if (!src || failed) {
     return (
       <div
         role="img"
         aria-label={`No image for ${name}`}
-        className={`${frame} flex items-center justify-center bg-secondary text-muted-foreground`}
+        className="flex size-full items-center justify-center text-muted-foreground/60"
       >
-        <Gift className="size-8" aria-hidden="true" />
+        <Gift className="size-10" aria-hidden="true" />
       </div>
     );
   }
@@ -230,13 +271,11 @@ const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
     <img
       src={src}
       alt={name}
-      width={112}
-      height={112}
       loading="lazy"
       onError={() => {
         setFailed(true);
       }}
-      className={`${frame} object-contain bg-card`}
+      className="size-full object-contain p-3 mix-blend-multiply"
     />
   );
 };
@@ -247,65 +286,62 @@ const CardsList: FC<{
   setCurrentItem: (item: WishlistItem) => void;
   setEditDialogOpen: (open: boolean) => void;
 }> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen }) => (
-  <>
+  <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     {items.map((item) => {
       const isPrivate = item.public === false;
       return (
-        <div
+        <li
           key={item.id}
-          className={`flex gap-2.5 justify-between border px-2.5 py-2.5 rounded-lg border-solid border-border max-w-full break-words ${
-            isPrivate ? "bg-secondary" : "glass-fg"
-          }`}
+          className="group relative flex animate-rise flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
         >
-          <div className="flex gap-2.5 items-center min-w-0">
+          <div className="relative aspect-[16/10] bg-secondary sm:aspect-[4/3]">
             <ItemImage src={item.image} name={item.name} />
-            <div className="flex flex-col min-w-0">
-              <h2 className="font-semibold mt-0 mb-1 mx-0">{item.name}</h2>
-              <p className="text-muted-foreground mt-0 mb-[5px] mx-0">
-                {item.price > 0 ? (
-                  <>
-                    Average Price:{" "}
-                    <span className="whitespace-nowrap">{item.price} zł</span>
-                  </>
-                ) : (
-                  "Price not set"
-                )}
-              </p>
-              {isPrivate && (
-                <p className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
-                  <Lock className="size-3" aria-hidden="true" />
-                  Private, only you can see this
-                </p>
-              )}
-              {item.link && (
-                <a
-                  href={item.link}
-                  className="inline-flex items-center gap-1 no-underline text-primary underline-offset-4 hover:underline"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={`View ${item.name} online (opens in a new tab)`}
-                >
-                  View product
-                  <ExternalLink className="size-3.5" aria-hidden="true" />
-                </a>
-              )}
-            </div>
+            {isPrivate && (
+              <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-card/95 px-2.5 py-1 text-xs font-medium text-destructive shadow-sm">
+                <Lock className="size-3" aria-hidden="true" />
+                Private
+                <span className="sr-only">, only you can see this</span>
+              </span>
+            )}
+            {canEditWishlist && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute right-3 top-3 size-9 bg-card/95"
+                aria-label={`Edit ${item.name}`}
+                onClick={() => {
+                  setCurrentItem(item);
+                  setEditDialogOpen(true);
+                }}
+              >
+                <Pencil aria-hidden="true" />
+              </Button>
+            )}
           </div>
-          {canEditWishlist && (
-            <Button
-              variant="outline"
-              className="p-2 size-9 shrink-0"
-              aria-label={`Edit ${item.name}`}
-              onClick={() => {
-                setCurrentItem(item);
-                setEditDialogOpen(true);
-              }}
-            >
-              <Pencil aria-hidden="true" />
-            </Button>
-          )}
-        </div>
+          <div className="flex flex-1 flex-col gap-3 p-4">
+            <div className="min-w-0 space-y-1">
+              <h2 className="break-words font-display text-lg font-semibold leading-snug tracking-tight">
+                {item.name}
+              </h2>
+              <p className="tabular text-muted-foreground">
+                {item.price > 0 ? formatPrice(item.price) : "Price not set"}
+              </p>
+            </div>
+            {item.link && (
+              <a
+                href={item.link}
+                className="mt-auto inline-flex items-center gap-1.5 self-start rounded-sm text-[0.95rem] font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`View ${item.name} online (opens in a new tab)`}
+              >
+                View product
+                <ExternalLink className="size-3.5" aria-hidden="true" />
+              </a>
+            )}
+          </div>
+        </li>
       );
     })}
-  </>
+  </ul>
 );

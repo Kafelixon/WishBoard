@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from "react";
+import { Heart } from "lucide-react";
 import { fetchFollowedWishlists } from "@/lib/wishlistHandlers";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUserId } from "@/lib/common";
+import { usePageTitle } from "@/lib/usePageTitle";
 import { useToast } from "@/components/ui/use-toast";
 import { Wishlist } from "@/lib/types";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { EmptyState, PageHeader } from "@/components/ui/page";
 import {
   WishlistCard,
   WishlistCardSkeleton,
 } from "@/components/ui/wishlist-card";
 
 export const FollowedWishlists: React.FC = () => {
+  usePageTitle("Following");
   const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const userId = useUserId();
@@ -31,43 +33,38 @@ export const FollowedWishlists: React.FC = () => {
       .finally(() => {
         setIsLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable; reload only when the user changes
-  }, [userId]);
-
-  if (!userId) {
-    return <p>Please sign in to view your followed wishlists.</p>;
-  }
-
-  const renderWishlists = () => {
-    if (wishlists && wishlists.length > 0) {
-      return wishlists.map((wishlist) => (
-        <WishlistCard
-          key={wishlist.id}
-          wishlist={wishlist}
-          editMode={false}
-          handleEdit={() => { console.log("Not Implemented"); }}
-        /> // TODO: Implement handleEdit
-      ));
-    }
-    return <p>You are not following any wishlists yet.</p>;
-  };
+  }, [userId, toast]);
 
   return (
-    <Card className="glass">
-      <CardHeader className="h-22">
-        <CardTitle className="h-10 flex justify-start items-center">
-          Your Followed Wishlists
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-72 w-full rounded-md border place-items-center glass-fg">
-          {isLoading
-            ? ["followed-skeleton-1", "followed-skeleton-2", "followed-skeleton-3"].map((key) => (
-                <WishlistCardSkeleton key={key} />
-              ))
-            : renderWishlists()}
-        </ScrollArea>
-      </CardContent>
-    </Card>
+    <>
+      <PageHeader
+        eyebrow="From friends and family"
+        title="Following"
+        description="Wishlists you follow, newest changes first."
+      />
+      {isLoading ? (
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+          {["a", "b", "c"].map((key) => (
+            <li key={key}>
+              <WishlistCardSkeleton />
+            </li>
+          ))}
+        </ul>
+      ) : wishlists && wishlists.length > 0 ? (
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {wishlists.map((wishlist) => (
+            <li key={wishlist.id} className="animate-rise">
+              <WishlistCard wishlist={wishlist} />
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <EmptyState
+          icon={<Heart aria-hidden="true" />}
+          title="Nothing followed yet"
+          description="Open a wishlist a friend shared with you and choose Follow. It will show up here."
+        />
+      )}
+    </>
   );
 };

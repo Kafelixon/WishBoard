@@ -14,6 +14,7 @@ import { logout } from "@/redux/slices/userSlice";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PageHeader } from "@/components/ui/page";
 import { useToast } from "./use-toast";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { changeUsername } from "@/lib/authHandlers";
@@ -26,32 +27,41 @@ import { useUserId } from "@/lib/common";
 export const SettingsPage = () => {
   usePageTitle("Settings");
   return (
-    <Card className="w-fit glass divide-y m-auto p-2 md:p-2">
-      <h1 className="p-3 scroll-m-20 font-display text-3xl font-semibold tracking-tight lg:text-4xl">
-        Settings
-      </h1>
-      <ChangeUsername />
-      <ResetPassword />
-      <ChangeEmail />
-      <RemoveAccount />
-    </Card>
+    <div className="mx-auto max-w-2xl">
+      <PageHeader
+        eyebrow="Account"
+        title="Settings"
+        description="Update how you appear to others and keep your account secure."
+      />
+      <Card className="divide-y divide-border">
+        <ChangeUsername />
+        <ResetPassword />
+        <ChangeEmail />
+        <RemoveAccount />
+      </Card>
+    </div>
   );
 };
 
 interface CommonSettingsFormProps {
   label: string;
+  description: string;
   children: React.ReactNode;
 }
 
 const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
   label,
+  description,
   children,
 }) => {
   return (
-    <div className="p-3 flex flex-col gap-1.5">
-      <p>{label}</p>
-      {children}
-    </div>
+    <section className="grid gap-4 p-6 sm:grid-cols-[1fr_1.2fr] sm:gap-8">
+      <div className="space-y-1">
+        <h2 className="font-display text-lg font-semibold tracking-tight">{label}</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      <div className="flex flex-col gap-3">{children}</div>
+    </section>
   );
 };
 
@@ -78,13 +88,9 @@ const ResetPassword: React.FC = () => {
   };
 
   return (
-    <CommonSettingsForm label="Reset Password">
-      <Button
-        className="w-full"
-        color="primary"
-        onClick={() => void resetPassword()}
-      >
-        Send Password Reset Email
+    <CommonSettingsForm label="Password" description="We'll email you a link to choose a new one.">
+      <Button variant="outline" className="self-start" onClick={() => void resetPassword()}>
+        Send reset email
       </Button>
     </CommonSettingsForm>
   );
@@ -119,21 +125,20 @@ const ChangeUsername: React.FC = () => {
   };
 
   return (
-    <CommonSettingsForm label="Change Username">
+    <CommonSettingsForm label="Username" description="Shown on your wishlists. You'll be asked to sign in again after changing it.">
       <Input
         type="text"
-        placeholder="New Username"
+        placeholder="New username" aria-label="New username"
         value={username}
         onChange={(e) => { setUsername(e.target.value); }}
       />
       <Button
-        className="w-full"
+        className="self-start"
         type="submit"
         disabled={!username}
-        color="primary"
         onClick={() => { void submitNewUsername(); }}
       >
-        Change Username
+        Update username
       </Button>
     </CommonSettingsForm>
   );
@@ -179,23 +184,23 @@ const ChangeEmail: React.FC = () => {
   };
 
   return (
-    <CommonSettingsForm label="Change Email">
+    <CommonSettingsForm label="Email" description="We'll send a verification link to the new address before switching.">
       <Input
         type="email"
-        placeholder="New Email"
+        placeholder="New email"
+        aria-label="New email"
+        aria-invalid={isValid ? undefined : true}
         value={email}
-        color={isValid ? "primary" : "danger"}
         onChange={handleInputChange}
         onBlur={validateEmail}
       />
       <Button
-        className="w-full"
+        className="self-start"
         type="submit"
         disabled={!email || !isValid}
-        color="primary"
         onClick={() => void changeEmail()}
       >
-        Change Email
+        Update email
       </Button>
     </CommonSettingsForm>
   );
@@ -276,13 +281,13 @@ const RemoveAccount: React.FC = () => {
   };
 
   return (
-    <CommonSettingsForm label="Delete Account">
+    <CommonSettingsForm label="Delete account" description="Permanently removes your account, wishlists and items. This cannot be undone.">
       <Button
         variant="outline"
-        color="danger"
+        className="self-start border-destructive/40 text-destructive hover:bg-destructive/10"
         onClick={() => void removeAccount()}
       >
-        Delete My Account
+        Delete my account
       </Button>
     </CommonSettingsForm>
   );

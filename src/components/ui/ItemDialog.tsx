@@ -31,7 +31,7 @@ interface ItemDialogProps {
 type ItemSchema = Omit<WishlistItem, "id">;
 
 const schema: yup.ObjectSchema<ItemSchema> = yup.object({
-  name: yup.string().required("Product Name is required"),
+  name: yup.string().required("Give the item a name"),
   image: yup
     .string()
     .defined()
@@ -83,7 +83,7 @@ export const ItemDialog: FC<ItemDialogProps> = ({
         </DialogHeader>
         <FormProvider {...methods}>
           <form
-            className="grid gap-4 pt-4"
+            className="grid gap-5 pt-2"
             onSubmit={methods.handleSubmit(onSubmit)}
           >
             <ItemFormFields
@@ -91,20 +91,25 @@ export const ItemDialog: FC<ItemDialogProps> = ({
               currentItem={currentItem}
             />
             <div
-              className={`flex flex-row ${!handleDelete ? "justify-end" : "justify-between"} mt-4`}
+              className={`flex flex-row items-center ${!handleDelete ? "justify-end" : "justify-between"} pt-2`}
             >
               {handleDelete && (
                 <Button
                   type="button"
-                  variant="destructive"
-                  onClick={handleDelete}
+                  variant="ghost"
+                  className="text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    if (window.confirm("Delete this item? This cannot be undone.")) {
+                      handleDelete();
+                    }
+                  }}
                 >
-                  Delete Item
+                  Delete item
                 </Button>
               )}
-              <Button type="submit" className="max-w-fit place-self-end">
+              <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
-                  <Loader2 className="mx-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="animate-spin" aria-label="Saving" />
                 ) : (
                   actionLabel
                 )}

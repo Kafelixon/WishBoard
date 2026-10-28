@@ -1,72 +1,39 @@
-import { Button } from "@/components/ui/button";
-import { logout } from "@/redux/slices/userSlice";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { useNavigate, useLocation } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react";
-import { useUser } from "@/lib/common";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
+import { logout } from "@/redux/slices/userSlice";
+import { useUser } from "@/lib/common";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
-import { User } from "@/lib/types";
 
-interface NavButtonsProps {
-  isLoginPage: boolean;
-  user: User | null;
-  userAvatar: string | undefined;
-  userInitials: string[] | string;
-  navigateToLogin: () => void;
-  navigateToWishlist: () => void;
-  navigateToSettingsPage: () => void;
-  onLogout: () => void;
-}
+const navLinkClass =
+  "rounded-full px-2.5 py-1.5 text-sm text-muted-foreground sm:px-3.5 sm:text-[0.95rem] transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-secondary aria-[current=page]:text-foreground";
 
-function NavButtons({
-  isLoginPage,
-  user,
-  userAvatar,
-  userInitials,
-  navigateToLogin,
-  navigateToWishlist,
-  navigateToSettingsPage,
-  onLogout,
-}: NavButtonsProps) {
-  if (isLoginPage) return null;
-  if (!user) return <Button onClick={navigateToLogin}>Sign up</Button>;
-
+function LogoMark() {
   return (
-    <>
-      <Button
-        variant="ghost"
-        className="text-muted-foreground px-2 md:px-3 lg:px-4"
-        onClick={navigateToWishlist}
-      >
-        Wishlists
-      </Button>
-      <DropdownMenu>
-        <DropdownMenuTrigger aria-label="Account menu">
-          <Avatar>
-            <AvatarImage src={userAvatar} alt="" />
-            <AvatarFallback>{userInitials}</AvatarFallback>
-          </Avatar>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent>
-          <DropdownMenuItem onClick={navigateToSettingsPage} className="gap-1">
-            <Settings /> Settings
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onLogout} className="gap-1">
-            <LogOut /> Log out
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
+    <svg
+      viewBox="0 0 24 24"
+      className="hidden size-6 text-primary sm:block"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 19c0-8 5-14 15-14 0 9-5 14-13 14" />
+      <path d="M5 19c3-5 6-8 10-10" />
+    </svg>
   );
 }
 
@@ -75,31 +42,14 @@ export function TopMenu() {
   const location = useLocation();
   const dispatch = useDispatch();
   const user = useUser();
-  const userAvatar = user?.photoURL ?? undefined;
 
-  const getUserInitials = () => {
-    if (!user?.displayName) return "?";
-    return user.displayName
-      .split(" ")
+  const initials =
+    user?.displayName
+      ?.split(" ")
       .filter(Boolean)
-      .map((n) => n[0]);
-  };
-
-  const navigateToLogin = () => {
-    void navigate("/login");
-  };
-
-  const navigateToHome = () => {
-    void navigate("/");
-  };
-
-  const navigateToWishlist = () => {
-    void navigate("/wishlists");
-  };
-
-  const navigateToSettingsPage = () => {
-    void navigate("/settings");
-  };
+      .map((n) => n[0])
+      .slice(0, 2)
+      .join("") ?? "?";
 
   const handleLogout = () => {
     dispatch(logout());
@@ -110,28 +60,61 @@ export function TopMenu() {
   };
 
   return (
-    <div className="top-0 left-0 w-full flex items-center justify-between z-10">
-      <div>
-        <button
-          type="button"
-          className="font-display text-3xl font-semibold tracking-tight lg:text-4xl bg-transparent border-0 p-0 cursor-pointer"
-          onClick={navigateToHome}
+    <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-4 sm:gap-3 sm:px-5">
+        <Link
+          to="/"
+          className="flex items-center gap-2 rounded-md font-display text-xl font-semibold tracking-tight sm:text-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
+          <LogoMark />
           WishBoard
-        </button>
+        </Link>
+        <nav aria-label="Main" className="flex flex-1 items-center gap-0.5 sm:ml-2 sm:gap-1">
+          {user && (
+            <>
+              <NavLink to="/wishlists" className={navLinkClass}>
+                Wishlists
+              </NavLink>
+              <NavLink to="/following" className={navLinkClass}>
+                Following
+              </NavLink>
+            </>
+          )}
+        </nav>
+        {user ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label="Account menu"
+              className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <Avatar>
+                <AvatarImage src={user.photoURL ?? undefined} alt="" />
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>{user.displayName ?? user.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => {
+                  void navigate("/settings");
+                }}
+              >
+                <Settings aria-hidden="true" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleLogout}>
+                <LogOut aria-hidden="true" /> Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : (
+          location.pathname !== "/login" && (
+            <Button asChild size="sm">
+              <Link to="/login">Get started</Link>
+            </Button>
+          )
+        )}
       </div>
-      <div className="flex items-end justify-between gap-1 lg:gap-2">
-        <NavButtons
-          isLoginPage={location.pathname === "/login"}
-          user={user}
-          userAvatar={userAvatar}
-          userInitials={getUserInitials()}
-          navigateToLogin={navigateToLogin}
-          navigateToWishlist={navigateToWishlist}
-          navigateToSettingsPage={navigateToSettingsPage}
-          onLogout={handleLogout}
-        />
-      </div>
-    </div>
+    </header>
   );
 }

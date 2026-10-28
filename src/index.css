@@ -32,7 +32,9 @@
   --font-serif: "Newsreader", "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-display: "Fraunces", "Newsreader", Georgia, serif;
 
-  --shadow-paper: 0 1px 0 hsl(38 30% 100% / 0.7) inset, 0 1px 2px hsl(28 30% 20% / 0.08), 0 8px 24px -12px hsl(28 30% 20% / 0.18);
+  --shadow-paper: 0 1px 0 hsl(38 30% 100% / 0.7) inset, 0 1px 2px hsl(28 30% 20% / 0.06), 0 10px 30px -16px hsl(28 30% 20% / 0.22);
+  --shadow-lift: 0 1px 0 hsl(38 30% 100% / 0.7) inset, 0 2px 4px hsl(28 30% 20% / 0.06), 0 18px 40px -18px hsl(28 30% 20% / 0.32);
+  --shadow-dialog: 0 2px 6px hsl(28 30% 20% / 0.08), 0 24px 60px -20px hsl(28 30% 20% / 0.45);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -54,6 +56,17 @@
     to { opacity: 1; transform: translateY(0); }
   }
   --animate-rise: rise 0.35s ease-out both;
+
+  @keyframes pop {
+    from { opacity: 0; transform: translateY(8px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  --animate-pop: pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-fade: fade 0.2s ease-out both;
 }
 
 @layer base {
@@ -86,7 +99,7 @@
     --input: 38 25% 78%;
     --ring: 111 23% 30%;
 
-    --radius: 0.625rem;
+    --radius: 0.875rem;
   }
 }
 
@@ -100,7 +113,7 @@
     -webkit-font-smoothing: antialiased;
   }
   body {
-    @apply bg-background text-foreground grid place-items-center min-h-screen;
+    @apply bg-background text-foreground min-h-screen;
     font-feature-settings: "kern", "liga", "onum";
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
@@ -118,18 +131,17 @@
   }
 }
 
-.glass {
-  @apply bg-card border-border shadow-paper;
-}
-
-.glass-fg {
-  @apply bg-card shadow-paper;
-}
-
 .tabular {
   font-variant-numeric: lining-nums tabular-nums;
 }
 
 #root {
-  @apply flex flex-col gap-12 p-3 flex-grow h-full w-screen;
+  @apply flex min-h-screen flex-col;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

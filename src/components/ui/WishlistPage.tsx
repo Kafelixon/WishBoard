@@ -9,15 +9,16 @@ import {
   type WishlistView,
 } from "@/lib/wishlistHandlers";
 import { NotFound } from "@/components/ui/NotFound";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import WishlistItemsTable from "@/components/ui/WishlistTable";
 import { useUserId } from "@/lib/common";
 import { WishlistItem } from "@/lib/types";
 import { Button } from "./button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "./skeleton";
-import { Share2 } from "lucide-react";
+import { ArrowLeft, Heart, Link2 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { usePageTitle } from "@/lib/usePageTitle";
+import { PageHeader } from "@/components/ui/page";
 
 interface FollowButtonProps {
   isWishlistOwner: boolean;
@@ -76,8 +77,12 @@ function FollowButton({
   }
 
   return (
-    <Button onClick={isFollowing ? handleUnfollow : handleFollow}>
-      {isFollowing ? "Unfollow" : "Follow"}
+    <Button
+      variant={isFollowing ? "outline" : "default"}
+      onClick={isFollowing ? handleUnfollow : handleFollow}
+    >
+      <Heart className={isFollowing ? "fill-current" : undefined} aria-hidden="true" />
+      {isFollowing ? "Following" : "Follow"}
     </Button>
   );
 }
@@ -106,9 +111,9 @@ function ShareButton({
   };
 
   return (
-    <Button variant="outline" onClick={handleShare} className="gap-1.5">
-      <Share2 className="size-4" aria-hidden="true" />
-      Share
+    <Button variant="outline" onClick={handleShare}>
+      <Link2 aria-hidden="true" />
+      Copy link
     </Button>
   );
 }
@@ -193,53 +198,48 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
 
 
   return (
-    <Card className="glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
-      <CardHeader className="h-22 pb-0">
-        <CardTitle className="flex justify-between items-center">
-          <div className="flex flex-col gap-1 align-top">
-            {!wishlistInfo ? (
-              <>
-                <Skeleton className="w-40 h-4 mb-2" />
-                <Skeleton className="w-10 h-4" />
-              </>
-            ) : (
-              <>
-                <h1 className="font-display text-2xl font-semibold">
-                  {wishlistInfo.name}
-                </h1>
-                {wishlistInfo.author && (
-                  <p className="text-muted-foreground text-sm text-left">
-                    {wishlistInfo.author}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {wishlistInfo && (
+    <>
+      {isWishlistOwner && (
+        <Link
+          to="/wishlists"
+          className="-mt-4 mb-6 inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Your wishlists
+        </Link>
+      )}
+      {!wishlistInfo ? (
+        <div className="space-y-3 pb-8" aria-busy="true">
+          <Skeleton className="h-3.5 w-32" />
+          <Skeleton className="h-12 w-72 max-w-full" />
+        </div>
+      ) : (
+        <PageHeader
+          eyebrow={wishlistInfo.author ? `Wishlist by ${wishlistInfo.author}` : "Wishlist"}
+          title={wishlistInfo.name}
+          actions={
+            <>
               <ShareButton wishlistId={wishlistId} toast={toast} />
-            )}
-            <FollowButton
-              isWishlistOwner={isWishlistOwner || state.status !== "ready"}
-              isFollowing={isFollowing}
-              userId={userId}
-              wishlistId={wishlistId}
-              setIsFollowing={setIsFollowing}
-              toast={toast}
-            />
-          </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <WishlistItemsTable
-          canEditWishlist={isWishlistOwner}
-          isLoading={state.status === "loading"}
-          items={items}
-          onItemsChange={setItems}
-          userId={userId}
-          wishlistId={wishlistId}
+              <FollowButton
+                isWishlistOwner={isWishlistOwner || state.status !== "ready"}
+                isFollowing={isFollowing}
+                userId={userId}
+                wishlistId={wishlistId}
+                setIsFollowing={setIsFollowing}
+                toast={toast}
+              />
+            </>
+          }
         />
-      </CardContent>
-    </Card>
+      )}
+      <WishlistItemsTable
+        canEditWishlist={isWishlistOwner}
+        isLoading={state.status === "loading"}
+        items={items}
+        onItemsChange={setItems}
+        userId={userId}
+        wishlistId={wishlistId}
+      />
+    </>
   );
 };
