@@ -6,99 +6,111 @@
   --color-ring: hsl(var(--ring));
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
-
   --color-primary: hsl(var(--primary));
   --color-primary-foreground: hsl(var(--primary-foreground));
-
   --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
-
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
-
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
-
   --color-accent: hsl(var(--accent));
   --color-accent-foreground: hsl(var(--accent-foreground));
-
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
-
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
-
-  --font-sans: "Newsreader", "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-serif: "Newsreader", "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-display: "Fraunces", "Newsreader", Georgia, serif;
-
-  --shadow-paper: 0 1px 0 hsl(38 30% 100% / 0.7) inset, 0 1px 2px hsl(28 30% 20% / 0.06), 0 10px 30px -16px hsl(28 30% 20% / 0.22);
-  --shadow-lift: 0 1px 0 hsl(38 30% 100% / 0.7) inset, 0 2px 4px hsl(28 30% 20% / 0.06), 0 18px 40px -18px hsl(28 30% 20% / 0.32);
-  --shadow-dialog: 0 2px 6px hsl(28 30% 20% / 0.08), 0 24px 60px -20px hsl(28 30% 20% / 0.45);
-
+  --font-sans: "Newsreader", "Source Serif 4", georgia, "Times New Roman", serif;
+  --font-serif: "Newsreader", "Source Serif 4", georgia, "Times New Roman", serif;
+  --font-display: "Fraunces", "Newsreader", georgia, serif;
+  --shadow-paper: 0 1px 0 hsl(38deg 30% 100% / 70%) inset, 0 1px 2px hsl(28deg 30% 20% / 6%), 0 10px 30px -16px hsl(28deg 30% 20% / 22%);
+  --shadow-lift: 0 1px 0 hsl(38deg 30% 100% / 70%) inset, 0 2px 4px hsl(28deg 30% 20% / 6%), 0 18px 40px -18px hsl(28deg 30% 20% / 32%);
+  --shadow-dialog: 0 2px 6px hsl(28deg 30% 20% / 8%), 0 24px 60px -20px hsl(28deg 30% 20% / 45%);
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
-
-  @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
-  }
-  @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
-  }
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
-
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(6px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
   --animate-rise: rise 0.35s ease-out both;
-
-  @keyframes pop {
-    from { opacity: 0; transform: translateY(8px) scale(0.98); }
-    to { opacity: 1; transform: none; }
-  }
-  @keyframes fade {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
   --animate-pop: pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
   --animate-fade: fade 0.2s ease-out both;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+
+    to {
+      height: 0;
+    }
+  }
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
 }
 
 @layer base {
   :root {
     --background: 41 52% 94%;
     --foreground: 28 29% 14%;
-
     --card: 43 60% 96%;
     --card-foreground: 28 29% 14%;
-
     --popover: 43 60% 97%;
     --popover-foreground: 28 29% 14%;
-
     --primary: 111 23% 30%;
     --primary-foreground: 43 60% 96%;
-
     --secondary: 41 36% 88%;
     --secondary-foreground: 28 29% 14%;
-
     --muted: 41 36% 88%;
     --muted-foreground: 32 16% 38%;
-
     --accent: 41 36% 88%;
     --accent-foreground: 28 29% 14%;
-
     --destructive: 14 50% 42%;
     --destructive-foreground: 43 60% 96%;
-
     --border: 38 25% 80%;
     --input: 38 25% 78%;
     --ring: 111 23% 30%;
-
     --radius: 0.875rem;
   }
 }
@@ -107,27 +119,32 @@
   * {
     @apply border-border;
   }
+
   html {
     font-family: var(--font-serif);
     font-size: 17px;
     -webkit-font-smoothing: antialiased;
   }
+
   body {
     @apply bg-background text-foreground min-h-screen;
+
     font-feature-settings: "kern", "liga", "onum";
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-      radial-gradient(ellipse at 0% 0%, hsl(111 25% 82% / 0.45), transparent 55%),
-      radial-gradient(ellipse at 100% 100%, hsl(30 45% 80% / 0.5), transparent 55%);
+      radial-gradient(ellipse at 0% 0%, hsl(111deg 25% 82% / 45%), transparent 55%),
+      radial-gradient(ellipse at 100% 100%, hsl(30deg 45% 80% / 50%), transparent 55%);
     background-attachment: fixed;
   }
+
   h1, h2, h3, h4 {
     font-family: var(--font-display);
     font-optical-sizing: auto;
     letter-spacing: -0.01em;
   }
+
   ::selection {
-    background: hsl(111 25% 70% / 0.55);
+    background: hsl(111deg 25% 70% / 55%);
   }
 }
 
