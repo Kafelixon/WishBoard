@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
-  AuthCredential,
   EmailAuthProvider,
+  type User,
   deleteUser,
   reauthenticateWithCredential,
   sendPasswordResetEmail,
@@ -159,12 +159,19 @@ const ChangeEmail: React.FC = () => {
       toast({ title: "Please enter a valid email", variant: "destructive" });
       return;
     }
-    const credential = promptForCredentials();
 
-    if (auth.currentUser) {
-      await reauthenticateWithCredential(auth.currentUser, credential);
-      await verifyBeforeUpdateEmail(auth.currentUser, email);
+    try {
+      const user = await reauthenticateWithPassword(toast);
+      if (!user) return;
+
+      await verifyBeforeUpdateEmail(user, email);
       toast({ title: "Verification email sent successfully to " + email });
+    } catch (error) {
+      console.error("Error changing email:", error);
+      toast({
+        title: authErrorTitle(error, "Failed to change email"),
+        variant: "destructive",
+      });
     }
   };
 
@@ -191,6 +198,50 @@ const ChangeEmail: React.FC = () => {
   );
 };
 
+type Toast = ReturnType<typeof useToast>["toast"];
+
+const authErrorTitle = (error: unknown, fallback: string): string => {
+  const code = (error as { code?: unknown } | null)?.code;
+  return code === "auth/wrong-password" || code === "auth/invalid-credential"
+    ? "Incorrect password"
+    : fallback;
+};
+
+/**
+ * Asks for the current password and re-authenticates, which Firebase requires
+ * for sensitive changes. Resolves with the user, or null when the flow should
+ * stop quietly (session not ready, Google-only account, prompt cancelled).
+ * Rejects when Firebase rejects the password.
+ */
+async function reauthenticateWithPassword(toast: Toast): Promise<User | null> {
+  const user = auth.currentUser;
+  if (!user?.email) {
+    toast({
+      title: "Your account is still loading",
+      description: "Please try again in a moment.",
+      variant: "destructive",
+    });
+    return null;
+  }
+  if (!user.providerData.some((p) => p.providerId === "password")) {
+    toast({
+      title: "Not available for this account yet",
+      description: "Accounts that sign in with Google can't do this from Settings.",
+      variant: "destructive",
+    });
+    return null;
+  }
+
+  const password = window.prompt("Please enter your password to continue.");
+  if (!password) return null;
+
+  await reauthenticateWithCredential(
+    user,
+    EmailAuthProvider.credential(user.email, password),
+  );
+  return user;
+}
+
 const RemoveAccount: React.FC = () => {
   const { toast } = useToast();
   const dispatch = useDispatch();
@@ -202,19 +253,21 @@ const RemoveAccount: React.FC = () => {
     );
     if (!confirmDelete) return;
 
-    const credential = promptForCredentials();
-    if (!auth.currentUser) return;
-
     try {
-      await reauthenticateWithCredential(auth.currentUser, credential);
-      await deleteUser(auth.currentUser);
+      const user = await reauthenticateWithPassword(toast);
+      if (!user) return;
+
+      await deleteUser(user);
       toast({ title: "Account deleted" });
 
       dispatch(logout());
       void navigate("/");
     } catch (error) {
       console.error("Error deleting user:", error);
-      toast({ title: "Failed to delete account", variant: "destructive" });
+      toast({
+        title: authErrorTitle(error, "Failed to delete account"),
+        variant: "destructive",
+      });
     }
   };
 
@@ -230,13 +283,5 @@ const RemoveAccount: React.FC = () => {
     </CommonSettingsForm>
   );
 };
-
-function promptForCredentials(): AuthCredential {
-  const password = prompt("Please enter your password to continue.");
-  if (!auth.currentUser?.email || !password) {
-    throw new Error("Invalid email or password");
-  }
-  return EmailAuthProvider.credential(auth.currentUser.email, password);
-}
 
 export default SettingsPage;

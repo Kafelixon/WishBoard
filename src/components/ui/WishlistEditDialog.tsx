@@ -91,7 +91,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
                   setDialogOpen(false);
                 }}
               >
-                Delete Item
+                Delete wishlist
               </Button>
             )}
             <Button type="submit" className="max-w-fit place-self-end">

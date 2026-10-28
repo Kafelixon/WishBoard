@@ -19,30 +19,23 @@ export const WishlistCard: React.FC<WishlistProps> = ({
 }) => {
   const navigate = useNavigate();
 
-  return (
-    <button
-      type="button"
-      className={`space-y-1 w-full text-left bg-transparent border-0 p-0 ${!editMode ? "cursor-pointer" : ""}`}
-      onClick={() => {
-        if (!editMode) {
-          void navigate(`/wishlist/${wishlist.id}`);
-        }
-      }}
-    >
-      <div
-        className={`flex items-center justify-between p-4 rounded-lg ${!editMode ? "hover:bg-gray-100" : "hover:bg-gray-50"}`}
-      >
-        <div className="flex items-center space-x-3">
-          <Icon name={wishlist.icon} className="w-6 h-6" />
-          <div>
-            <p className="font-semibold break-words max-w-96">
-              {wishlist.name}
-            </p>
-            <p className="text-gray-500 text-sm text-left">{wishlist.author}</p>
-          </div>
-        </div>
+  const summary = (
+    <div className="flex items-center space-x-3">
+      <Icon name={wishlist.icon} className="w-6 h-6" />
+      <div>
+        <p className="font-semibold break-words max-w-96">{wishlist.name}</p>
+        <p className="text-gray-500 text-sm text-left">{wishlist.author}</p>
+      </div>
+    </div>
+  );
 
-        {editMode ? (
+  // In edit mode the row holds its own Edit button, so the row itself must not
+  // be a button (buttons cannot be nested).
+  if (editMode) {
+    return (
+      <div className="space-y-1 w-full">
+        <div className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
+          {summary}
           <Button
             variant="outline"
             className="p-2 size-9"
@@ -53,13 +46,26 @@ export const WishlistCard: React.FC<WishlistProps> = ({
           >
             <Pencil aria-hidden="true" />
           </Button>
-        ) : (
-          <div>
-            <p className="text-gray-400 text-sm">
-              {new Date(wishlist.updateTimestamp).toLocaleDateString()}
-            </p>
-          </div>
-        )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="space-y-1 w-full text-left bg-transparent border-0 p-0 cursor-pointer"
+      onClick={() => {
+        void navigate(`/wishlist/${wishlist.id}`);
+      }}
+    >
+      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-100">
+        {summary}
+        <div>
+          <p className="text-gray-400 text-sm">
+            {new Date(wishlist.updateTimestamp).toLocaleDateString()}
+          </p>
+        </div>
       </div>
     </button>
   );

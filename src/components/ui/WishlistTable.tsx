@@ -184,6 +184,12 @@ export default function WishlistItemsTable({
       )}
       {isLoading ? (
         <CardsSkeletonLoader />
+      ) : sortedItems.length === 0 ? (
+        <p className="text-center text-gray-500 py-6">
+          {canEditWishlist
+            ? "No items yet. Use Add Item to add your first wish."
+            : "This wishlist has no public items yet."}
+        </p>
       ) : (
         <CardsList
           items={sortedItems}

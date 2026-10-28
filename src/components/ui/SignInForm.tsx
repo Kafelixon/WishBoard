@@ -179,7 +179,15 @@ function renderToggleRegisterLogin(
   );
 }
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Plain string checks instead of a regex, so long odd input can't cause backtracking.
+const looksLikeEmail = (value: string): boolean => {
+  const at = value.indexOf("@");
+  if (at < 1 || at !== value.lastIndexOf("@")) return false;
+  if (/\s/.test(value)) return false;
+  const domain = value.slice(at + 1);
+  const dot = domain.lastIndexOf(".");
+  return dot > 0 && dot < domain.length - 1;
+};
 
 function validateCredentials(
   email: string,
@@ -189,7 +197,7 @@ function validateCredentials(
 ): string | null {
   if (!registered && !username.trim()) return "Please choose a username.";
   if (!email.trim()) return "Please enter your email address.";
-  if (!EMAIL_PATTERN.test(email.trim())) return "That email address doesn't look right.";
+  if (!looksLikeEmail(email.trim())) return "That email address doesn't look right.";
   if (!password) return "Please enter your password.";
   if (!registered && password.length < 6) {
     return "Password must be at least 6 characters.";

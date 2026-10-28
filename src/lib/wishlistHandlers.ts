@@ -291,7 +291,7 @@ const fetchWishlistsByIds = async (
   const results = await Promise.all(
     wishlistIds.map((wishlistId) =>
       fetchWishlistById(wishlistId).catch((error: unknown) => {
-        console.error(`Failed to load followed wishlist ${wishlistId}`, error);
+        console.error("Failed to load followed wishlist", wishlistId, error);
         return null;
       }),
     ),

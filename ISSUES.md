@@ -2,7 +2,7 @@
 
 Found by running the app locally (Vite dev server against the configured Firebase project, signed in as the test account) and reading the code. `tsc --noEmit` and `eslint . --max-warnings 0` pass cleanly.
 
-Not tested: Google sign-in, registration, password reset, email change, account deletion, follow/unfollow, creating or editing a wishlist, and a production build run in a browser. Account deletion and registration would have changed real data. Firestore security rules aren't in the repo, so their effect on any of these items is unknown.
+Not tested: Google sign-in, email change, username change, password reset email, and a production build run in a browser. Firestore security rules aren't in the repo, so their effect on any of these items is unknown.
 
 ## Status: step 1 (stabilize on Firestore) done
 
@@ -18,7 +18,7 @@ Fixed in code and checked in the browser against the test account (three items a
 - The persisted user is cleared when Firebase reports no session (`AuthSync` in `App.tsx`).
 - Firestore uses `experimentalAutoDetectLongPolling`; the `console.log` in `useUser` is gone.
 
-Still open from step 1: check the Firestore region in the Firebase console (not checked), Firestore security rules are not in the repo, and there are no automated tests. The items below describe the state before these fixes unless listed above.
+Still open from step 1: Firestore security rules are not in the repo, and there are no automated tests. The Firestore database is in the `eur3` multi-region (Europe), so distance is not the cause of the slowness. The items below describe the state before these fixes unless listed above.
 
 ## Status: step 2 (quick usability fixes) done
 
@@ -35,11 +35,42 @@ Correction to the list below: the dialog close button already had a "Close" labe
 
 Not done in step 2: confirmation before deleting items or wishlists (needs a proper dialog, better done in the redesign), currency choice, item rows opening the link from the image/name, and the remaining items in this file.
 
+## Test results: registration, wishlists, follow, account deletion
+
+Run locally against the live Firebase project with a throwaway `@example.com` account (random password, deleted at the end) and the follow target `test@test.com`.
+
+Worked:
+
+- Sign-up validation (short password rejected inline), registration, automatic sign-in.
+- Empty wishlist list message, create wishlist (empty name rejected), rename, delete.
+- Follow and unfollow `test@test.com`'s wishlist; follow persisted across reload and showed in the Followed tab; unfollow showed "You are not following any wishlists yet."
+- A non-owner does not see private items or edit controls.
+- Delete account: confirm, password prompt, "Account deleted", signed out, and signing in again with that account fails with "Invalid email or password."
+
+Fixed after this test run (checked in the browser as `test@test.com`; for delete-account I only tried a cancelled prompt and a wrong password): the nested button in the wishlist card, the "Delete Item" label on the wishlist dialog (now "Delete wishlist"), the missing empty-wishlist message, and the delete-account and change-email error handling (a shared `reauthenticateWithPassword` helper: clicking too early shows "Your account is still loading", cancelling the prompt does nothing, a wrong password shows "Incorrect password", and Google-only accounts get a clear message instead of a crash).
+
+Found:
+
+- **Wishlist card is a button inside a button** (`wishlist-card.tsx`): in edit mode the pencil button sits inside the clickable row button. React logs "cannot contain a nested button". Make the row a div with a separate open control. **Fixed.**
+- **The wishlist dialog's delete button says "Delete Item"** (`WishlistEditDialog.tsx`) when it deletes the whole wishlist; it should say "Delete wishlist". **Fixed.**
+- **A new, empty wishlist shows only the title and "Add Item"**, with no "No items yet" message. **Fixed.**
+- **Delete account fails if clicked before Firebase restores the session.** `promptForCredentials` throws "Invalid email or password" as an uncaught promise error when `auth.currentUser` is still null (right after a page load), and also when the password prompt is cancelled. Nothing is shown to the user. **Fixed.**
+- **Delete account uses native `confirm` and `prompt` dialogs**; the password is visible while typing.
+- **Account deletion leaves data behind.** The user's `user_follows/{uid}` document stays, and any wishlists the user did not delete first would be orphaned (I deleted the test wishlist first).
+- **Registration sends a verification email but never tells the user** or restricts anything for unverified accounts.
+
+Not tested: Google sign-in, email change, username change, password reset email.
+
+## Codacy (PR 59)
+
+Codacy reported 21 issues: 19 Markdown style findings in this file (blank lines around lists and headings, repeated headings), now fixed, and two flagged high in code. Both were fixed: a log line that built a string from a variable, and the email regex, which could backtrack on long input and is now plain string checks.
+
 Severity: **High** = data loss, security, or broken flow. **Medium** = wrong or confusing behaviour. **Low** = polish.
 
 ## Stability
 
-### High
+### Stability: High
+
 - **Item edits are read-modify-write on an array.** `updateWishlistItem` and `deleteWishlistItem` (`src/lib/wishlistHandlers.ts`) read the whole `items` array, change it, and write it back. Two tabs or devices editing the same wishlist can silently overwrite each other. A transaction, or storing items as a subcollection, would fix it.
 - **Account deletion leaves data behind.** `deleteUser` only removes the auth user (`SettingsPage.tsx`). The user's wishlists and their `user_follows` doc stay in Firestore, and other users' follow lists still point at them. `deleteWishlist` has the same dangling-reference problem for followers.
 - **Cancelling the password prompt throws an unhandled error.** `promptForCredentials()` is called outside the `try` in `removeAccount`, so cancelling `prompt()` throws an uncaught `Invalid email or password`.
@@ -49,7 +80,8 @@ Severity: **High** = data loss, security, or broken flow. **Medium** = wrong or 
 - **A brand-new empty wishlist can crash when shared.** `createWishlist` doesn't write an `items` field. `fetchItemsFromWishlist` then runs `items.filter(...)` on `undefined` for any non-owner viewer, which throws and leaves the skeleton on screen forever. Found by reading the code, not reproduced.
 - **State array mutated during render.** `CardsList` calls `items.sort(...)` on the state array in place on every render.
 
-### Medium
+### Stability: Medium
+
 - **Failed saves can look like successes.** `createWishlist` catches errors and only `console.error`s them, so the caller can't tell the write failed. Other handlers should be checked for the same pattern.
 - **Unhandled promise rejections on a bad wishlist ID.** Opening `/wishlist/<nonexistent>` while signed in logs `Uncaught (in promise) Error: Wishlist is invalid.` from `isOwnerOfWishlist` (twice). The page still shows "Wishlist not found", but the `.then()` chains in `WishlistPage.tsx` have no `.catch`.
 - **Routes aren't protected.** Signed out, `/wishlists` and `/settings` render their full UI (tabs, "Add new", all the settings forms) instead of redirecting to `/login`. The settings actions then fail with no clear explanation.
@@ -60,12 +92,14 @@ Severity: **High** = data loss, security, or broken flow. **Medium** = wrong or 
 
 ## Usability
 
-### High
+### Usability: High
+
 - **No way to share a wishlist.** The landing page promises "Hassle-Free Sharing", but the wishlist page has no Share or Copy-link button; people have to copy the address bar. (Second review.)
 - **Sign-in errors are always generic.** `handleLoginError` (`SignInForm.tsx`) ignores the specific error and shows "An error occurred while logging in", even though `authHandlers.ts` builds the better message "Invalid email or password". There's a `// TODO: Handle error messages` there. Registration failures have the same problem.
 - **No client-side validation on the sign-in form.** Submitting it empty sends a request to Firebase (visible 400 `auth/invalid-email` in the console) and only then shows the generic error.
 
-### Medium
+### Usability: Medium
+
 - **Price is mandatory and must be positive.** Adding an item with the default `0` fails with "Price must be positive". The README describes price as optional, and a gift you can't price can't be added.
 - **Link and image URLs aren't validated.** Both inputs are `type="text"`. `http://` is prepended to anything, so `qwe`, `12` and `javascript:alert(1)` are saved. The `http://` prefix means the `javascript:` value is not an XSS vector, but the data is junk.
 - **Empty link still shows a "Link" anchor.** Items saved without a link render a `Link` with an empty `href`. Clicking it opens the current page in a new tab.
@@ -85,30 +119,35 @@ Severity: **High** = data loss, security, or broken flow. **Medium** = wrong or 
 - **Invalid image URLs aren't caught.** `not a url` was saved as `http://not a url/`.
 - **Mobile price wrapping.** At 375px wide, long prices wrap mid-number (`1231` / `23 zł`).
 
-### Low
+### Usability: Low
+
 - **Landing page uses the wrong product name.** Copy says "WishLinker" in two places (`LandingPage.tsx`) instead of WishBoard.
 - **Item with no image uses an external placeholder.** `https://via.placeholder.com/150` is a third-party service (`WishlistTable.tsx`). It appeared blocked or unresolvable in one console check (`ERR_NAME_NOT_RESOLVED`).
 - **Page title never changes.** Every route has the title "WishBoard", and there is no description meta tag.
 - **README install steps say `npm`.** The project is pinned to pnpm (`packageManager` in `package.json`).
 
 ### Accessibility
+
 - **Icon-only buttons have no accessible name.** The avatar/menu button, the edit (pencil) buttons on items and wishlists, and the dialog close button have no text or `aria-label`; screen readers announce them as unlabeled buttons. Add `aria-label`s or visually hidden text.
 - **Images use a generic alt.** Every item image has `alt="Product"` instead of the item name.
 
 ## Performance
 
-### Medium
+### Performance: Medium
+
 - **Single 883 kB JavaScript bundle (278 kB gzipped).** `vite build` warns about it. There is no route-level code splitting, so the landing page downloads Firebase, Radix, form libraries and every page up front. Lazy-loading routes and the Firebase SDK would cut the initial load a lot.
 - **Duplicate Firestore reads on the wishlist page.** Loading one wishlist reads the same document several times: `wishlistExists`, `isOwnerOfWishlist`, `fetchWishlistById`, and `fetchItemsFromWishlist` each call `getDoc` separately (`WishlistPage.tsx` effects → `wishlistHandlers.ts`). A single `getDoc` feeding all of these would cut reads and speed up first render. These are billed reads.
 - **Unused dependencies.** Both `zod` and `yup` are installed, and `redux` alongside `@reduxjs/toolkit`. `.env` also contains Supabase and Turso entries that nothing in `src/` reads.
 
-### Low
+### Performance: Low
+
 - **Images lack `loading="lazy"` and dimensions.** Item images load eagerly and have no width/height, so long wishlists cause layout shift.
 - **`useUser()` logs on every render.** `console.log("userState", ...)` in `src/lib/common.ts` fires for every component that uses the hook. In development it was logged repeatedly on first load.
 - **`updateExistingWishlistsAuthor` writes sequentially.** Renaming a user updates each wishlist one at a time with `await` in a loop; a `writeBatch` would be one round trip.
 - **Slow first load of the wishlist list.** The list stays on skeleton rows for about 3 seconds on the dev server (not measured against production).
 
 ## Security notes
+
 - Item privacy (`public` flag) and ownership are enforced only in client code (`fetchItemsFromWishlist` filters, `isOwnerOfWishlist` checks). Anyone can query Firestore directly with the public web config unless security rules block it. The rules are not in this repo; they should be reviewed, and ideally versioned (`firestore.rules`).
 - `.env` is gitignored and not tracked (checked). It holds Supabase and Turso secrets that the app doesn't use; worth removing or rotating.
 
@@ -124,8 +163,9 @@ What the code does today, per user action:
 | Followed tab | one read per followed wishlist, awaited one after another in a loop (`fetchWishlistsByIds`) |
 
 Causes, most likely first:
+
 1. **Too many sequential round trips.** At 100–200 ms per call (more if the database is in a distant region), a 3–4 step save is already a noticeable pause, and the followed tab grows linearly with the number of follows.
-2. **Firestore region.** Not checked. If the database was created in a US location and most users are in Poland or Europe, every call pays an extra transatlantic round trip. Look at the location in the Firebase console; it cannot be changed later.
+2. **Firestore region.** Not the cause: the database is in `eur3` (Europe multi-region), close to Polish users. Multi-region writes wait for replication, which adds a little latency per write; that makes the number of sequential round trips matter even more.
 3. **Items stored as an array inside one document.** Concurrent writes overwrite each other (see Stability), and every edit rewrites the whole array.
 4. **Firestore's streaming transport.** The web SDK sometimes falls back to long polling behind proxies, VPNs or ad blockers, which looks like random slowness. `initializeFirestore(app, { experimentalAutoDetectLongPolling: true })` helps.
 5. **No offline cache or real-time listeners.** Every view re-fetches from the server instead of reading from a local cache.
@@ -137,6 +177,7 @@ These explain "sometimes slow" and "adding several items breaks something" (the 
 Short answer: it's reasonable, but fix the data-access code first. A migration will not fix the slow round trips or the form-reset bug by itself.
 
 Where SQL genuinely helps:
+
 - Items become rows, so adding, editing or deleting one item is a single statement and can't overwrite another (fixes the lost-update problem).
 - One query can return a wishlist with its owner, items and follow state, replacing 4–5 reads.
 - Private items can be hidden by the database (Postgres row-level security) instead of by client code.
@@ -159,7 +200,7 @@ If you migrate, Supabase is the simplest path. Keep Firebase Auth for the first 
    - Fix the form-reset race, per-save `isSubmitting`, stale-refresh guard, `items: []` on create, in-place sort.
    - Collapse the wishlist page to one `getDoc`; read the followed lists in parallel (`Promise.all`) or with `where(documentId(), "in", ids)`.
    - Add try/catch with visible error states, `.catch` on every effect promise, route guards and a 404 page.
-   - Check the Firestore region and enable `experimentalAutoDetectLongPolling`; measure again.
+   - Enable `experimentalAutoDetectLongPolling` (done) and measure again; the region (`eur3`) is already fine.
 2. **Quick usability wins.** Share/copy-link button, URL validation for link and image, optional price, fix dialog copy, private-item badge, clickable item rows with descriptive link text, accessible labels, fix "WishLinker", page titles per route, replace `via.placeholder.com` with a local fallback.
 3. **Decide on SQL.** If step 1 isn't enough, or you want database-enforced privacy, migrate data to Supabase Postgres behind the existing handler functions (tables: `wishlists`, `items`, `follows`). Export Firestore, import, run both in parallel for a short time, then switch.
 4. **Redesign.** Warm "paper and nature" look with a serif main font, built on design tokens in `index.css` (colors, type scale, radii) so shadcn components inherit it. Do this after steps 1–2 so the new look isn't built on broken flows, and ideally in parallel with step 3 only if they touch different files.
