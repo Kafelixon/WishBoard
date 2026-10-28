@@ -290,7 +290,7 @@ const CardsList: FC<{
           key={item.id}
           className="group relative flex animate-rise flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
         >
-          <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-secondary">
+          <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-[hsl(41_36%_88%)]">
             <ItemImage src={item.image} name={item.name} />
             {isPrivate && (
               <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-card/95 px-2.5 py-1 text-xs font-medium text-destructive shadow-sm">
