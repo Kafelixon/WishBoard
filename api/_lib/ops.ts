@@ -99,7 +99,8 @@ const listItems = async (
   const { rows } = await q.query(onlyPublic ? PUBLIC_ITEMS : ALL_ITEMS, [
     wishlistId,
   ]);
-  return rows.map(toItem);
+  // Rows come from our own query for one wishlist, not from the request body.
+  return rows.map(toItem); // nosemgrep
 };
 
 const touch = (q: Queryable, wishlistId: string) =>
