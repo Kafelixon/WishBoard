@@ -9,7 +9,7 @@ import {
 } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
 import { login } from "../redux/slices/userSlice";
-import { Action, Dispatch } from "redux";
+import { Action, Dispatch } from "@reduxjs/toolkit";
 import { NavigateFunction } from "react-router-dom";
 
 export const loginUser = async (
