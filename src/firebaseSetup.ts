@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_APP_FIREBASE_API_KEY as string,
@@ -14,6 +14,9 @@ const firebaseConfig = {
 
 export const firebase = initializeApp(firebaseConfig);
 export const auth = getAuth(firebase);
-export const firestore = getFirestore(firebase);
+// Falls back to long polling when the streaming transport is blocked (proxies, VPNs, ad blockers).
+export const firestore = initializeFirestore(firebase, {
+  experimentalAutoDetectLongPolling: true,
+});
 
 // const analytics = getAnalytics(firebase);

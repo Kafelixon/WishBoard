@@ -2,20 +2,22 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   FollowStateChanger,
-  fetchWishlistById,
+  fetchWishlistView,
   followWishlist,
   isFollowingWishlist,
-  isOwnerOfWishlist,
   unfollowWishlist,
-  wishlistExists,
+  type WishlistView,
 } from "@/lib/wishlistHandlers";
+import { NotFound } from "@/components/ui/NotFound";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import WishlistItemsTable from "@/components/ui/WishlistTable";
 import { useUserId } from "@/lib/common";
-import { Wishlist } from "@/lib/types";
+import { WishlistItem } from "@/lib/types";
 import { Button } from "./button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "./skeleton";
+import { Share2 } from "lucide-react";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 interface FollowButtonProps {
   isWishlistOwner: boolean;
@@ -36,25 +38,25 @@ function FollowButton({
 }: FollowButtonProps) {
   const handleFollowChange = (
     followAction: FollowStateChanger,
+    nowFollowing: boolean,
     successMessage: string,
     errorMessage: string,
   ) => {
-    void followAction(userId, wishlistId)
+    followAction(userId, wishlistId)
       .then(() => {
-        return isFollowingWishlist(userId, wishlistId);
-      })
-      .then((following) => {
-        setIsFollowing(following);
+        setIsFollowing(nowFollowing);
         toast({ title: successMessage });
       })
-      .catch(() => {
-        toast({ title: errorMessage });
+      .catch((error: unknown) => {
+        console.error(error);
+        toast({ title: errorMessage, variant: "destructive" });
       });
   };
 
   const handleFollow = () => {
     handleFollowChange(
       followWishlist,
+      true,
       "You are now following this wishlist",
       "Failed to follow this wishlist",
     );
@@ -63,6 +65,7 @@ function FollowButton({
   const handleUnfollow = () => {
     handleFollowChange(
       unfollowWishlist,
+      false,
       "You are no longer following this wishlist",
       "Failed to unfollow this wishlist",
     );
@@ -79,44 +82,115 @@ function FollowButton({
   );
 }
 
+function ShareButton({
+  wishlistId,
+  toast,
+}: {
+  wishlistId: string;
+  toast: ReturnType<typeof useToast>["toast"];
+}) {
+  const handleShare = () => {
+    const url = `${window.location.origin}/wishlist/${wishlistId}`;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        toast({ title: "Link copied", description: "Anyone with it can view the public items." });
+      })
+      .catch(() => {
+        toast({
+          title: "Could not copy the link",
+          description: "Copy the address from your browser's address bar instead.",
+          variant: "destructive",
+        });
+      });
+  };
+
+  return (
+    <Button variant="outline" onClick={handleShare} className="gap-1.5">
+      <Share2 className="size-4" aria-hidden="true" />
+      Share
+    </Button>
+  );
+}
+
+type LoadState =
+  | { status: "loading" }
+  | { status: "missing" }
+  | { status: "error" }
+  | { status: "ready"; view: WishlistView };
+
+/** Remounts the page content per wishlist and user so load state starts fresh. */
 export const WishlistPage: React.FC = () => {
-  const { wishlistId: paramId } = useParams();
-  const [wishlistId, setWishlistId] = useState<string | null>(paramId ?? null);
-  const [isWishlistOwner, setIsWishlistOwner] = useState<boolean>(false);
-  const [isFollowing, setIsFollowing] = useState<boolean>(false);
-  const [wishlistInfo, setWishlistInfo] = useState<Wishlist | null>(null);
-  const { toast } = useToast();
+  const { wishlistId = "" } = useParams();
   const userId = useUserId();
+  return (
+    <WishlistPageContent
+      key={`${wishlistId}:${userId}`}
+      wishlistId={wishlistId}
+      userId={userId}
+    />
+  );
+};
+
+const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
+  wishlistId,
+  userId,
+}) => {
+  const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [isFollowing, setIsFollowing] = useState<boolean>(false);
+  const [items, setItems] = useState<WishlistItem[]>([]);
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (userId && wishlistId) {
-      void wishlistExists(wishlistId).then((exists) => {
-        if (!exists) {
-          setWishlistId(null);
+    let cancelled = false;
+
+    Promise.all([
+      fetchWishlistView(wishlistId, userId || null),
+      userId ? isFollowingWishlist(userId, wishlistId) : false,
+    ])
+      .then(([view, following]) => {
+        if (cancelled) return;
+        if (!view) {
+          setState({ status: "missing" });
+          return;
         }
+        setItems(view.items);
+        setIsFollowing(following);
+        setState({ status: "ready", view });
+      })
+      .catch((error: unknown) => {
+        console.error(error);
+        if (!cancelled) setState({ status: "error" });
       });
-      if (wishlistId) {
-        void isOwnerOfWishlist(userId, wishlistId).then((isOwner) => {
-          setIsWishlistOwner(isOwner);
-        });
-        void isFollowingWishlist(userId, wishlistId).then((following) => {
-          setIsFollowing(following);
-        });
-      }
-    }
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId, wishlistId]);
 
-  useEffect(() => {
-    if (wishlistId) {
-      void fetchWishlistById(wishlistId).then((info) => {
-        setWishlistInfo(info);
-      });
-    }
-  }, [wishlistId]);
+  const wishlistInfo = state.status === "ready" ? state.view.info : null;
+  const isWishlistOwner = state.status === "ready" && state.view.isOwner;
+  const pageTitle =
+    wishlistInfo?.name ?? (state.status === "missing" ? "Wishlist not found" : "Wishlist");
+  usePageTitle(pageTitle);
 
-  if (!wishlistId) {
-    return <div>Wishlist not found</div>;
+  if (state.status === "missing") {
+    return (
+      <NotFound
+        title="Wishlist not found"
+        message="This wishlist does not exist or has been deleted."
+      />
+    );
   }
+  if (state.status === "error") {
+    return (
+      <NotFound
+        title="Could not load wishlist"
+        message="Something went wrong while loading this wishlist. Please try again."
+      />
+    );
+  }
+
 
   return (
     <Card className="shadow-lg glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
@@ -131,8 +205,7 @@ export const WishlistPage: React.FC = () => {
             ) : (
               <>
                 <h1 className="font-semibold">
-                  {wishlistInfo.name[0].toUpperCase() +
-                    wishlistInfo.name.slice(1)}
+                  {wishlistInfo.name}
                 </h1>
                 {wishlistInfo.author && (
                   <p className="text-gray-500 text-sm text-left">
@@ -142,9 +215,12 @@ export const WishlistPage: React.FC = () => {
               </>
             )}
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            {wishlistInfo && (
+              <ShareButton wishlistId={wishlistId} toast={toast} />
+            )}
             <FollowButton
-              isWishlistOwner={isWishlistOwner}
+              isWishlistOwner={isWishlistOwner || state.status !== "ready"}
               isFollowing={isFollowing}
               userId={userId}
               wishlistId={wishlistId}
@@ -157,6 +233,9 @@ export const WishlistPage: React.FC = () => {
       <CardContent>
         <WishlistItemsTable
           canEditWishlist={isWishlistOwner}
+          isLoading={state.status === "loading"}
+          items={items}
+          onItemsChange={setItems}
           userId={userId}
           wishlistId={wishlistId}
         />

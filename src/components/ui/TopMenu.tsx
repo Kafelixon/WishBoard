@@ -4,6 +4,8 @@ import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { LogOut, Settings } from "lucide-react";
 import { useUser } from "@/lib/common";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebaseSetup";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,9 +50,9 @@ function NavButtons({
         Wishlists
       </Button>
       <DropdownMenu>
-        <DropdownMenuTrigger>
+        <DropdownMenuTrigger aria-label="Account menu">
           <Avatar>
-            <AvatarImage src={userAvatar} />
+            <AvatarImage src={userAvatar} alt="" />
             <AvatarFallback>{userInitials}</AvatarFallback>
           </Avatar>
         </DropdownMenuTrigger>
@@ -77,7 +79,10 @@ export function TopMenu() {
 
   const getUserInitials = () => {
     if (!user?.displayName) return "?";
-    return user.displayName.split(" ").map((n) => n[0]);
+    return user.displayName
+      .split(" ")
+      .filter(Boolean)
+      .map((n) => n[0]);
   };
 
   const navigateToLogin = () => {
@@ -98,6 +103,10 @@ export function TopMenu() {
 
   const handleLogout = () => {
     dispatch(logout());
+    signOut(auth).catch((error: unknown) => {
+      console.error("Sign out failed", error);
+    });
+    void navigate("/");
   };
 
   return (

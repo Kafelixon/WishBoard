@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { ItemFormFields } from "./ItemFormFields";
+import { isValidWebUrl } from "@/lib/url";
 
 interface ItemDialogProps {
   dialogOpen: boolean;
@@ -23,6 +24,7 @@ interface ItemDialogProps {
   handleDelete?: () => void;
   isSubmitting: boolean;
   dialogTitle: string;
+  dialogDescription: string;
   actionLabel: string;
 }
 
@@ -30,19 +32,20 @@ type ItemSchema = Omit<WishlistItem, "id">;
 
 const schema: yup.ObjectSchema<ItemSchema> = yup.object({
   name: yup.string().required("Product Name is required"),
-  image: yup.string().defined(),
+  image: yup
+    .string()
+    .defined()
+    .test("web-url", "Enter a valid web address", isValidWebUrl),
   price: yup
     .number()
-    .min(0, "Price must be positive")
-    .positive("Price must be positive")
-    .required("Average Price is required")
-    .transform((value, originalValue) => {
-      if (originalValue === "") {
-        return undefined;
-      }
-      return value as number;
-    }),
-  link: yup.string().defined(),
+    .transform((value, originalValue) => (originalValue === "" ? 0 : (value as number)))
+    .typeError("Price must be a number")
+    .min(0, "Price can't be negative")
+    .required(),
+  link: yup
+    .string()
+    .defined()
+    .test("web-url", "Enter a valid web address", isValidWebUrl),
   public: yup.boolean(),
 });
 
@@ -55,6 +58,7 @@ export const ItemDialog: FC<ItemDialogProps> = ({
   handleDelete,
   isSubmitting,
   dialogTitle,
+  dialogDescription,
   actionLabel,
 }) => {
   const methods = useForm<ItemSchema>({
@@ -74,7 +78,7 @@ export const ItemDialog: FC<ItemDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            Add a new item to your wishlist. Click add when you're done.
+            {dialogDescription}
           </DialogDescription>
         </DialogHeader>
         <FormProvider {...methods}>
