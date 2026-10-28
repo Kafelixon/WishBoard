@@ -9,7 +9,8 @@
     "build": "tsc && vite build",
     "lint": "eslint . --max-warnings 0",
     "preview": "vite preview",
-    "test": "node --env-file=.env.local --import tsx --test api/__tests__/*.test.ts"
+    "test": "node --env-file=.env.local --import tsx --test api/__tests__/*.test.ts",
+    "dev:api": "node --env-file=.env --env-file=.env.local --import tsx scripts/dev-api.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

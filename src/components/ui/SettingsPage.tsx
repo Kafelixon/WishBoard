@@ -17,7 +17,10 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "./use-toast";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { changeUsername } from "@/lib/authHandlers";
-import { updateExistingWishlistsAuthor } from "@/lib/wishlistHandlers";
+import {
+  deleteUserData,
+  updateExistingWishlistsAuthor,
+} from "@/lib/wishlistHandlers";
 import { useUserId } from "@/lib/common";
 
 export const SettingsPage = () => {
@@ -257,6 +260,7 @@ const RemoveAccount: React.FC = () => {
       const user = await reauthenticateWithPassword(toast);
       if (!user) return;
 
+      await deleteUserData(user.uid);
       await deleteUser(user);
       toast({ title: "Account deleted" });
 

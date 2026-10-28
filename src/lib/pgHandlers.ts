@@ -117,3 +117,8 @@ export const updateExistingWishlistsAuthor = async (
 ) => {
   await call("updateAuthor", { author: newAuthorName });
 };
+
+/** Removes the signed-in user's wishlists, items and follows. */
+export const deleteUserData = async (_userId: string) => {
+  await call("deleteAccount");
+};

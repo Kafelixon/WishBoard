@@ -116,6 +116,19 @@ describe("wishlist operations", () => {
     assert.equal(mine[0]?.author, "Alicia");
   });
 
+  it("deletes all of a user's data with the account", async () => {
+    const { id } = (await op(bob, {
+      op: "createWishlist", name: "Bobs", author: "Bob", icon: "gift",
+    })) as { id: string };
+    await op(bob, { op: "addItem", wishlistId: id, item: { name: "x" } });
+    await op(bob, { op: "deleteAccount" });
+    const left = await pool.query(
+      "select (select count(*) from wishlists where id = $1)::int w, (select count(*) from wishlist_items where wishlist_id = $1)::int i",
+      [id],
+    );
+    assert.deepEqual(left.rows[0], { w: 0, i: 0 });
+  });
+
   it("deletes a wishlist with its items and follows", async () => {
     await op(bob, { op: "follow", wishlistId });
     await op(alice, { op: "deleteWishlist", id: wishlistId });

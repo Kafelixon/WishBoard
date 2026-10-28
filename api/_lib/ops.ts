@@ -305,6 +305,13 @@ export async function handleOp(
       return {};
     }
 
+    case "deleteAccount": {
+      const user = requireCaller(caller);
+      // Wishlists, items and follows go with the user row (ON DELETE CASCADE).
+      await db.query("delete from users where id = $1", [user.uid]);
+      return {};
+    }
+
     default:
       throw new HttpError(400, "Unknown operation.");
   }

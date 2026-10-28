@@ -16,6 +16,7 @@ export const {
   addItemToWishlist,
   createWishlist,
   deleteWishlist,
+  deleteUserData,
   deleteWishlistItem,
   fetchFollowedWishlists,
   fetchWishlistById,

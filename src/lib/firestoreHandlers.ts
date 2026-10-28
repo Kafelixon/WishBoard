@@ -356,3 +356,7 @@ export const updateExistingWishlistsAuthor = async (
     ),
   );
 };
+
+/** Firestore data is not cleaned up on account deletion (existing behaviour). */
+export const deleteUserData = (_userId: string): Promise<void> =>
+  Promise.resolve();
