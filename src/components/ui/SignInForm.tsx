@@ -7,6 +7,7 @@ import { loginUser, loginWithGoogle, registerUser } from "@/lib/authHandlers";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { RotateCw } from "lucide-react";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 interface LocationState {
   from: string;
@@ -18,6 +19,8 @@ export const SignInForm = () => {
   const [username, setUsername] = useState("");
   const [registered, setRegistered] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  usePageTitle(registered ? "Sign in" : "Sign up");
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -27,6 +30,10 @@ export const SignInForm = () => {
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
+    const validationError = validateCredentials(email, password, username, registered);
+    setFormError(validationError);
+    if (validationError) return;
+
     try {
       setIsSubmitting(true);
       if (registered) {
@@ -53,6 +60,7 @@ export const SignInForm = () => {
   return (
       <Card className="p-5 glass m-auto w-60">
         <form
+          noValidate
           onSubmit={(e) => { void handleSubmit(e); }}
           style={{
             display: "flex",
@@ -66,6 +74,7 @@ export const SignInForm = () => {
               name="username"
               autoComplete="username"
               type="text"
+              aria-label="Username"
               placeholder="Username"
               value={username}
               onChange={(e) => { setUsername(e.target.value); }}
@@ -73,7 +82,12 @@ export const SignInForm = () => {
             />
           )}
           {renderEmailInput(email, setEmail)}
-          {renderPasswordInput(password, setPassword)}
+          {renderPasswordInput(password, setPassword, registered)}
+          {formError && (
+            <p role="alert" className="text-red-600 text-xs">
+              {formError}
+            </p>
+          )}
           {renderSubmitButton(registered, isSubmitting)}
           {renderGoogleLoginButton(handleGoogleLogin)}
         </form>
@@ -91,6 +105,7 @@ function renderEmailInput(
       name="email"
       autoComplete="email"
       type="email"
+      aria-label="Email"
       placeholder="Email"
       value={email}
       onChange={(e) => { setEmail(e.target.value); }}
@@ -101,13 +116,15 @@ function renderEmailInput(
 
 function renderPasswordInput(
   password: string,
-  setPassword: React.Dispatch<React.SetStateAction<string>>
+  setPassword: React.Dispatch<React.SetStateAction<string>>,
+  registered: boolean,
 ) {
   return (
     <Input
       name="password"
-      autoComplete="current-password"
+      autoComplete={registered ? "current-password" : "new-password"}
       type="password"
+      aria-label="Password"
       placeholder="Password"
       value={password}
       onChange={(e) => { setPassword(e.target.value); }}
@@ -118,9 +135,9 @@ function renderPasswordInput(
 
 function renderSubmitButton(registered: boolean, loggingIn: boolean) {
   return (
-    <Button type="submit" className="shadow-md">
+    <Button type="submit" className="shadow-md" disabled={loggingIn}>
       {loggingIn ? (
-        <RotateCw className="animate-spin" />
+        <RotateCw className="animate-spin" aria-label="Signing in" />
       ) : registered ? (
         "Sign in"
       ) : (
@@ -162,18 +179,62 @@ function renderToggleRegisterLogin(
   );
 }
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateCredentials(
+  email: string,
+  password: string,
+  username: string,
+  registered: boolean,
+): string | null {
+  if (!registered && !username.trim()) return "Please choose a username.";
+  if (!email.trim()) return "Please enter your email address.";
+  if (!EMAIL_PATTERN.test(email.trim())) return "That email address doesn't look right.";
+  if (!password) return "Please enter your password.";
+  if (!registered && password.length < 6) {
+    return "Password must be at least 6 characters.";
+  }
+  return null;
+}
+
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  "auth/invalid-credential": "Invalid email or password.",
+  "auth/wrong-password": "Invalid email or password.",
+  "auth/user-not-found": "Invalid email or password.",
+  "auth/invalid-email": "That email address doesn't look right.",
+  "auth/email-already-in-use": "An account with this email already exists. Try signing in.",
+  "auth/weak-password": "Password must be at least 6 characters.",
+  "auth/too-many-requests": "Too many attempts. Please wait a moment and try again.",
+  "auth/network-request-failed": "Network problem. Check your connection and try again.",
+  "auth/account-exists-with-different-credential":
+    "This email is already registered with a different sign-in method.",
+};
+
+// The user closing the Google popup is not an error worth a toast.
+const SILENT_AUTH_CODES = new Set([
+  "auth/popup-closed-by-user",
+  "auth/cancelled-popup-request",
+]);
+
+const getAuthErrorCode = (error: unknown): string | undefined => {
+  const cause = (error as { cause?: unknown } | null)?.cause;
+  const code = ((cause ?? error) as { code?: unknown } | null)?.code;
+  return typeof code === "string" ? code : undefined;
+};
+
 function handleLoginError(
   error: unknown,
   toast: ReturnType<typeof useToast>["toast"]
 ) {
+  const code = getAuthErrorCode(error);
+  if (code && SILENT_AUTH_CODES.has(code)) return;
+
   console.error("Login Error: ", error);
-  if (error !== null && error instanceof Error) {
-    console.error(error.message);
-  }
-  // TODO: Handle error messages
   toast({
     variant: "destructive",
-    description: "An error occurred while logging in. Please try again.",
+    description:
+      (code && AUTH_ERROR_MESSAGES[code]) ??
+      "Something went wrong while signing in. Please try again.",
   });
 }
 

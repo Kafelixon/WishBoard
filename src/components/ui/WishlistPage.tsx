@@ -16,6 +16,8 @@ import { WishlistItem } from "@/lib/types";
 import { Button } from "./button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "./skeleton";
+import { Share2 } from "lucide-react";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 interface FollowButtonProps {
   isWishlistOwner: boolean;
@@ -80,6 +82,37 @@ function FollowButton({
   );
 }
 
+function ShareButton({
+  wishlistId,
+  toast,
+}: {
+  wishlistId: string;
+  toast: ReturnType<typeof useToast>["toast"];
+}) {
+  const handleShare = () => {
+    const url = `${window.location.origin}/wishlist/${wishlistId}`;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        toast({ title: "Link copied", description: "Anyone with it can view the public items." });
+      })
+      .catch(() => {
+        toast({
+          title: "Could not copy the link",
+          description: "Copy the address from your browser's address bar instead.",
+          variant: "destructive",
+        });
+      });
+  };
+
+  return (
+    <Button variant="outline" onClick={handleShare} className="gap-1.5">
+      <Share2 className="size-4" aria-hidden="true" />
+      Share
+    </Button>
+  );
+}
+
 type LoadState =
   | { status: "loading" }
   | { status: "missing" }
@@ -135,6 +168,12 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
     };
   }, [userId, wishlistId]);
 
+  const wishlistInfo = state.status === "ready" ? state.view.info : null;
+  const isWishlistOwner = state.status === "ready" && state.view.isOwner;
+  const pageTitle =
+    wishlistInfo?.name ?? (state.status === "missing" ? "Wishlist not found" : "Wishlist");
+  usePageTitle(pageTitle);
+
   if (state.status === "missing") {
     return (
       <NotFound
@@ -152,8 +191,6 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
     );
   }
 
-  const wishlistInfo = state.status === "ready" ? state.view.info : null;
-  const isWishlistOwner = state.status === "ready" && state.view.isOwner;
 
   return (
     <Card className="shadow-lg glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
@@ -168,8 +205,7 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
             ) : (
               <>
                 <h1 className="font-semibold">
-                  {wishlistInfo.name.charAt(0).toUpperCase() +
-                    wishlistInfo.name.slice(1)}
+                  {wishlistInfo.name}
                 </h1>
                 {wishlistInfo.author && (
                   <p className="text-gray-500 text-sm text-left">
@@ -179,7 +215,10 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
               </>
             )}
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
+            {wishlistInfo && (
+              <ShareButton wishlistId={wishlistId} toast={toast} />
+            )}
             <FollowButton
               isWishlistOwner={isWishlistOwner || state.status !== "ready"}
               isFollowing={isFollowing}

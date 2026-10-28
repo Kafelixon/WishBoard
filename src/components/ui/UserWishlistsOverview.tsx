@@ -1,6 +1,7 @@
 import { FollowedWishlists } from "@/components/ui/FollowedWishlists";
 import { UserWishlists } from "@/components/ui/UserWishlists";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 const TABS = {
   USER_WISHLISTS: 'userWishlists',
@@ -8,6 +9,7 @@ const TABS = {
 };
 
 export const UserWishlistsOverview: React.FC = () => {
+  usePageTitle("Your wishlists");
   return (
     <Tabs
       defaultValue={TABS.USER_WISHLISTS}

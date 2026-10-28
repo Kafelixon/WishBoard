@@ -46,11 +46,12 @@ export const WishlistCard: React.FC<WishlistProps> = ({
           <Button
             variant="outline"
             className="p-2 size-9"
+            aria-label={`Edit ${wishlist.name}`}
             onClick={() => {
               handleEdit(wishlist);
             }}
           >
-            <Pencil />
+            <Pencil aria-hidden="true" />
           </Button>
         ) : (
           <div>

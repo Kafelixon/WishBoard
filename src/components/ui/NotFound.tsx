@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 interface NotFoundProps {
   title?: string;
@@ -10,7 +11,9 @@ interface NotFoundProps {
 export const NotFound = ({
   title = "Page not found",
   message = "The page you are looking for does not exist.",
-}: NotFoundProps) => (
+}: NotFoundProps) => {
+  usePageTitle(title);
+  return (
   <Card className="shadow-lg glass w-full md:w-[60vw] lg:w-[45vw] m-auto">
     <CardHeader>
       <CardTitle>{title}</CardTitle>
@@ -22,4 +25,6 @@ export const NotFound = ({
       </Button>
     </CardContent>
   </Card>
-);
+
+  );
+};

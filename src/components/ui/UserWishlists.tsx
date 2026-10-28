@@ -151,6 +151,7 @@ export const UserWishlists: React.FC = () => {
               <Button
                 className="p-2"
                 variant={!editMode ? "default" : "destructive"}
+                aria-label={editMode ? "Exit edit mode" : "Edit wishlists"}
                 onClick={() => { setEditMode(!editMode); }}
               >
                 {editMode ? <X /> : <Pencil />}

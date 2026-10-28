@@ -20,6 +20,21 @@ Fixed in code and checked in the browser against the test account (three items a
 
 Still open from step 1: check the Firestore region in the Firebase console (not checked), Firestore security rules are not in the repo, and there are no automated tests. The items below describe the state before these fixes unless listed above.
 
+## Status: step 2 (quick usability fixes) done
+
+Done on the `stabilize-firestore` branch after the step 1 commit, checked in the browser (sign-in validation and error message, share, item form validation, minimal item, delete, log out, landing page). `tsc` and ESLint pass. Not committed yet.
+
+- **Share:** a Share button on every wishlist page copies the link and says anyone with it sees the public items.
+- **Item form:** price, image and link are optional; image and link must be real web addresses (`qwe`, `not a url` and `javascript:` values are rejected, addresses without a scheme get `https://`); the edit dialog has its own description and a "Save changes" button; error text is announced to screen readers.
+- **Item rows:** private items show a lock and "Private, only you can see this"; images fall back to a gift icon (no more `via.placeholder.com`, no broken-image boxes) and use the item name as alt text; the "Link" anchor is only shown when there is a link and reads "View product", with the item name in its accessible label; items without a price say "Price not set" and sort last; prices no longer wrap mid-number.
+- **Sign-in:** the form checks email, password and username before calling Firebase; known Firebase errors show specific messages (wrong credentials, email in use, weak password, too many attempts, offline); closing the Google popup is no longer an error.
+- **Log out** now also signs out of Firebase (before, only the stored user was cleared) and returns to the landing page.
+- **Page titles** per route (wishlist name on wishlist pages), a meta description, "WishLinker" replaced by "WishBoard", the LinkedIn address styled as a link, wishlist titles shown exactly as typed, and accessible labels on the account menu and the edit buttons.
+
+Correction to the list below: the dialog close button already had a "Close" label for screen readers.
+
+Not done in step 2: confirmation before deleting items or wishlists (needs a proper dialog, better done in the redesign), currency choice, item rows opening the link from the image/name, and the remaining items in this file.
+
 Severity: **High** = data loss, security, or broken flow. **Medium** = wrong or confusing behaviour. **Low** = polish.
 
 ## Stability

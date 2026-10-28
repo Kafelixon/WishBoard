@@ -15,11 +15,13 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "./use-toast";
+import { usePageTitle } from "@/lib/usePageTitle";
 import { changeUsername } from "@/lib/authHandlers";
 import { updateExistingWishlistsAuthor } from "@/lib/wishlistHandlers";
 import { useUserId } from "@/lib/common";
 
 export const SettingsPage = () => {
+  usePageTitle("Settings");
   return (
     <Card className="w-fit glass divide-y m-auto p-2 md:p-2">
       <h1 className="p-3 scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl">

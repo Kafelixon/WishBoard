@@ -1,6 +1,8 @@
 import { Card } from "@/components/ui/card";
+import { usePageTitle } from "@/lib/usePageTitle";
 
 export const LandingPage = () => {
+  usePageTitle();
   return (
       <Card className="p-3 lg:p5 backdrop-blur-[10px] items-center w-full md:w-[60vw] lg:w-[45vw] flex-grow glass m-auto">
         <h1 className="scroll-m-20 text-3xl font-extrabold tracking-tight lg:text-4xl text-center p-4">
@@ -34,7 +36,7 @@ export const LandingPage = () => {
             </li>
             <li>
               <b>Stay Connected: </b>Follow your friends and loved ones. Be the
-              first to know when their wishes evolve. WishLinker keeps you
+              first to know when their wishes evolve. WishBoard keeps you
               connected, discreetly notifying you of any changes.
             </li>
             <li>
@@ -50,7 +52,7 @@ export const LandingPage = () => {
           </h3>
           <p className="leading-7 space-y-4 [&:not(:first-child)]:mt-6">
             Dive into a world where wishing is as easy as dreaming. Whether for
-            birthdays, weddings, or those just-because moments, WishLinker is
+            birthdays, weddings, or those just-because moments, WishBoard is
             your companion in celebrating life's milestones and moments. Start
             today. Create your wishlist, share your dreams, and explore the
             endless possibilities that await.
@@ -64,7 +66,12 @@ export const LandingPage = () => {
             Got questions or need assistance? Our dedicated support team is here
             to ensure your wishlisting is smooth and enjoyable. Reach out to me
             on linkedin at&nbsp;
-            <a href="https://www.linkedin.com/in/piotrszkafel/">
+            <a
+              href="https://www.linkedin.com/in/piotrszkafel/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-violet-700 underline underline-offset-2"
+            >
               www.linkedin.com/in/piotrszkafel
             </a>
             .
