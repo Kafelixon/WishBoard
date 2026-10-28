@@ -138,7 +138,6 @@ export default function WishlistItemsTable({
     setEditDialogOpen(false);
   };
 
-  const total = items.reduce((sum, item) => sum + item.price, 0);
   const privateCount = items.filter((item) => item.public === false).length;
 
   return (
@@ -147,7 +146,6 @@ export default function WishlistItemsTable({
         <div className="flex flex-wrap items-end justify-between gap-4 border-y border-border py-4">
           <dl className="flex flex-wrap gap-x-10 gap-y-3">
             <Stat label={items.length === 1 ? "item" : "items"} value={String(items.length)} />
-            {total > 0 && <Stat label="total" value={formatPrice(total)} />}
             {canEditWishlist && privateCount > 0 && (
               <Stat label="private" value={String(privateCount)} />
             )}
@@ -260,7 +258,7 @@ const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
       <div
         role="img"
         aria-label={`No image for ${name}`}
-        className="flex size-full items-center justify-center text-muted-foreground/60"
+        className="absolute inset-0 flex items-center justify-center text-muted-foreground/60"
       >
         <Gift className="size-10" aria-hidden="true" />
       </div>
@@ -275,7 +273,7 @@ const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
       onError={() => {
         setFailed(true);
       }}
-      className="size-full object-contain p-3 mix-blend-multiply"
+      className="absolute inset-0 size-full object-contain p-3 mix-blend-multiply"
     />
   );
 };
@@ -294,7 +292,7 @@ const CardsList: FC<{
           key={item.id}
           className="group relative flex animate-rise flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
         >
-          <div className="relative aspect-[16/10] bg-secondary sm:aspect-[4/3]">
+          <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-secondary">
             <ItemImage src={item.image} name={item.name} />
             {isPrivate && (
               <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-card/95 px-2.5 py-1 text-xs font-medium text-destructive shadow-sm">
