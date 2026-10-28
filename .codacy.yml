@@ -1,0 +1,4 @@
+---
+exclude_paths:
+  # Postgres schema; Codacy's T-SQL linter misreads it.
+  - "db/**"
