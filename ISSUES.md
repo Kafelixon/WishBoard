@@ -183,16 +183,35 @@ Where SQL genuinely helps:
 - Private items can be hidden by the database (Postgres row-level security) instead of by client code.
 - Followed wishlists become one join instead of a loop of reads.
 
-Free options that are publicly reachable from Vercel (check current limits before committing; they change often):
+Free options, re-checked against the vendors' own pages (Oct 2026; limits change, confirm before committing):
 
-| Option | Fit | Watch out for |
+| Option | Free tier | Inactivity | Verdict |
+| --- | --- | --- | --- |
+| **Neon (Postgres)** | 100 CU-hours and 1 GB per project, 100 projects | Compute sleeps after 5 minutes and wakes on the next request; no deletion or pause policy for idle free projects is documented | **Best fit.** Real Postgres, reachable from Vercel functions, keeps Firebase Auth. Cost: a cold start of a few hundred ms after idle, and your own API layer. |
+| **Turso (SQLite)** | 5 GB, 500M reads and 10M writes per month | Docs say free databases are archived after 10 days without activity and need a manual unarchive. Checked on the existing `wishboard` database, idle for weeks: it answered immediately (0.34 s, no unarchive needed), so the rule does not seem to apply to it, but the docs are inconsistent, so it is one data point, not a guarantee. A daily keep-alive request would remove the doubt. | **Viable, and half-built.** The database already has a normalised schema (users, wishlists, wishlist_items, user_follows) with 10 wishlists and 54 items copied from Firestore earlier, and the `db-migration` branch has the Vercel function. |
+| Supabase (Postgres) | Generous | Projects are paused after a week of inactivity | Ruled out by you. |
+| Cloudflare D1 | 5 GB, 5M reads and 100k writes per day | None found | Reachable only through Cloudflare Workers, so the app would have to move off Vercel functions. |
+| CockroachDB | 30-day trial with credit, no permanent free tier | Paused, then deleted if no payment method | Not free. |
+
+If you migrate, Neon or Turso both work: keep Firebase Auth (the API only needs a verified user id from the ID token), add a Vercel function in front of Postgres, and keep `src/lib/wishlistHandlers.ts` as the only data-access file. Firestore also never pauses, which is a point in its favour: after step 1 the main slowness and lost-update causes are fixed, so the migration is now about SQL itself, not about fixing bugs.
+
+### Turso vs Neon for a rarely used app
+
+Usage assumption: the owner opens it about every two months and other users less often, so almost every visit starts from a database that has been idle for weeks. The deciding question is what the first visit after a long silence looks like.
+
+| | Turso (free) | Neon (free) |
 | --- | --- | --- |
-| **Supabase (Postgres)** | Best fit. Browser can talk to it directly with row-level security, includes auth, free tier is generous for this size. Your `.env` already has `VITE_SUPABASE_*` entries. | Free projects pause after about a week without activity (keep-alive ping needed). Choose the Frankfurt (EU) region. |
-| **Neon (Postgres)** | Good Postgres, scales to zero. | Needs your own API layer (Vercel functions); cold start after idle adds latency. |
-| **Turso (SQLite/libSQL)** | Very generous free tier, fast reads. Your `.env` has `TURSO_*` entries. | Needs a server-side API (the token must not reach the browser). |
-| Cloudflare D1 | Free SQLite. | Only reachable through Workers, so a bigger rewrite. |
+| Long idle, documented | CLI docs: free databases are archived after 10 days of inactivity and are brought back with `turso group unarchive`. The docs do not say whether a request to an archived database fails. The current pricing page says nothing about it. | Compute suspends after 5 minutes and wakes "within a few hundred milliseconds" on the next query. Branches older than 14 days and not accessed for 24 hours are archived to object storage and restored automatically on connect. The docs do not say whether the main branch is exempt. No deletion of idle free projects is documented, and free-plan limits are stated not to delete data. |
+| Worst case after months idle | Possibly errors until someone runs the unarchive command: an outage that needs manual action. | A slower first request. No manual step is documented. |
+| Seen in practice | The existing `wishboard` database, idle for weeks, answered in 0.34 s. This is one data point, and a token had just been created for it, which may have counted as activity. | Not tested (no project yet). |
+| Keep-alive | One request a day from a Vercel cron job (free plan allows once per day, hour-level precision) resolves the 10-day rule and the Neon branch rule. | Same. |
+| Database | SQLite (libSQL): simple types, no row-level security. | Postgres: row-level security, richer types and tooling. |
+| Backups | Free plan: 1 day point-in-time restore; databases deleted on the free plan are not restorable. | Free plan: 6 hours of history. |
+| Limits that matter here | 5 GB, 500M reads and 10M writes per month: far above this app. | 1 GB per project and 100 compute-hours per month: far above this app. |
+| Work left | Schema and 54 copied items exist; the `db-migration` branch has the Vercel function. Needs rebasing, item-level writes, tests, a final data copy. | Everything from scratch: schema port, function with the Neon serverless driver, data copy, tests. |
+| Latency when warm | Fast reads from the EU region. | Comparable; each request after 5 idle minutes pays the wake-up. |
 
-If you migrate, Supabase is the simplest path. Keep Firebase Auth for the first step (the app only needs a verified user id) or move to Supabase Auth later; moving both at once adds risk. Because `src/lib/wishlistHandlers.ts` and `authHandlers.ts` are the only files that touch Firebase, the swap is contained, and that is also the right place to add tests first.
+Recommendation: if you want SQL, use Neon, because its failure mode is "slow" rather than "down" and needs no manual step. Choose Turso only together with the daily keep-alive, accepting the unverified archive rule in exchange for finishing sooner. Staying on Firestore remains the lowest-risk option for an app this rarely used, since it never pauses and needs no extra server; migrating mainly buys SQL and database-enforced privacy.
 
 ## Plan (suggested order)
 
@@ -202,6 +221,6 @@ If you migrate, Supabase is the simplest path. Keep Firebase Auth for the first 
    - Add try/catch with visible error states, `.catch` on every effect promise, route guards and a 404 page.
    - Enable `experimentalAutoDetectLongPolling` (done) and measure again; the region (`eur3`) is already fine.
 2. **Quick usability wins.** Share/copy-link button, URL validation for link and image, optional price, fix dialog copy, private-item badge, clickable item rows with descriptive link text, accessible labels, fix "WishLinker", page titles per route, replace `via.placeholder.com` with a local fallback.
-3. **Decide on SQL.** If step 1 isn't enough, or you want database-enforced privacy, migrate data to Supabase Postgres behind the existing handler functions (tables: `wishlists`, `items`, `follows`). Export Firestore, import, run both in parallel for a short time, then switch.
+3. **Decide on SQL.** If step 1 isn't enough, or you want database-enforced privacy, migrate data to Neon Postgres (Supabase is ruled out because it pauses idle projects) behind the existing handler functions (tables: `wishlists`, `items`, `follows`). Export Firestore, import, run both in parallel for a short time, then switch.
 4. **Redesign.** Warm "paper and nature" look with a serif main font, built on design tokens in `index.css` (colors, type scale, radii) so shadcn components inherit it. Do this after steps 1–2 so the new look isn't built on broken flows, and ideally in parallel with step 3 only if they touch different files.
 5. **Housekeeping.** Remove unused dependencies (`yup` or `zod`, `redux`) and unused env entries, lazy-load routes to cut the 883 kB bundle, add a test setup (Vitest plus handler tests) so the migration can be verified.

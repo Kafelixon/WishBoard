@@ -76,5 +76,17 @@ export default ts.config(
         { allowConstantExport: true },
       ],
     },
+  },
+  {
+    // Node-side code: tests and one-off scripts are plain scripts, not UI.
+    files: ["api/__tests__/**/*.ts", "scripts/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-floating-promises": "off",
+      "@typescript-eslint/no-unnecessary-condition": "off",
+      "@typescript-eslint/restrict-template-expressions": [
+        "error",
+        { allowNumber: true },
+      ],
+    },
   }
 );
