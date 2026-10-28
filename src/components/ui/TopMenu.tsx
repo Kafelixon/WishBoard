@@ -24,7 +24,7 @@ function LogoMark() {
     <svg
       viewBox="0 0 24 24"
       className="hidden size-6 text-primary sm:block"
-      fill="currentColor"
+      fill="none"
       stroke="currentColor"
       strokeWidth="1.6"
       strokeLinecap="round"

@@ -142,15 +142,13 @@ export default function WishlistItemsTable({
 
   return (
     <section aria-label="Items" className="flex flex-col gap-8">
-      {!isLoading && items.length > 0 && (
+      {!isLoading && items.length > 0 && canEditWishlist && (
         <div className="flex flex-wrap items-end justify-between gap-4 border-y border-border py-4">
           <dl className="flex flex-wrap gap-x-10 gap-y-3">
             <Stat label={items.length === 1 ? "item" : "items"} value={String(items.length)} />
-            {canEditWishlist && privateCount > 0 && (
-              <Stat label="private" value={String(privateCount)} />
-            )}
+            {privateCount > 0 && <Stat label="private" value={String(privateCount)} />}
           </dl>
-          {canEditWishlist && userId && (
+          {userId && (
             <Button onClick={openAddDialog}>
               <Plus aria-hidden="true" /> Add item
             </Button>
