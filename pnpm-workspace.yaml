@@ -5,3 +5,5 @@ allowBuilds:
 overrides:
   # @firebase/firestore pins ~1.9, which has known CVEs (Node-only code path).
   '@grpc/grpc-js@<1.13.6': 1.14.6
+  'zod@<4.6.6': 4.6.7
+  'yaml@<2.8.3': 2.9.1
