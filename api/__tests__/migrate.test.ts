@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { it } from "node:test";
-import { planRows } from "../../scripts/migrate-firestore";
+import { planRows } from "../../scripts/migrate-firestore.ts";
 
 it("plans rows: cents, order, defaults, and drops follows of missing wishlists", () => {
   const plan = planRows(

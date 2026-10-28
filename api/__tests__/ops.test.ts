@@ -3,9 +3,9 @@ import { after, describe, it } from "node:test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { exportJWK, generateKeyPair, SignJWT, createLocalJWKSet } from "jose";
-import { createVerifier, type Caller } from "../_lib/auth";
-import { poolDb } from "../_lib/db";
-import { handleOp, HttpError } from "../_lib/ops";
+import { createVerifier, type Caller } from "../_lib/auth.js";
+import { poolDb } from "../_lib/db.js";
+import { handleOp, HttpError } from "../_lib/ops.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = poolDb(pool);

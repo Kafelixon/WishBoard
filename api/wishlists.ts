@@ -1,9 +1,9 @@
 import { Pool } from "pg";
 import { createRemoteJWKSet } from "jose";
 import { attachDatabasePool } from "@vercel/functions";
-import { createVerifier, FIREBASE_JWKS_URL, type Caller } from "./_lib/auth";
-import { poolDb } from "./_lib/db";
-import { handleOp, HttpError, type Body } from "./_lib/ops";
+import { createVerifier, FIREBASE_JWKS_URL, type Caller } from "./_lib/auth.js";
+import { poolDb } from "./_lib/db.js";
+import { handleOp, HttpError, type Body } from "./_lib/ops.js";
 
 const projectId =
   process.env.FIREBASE_PROJECT_ID ?? process.env.VITE_APP_FIREBASE_PROJECT_ID ?? "";

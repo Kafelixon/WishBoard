@@ -1,6 +1,6 @@
 /** Local stand-in for Vercel: serves api/wishlists on :3001 (Vite proxies /api to it). */
 import { createServer } from "node:http";
-import { POST } from "../api/wishlists";
+import { POST } from "../api/wishlists.js";
 
 createServer((req, res) => {
   void (async () => {

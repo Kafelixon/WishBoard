@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import type { Caller } from "./auth";
-import type { Db, Queryable, Row } from "./db";
+import type { Caller } from "./auth.js";
+import type { Db, Queryable, Row } from "./db.js";
 
 export class HttpError extends Error {
   constructor(
