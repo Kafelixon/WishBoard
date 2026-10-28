@@ -164,7 +164,7 @@ export const UserWishlists: React.FC = () => {
             <button
               type="button"
               onClick={openAddDialog}
-              className="flex min-h-44 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-[1.5px] border-dashed border-input text-muted-foreground transition-colors hover:border-primary hover:bg-card hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-h-44 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-input text-muted-foreground transition-colors hover:border-primary hover:bg-card hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus className="size-6" aria-hidden="true" />
               Start a new list

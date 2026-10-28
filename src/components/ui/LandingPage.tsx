@@ -38,8 +38,8 @@ const SAMPLE_ITEMS = [
 function PaperPreview() {
   return (
     <div className="relative mx-auto w-full max-w-sm" aria-hidden="true">
-      <div className="absolute inset-0 translate-x-3 translate-y-3 rotate-3 rounded-2xl border border-border bg-secondary" />
-      <div className="relative -rotate-2 rounded-2xl border border-border bg-card p-6 shadow-lift">
+      <div className="absolute inset-0 translate-x-3 translate-y-3 rotate-3 rounded-xl border border-border bg-secondary" />
+      <div className="relative -rotate-2 rounded-xl border border-border bg-card p-6 shadow-lift">
         <div className="mb-5 flex items-center gap-3">
           <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Gift className="size-5" />
@@ -65,7 +65,7 @@ function PaperPreview() {
           ))}
         </ul>
       </div>
-      <div className="absolute -bottom-5 -right-2 flex rotate-3 items-center gap-2 rounded-full border border-border bg-popover px-4 py-2 text-sm shadow-dialog">
+      <div className="absolute -bottom-5 -right-2 flex rotate-3 items-center gap-2 rounded-lg border border-border bg-popover px-4 py-2 text-sm shadow-dialog">
         <Link2 className="size-4 text-primary" /> Link copied
       </div>
     </div>
@@ -82,7 +82,7 @@ export const LandingPage = () => {
     <div className="space-y-28 pt-4 md:pt-10">
       <section className="grid items-center gap-16 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-7">
-          <p className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-sm text-muted-foreground">
+          <p className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-1.5 text-sm text-muted-foreground">
             <Sprout className="size-4 text-primary" aria-hidden="true" />
             Wishlists, kept simple
           </p>
@@ -119,7 +119,7 @@ export const LandingPage = () => {
           {FEATURES.map((feature) => (
             <li
               key={feature.title}
-              className="flex gap-5 rounded-2xl border border-border bg-card p-6 shadow-paper"
+              className="flex gap-5 rounded-xl border border-border bg-card p-6 shadow-paper"
             >
               <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary [&_svg]:size-6">
                 {feature.icon}
@@ -135,7 +135,7 @@ export const LandingPage = () => {
         </ul>
       </section>
 
-      <section className="space-y-6 rounded-3xl bg-primary px-8 py-14 text-center text-primary-foreground shadow-lift md:px-16">
+      <section className="space-y-6 rounded-2xl bg-primary px-8 py-14 text-center text-primary-foreground shadow-lift md:px-16">
         <h2 className="mx-auto max-w-2xl font-display text-4xl font-semibold tracking-tight md:text-5xl">
           Where wishes come alive
         </h2>
