@@ -91,10 +91,16 @@ const ITEM_COLUMNS =
 const ALL_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 order by sort_order, id`;
 const PUBLIC_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 and is_public order by sort_order, id`;
 
-const listItems = async (q: Queryable, wishlistId: string, onlyPublic = false) =>
-  (await q.query(onlyPublic ? PUBLIC_ITEMS : ALL_ITEMS, [wishlistId])).rows.map(
-    toItem,
-  );
+const listItems = async (
+  q: Queryable,
+  wishlistId: string,
+  onlyPublic = false,
+): Promise<Item[]> => {
+  const { rows } = await q.query(onlyPublic ? PUBLIC_ITEMS : ALL_ITEMS, [
+    wishlistId,
+  ]);
+  return rows.map(toItem);
+};
 
 const touch = (q: Queryable, wishlistId: string) =>
   q.query("update wishlists set updated_at = now() where id = $1", [wishlistId]);
