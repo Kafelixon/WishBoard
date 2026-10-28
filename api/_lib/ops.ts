@@ -86,15 +86,15 @@ const lockOwned = async (q: Queryable, caller: Caller, wishlistId: string) => {
   }
 };
 
+const ITEM_COLUMNS =
+  "select id, name, price_cents, link, image, is_public from wishlist_items";
+const ALL_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 order by sort_order, id`;
+const PUBLIC_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 and is_public order by sort_order, id`;
+
 const listItems = async (q: Queryable, wishlistId: string, onlyPublic = false) =>
-  (
-    await q.query(
-      `select id, name, price_cents, link, image, is_public from wishlist_items
-       where wishlist_id = $1 ${onlyPublic ? "and is_public" : ""}
-       order by sort_order, id`,
-      [wishlistId],
-    )
-  ).rows.map(toItem);
+  (await q.query(onlyPublic ? PUBLIC_ITEMS : ALL_ITEMS, [wishlistId])).rows.map(
+    toItem,
+  );
 
 const touch = (q: Queryable, wishlistId: string) =>
   q.query("update wishlists set updated_at = now() where id = $1", [wishlistId]);
