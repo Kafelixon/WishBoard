@@ -111,7 +111,7 @@
     --border: 38 25% 80%;
     --input: 38 25% 78%;
     --ring: 111 23% 30%;
-    --radius: 0.625rem;
+    --radius: 0.875rem;
   }
 }
 
@@ -132,9 +132,8 @@
     font-feature-settings: "kern", "liga", "onum";
     background-image:
       url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .27 0 0 0 0 .18 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
-      radial-gradient(ellipse at 0% 0%, hsl(111deg 30% 74% / 80%), transparent 60%),
-      radial-gradient(ellipse at 100% 100%, hsl(28deg 55% 74% / 80%), transparent 60%),
-      radial-gradient(ellipse at 100% 0%, hsl(45deg 60% 80% / 45%), transparent 50%);
+      radial-gradient(ellipse at 0% 0%, hsl(111deg 25% 82% / 45%), transparent 55%),
+      radial-gradient(ellipse at 100% 100%, hsl(30deg 45% 80% / 50%), transparent 55%);
     background-attachment: fixed;
   }
 
