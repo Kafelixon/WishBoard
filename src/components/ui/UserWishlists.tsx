@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Plus, Sprout } from "lucide-react";
 import {
   createWishlist,
   deleteWishlist,
@@ -7,22 +8,23 @@ import {
 } from "@/lib/wishlistHandlers";
 import { Wishlist } from "@/lib/types";
 import { useUserId, useUserName } from "@/lib/common";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePageTitle } from "@/lib/usePageTitle";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { EmptyState, PageHeader } from "@/components/ui/page";
 import { useToast } from "@/components/ui/use-toast";
 import {
   WishlistCard,
   WishlistCardSkeleton,
 } from "@/components/ui/wishlist-card";
 import { WishlistEditDialog } from "./WishlistEditDialog";
-import { Pencil, X } from "lucide-react";
 
 export const UserWishlists: React.FC = () => {
+  usePageTitle("Your wishlists");
+  const userName = useUserName();
   const PLACEHOLDER_ITEM: Wishlist = {
     id: "",
     name: "",
-    author: useUserName(),
+    author: userName,
     icon: "shopping-cart",
     updateTimestamp: 0,
   };
@@ -34,13 +36,6 @@ export const UserWishlists: React.FC = () => {
 
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
   const [actionType, setActionType] = useState<"Add" | "Update">("Add");
-  const [dialogTitle, setDialogTitle] = useState<string>("");
-  const [handleAction, setHandleAction] = useState<
-    (wishlist: Wishlist) => void
-  >(() => {
-    return undefined;
-  });
-  const [editMode, setEditMode] = useState<boolean>(false);
   const userId = useUserId();
   const { toast } = useToast();
 
@@ -56,8 +51,7 @@ export const UserWishlists: React.FC = () => {
       .finally(() => {
         setIsLoading(false);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable; reload only when the user changes
-  }, [userId]);
+  }, [userId, toast]);
 
   const runWishlistWrite = async (
     write: () => Promise<void>,
@@ -79,8 +73,9 @@ export const UserWishlists: React.FC = () => {
     }
   };
 
-  const handleItemChange = (changes: Partial<Wishlist>) =>
-    { setCurrentItem((current) => ({ ...current, ...changes })); };
+  const handleItemChange = (changes: Partial<Wishlist>) => {
+    setCurrentItem((current) => ({ ...current, ...changes }));
+  };
 
   const handleAddWishlist = async (wishlistToAdd: Wishlist) => {
     if (!wishlistToAdd.name) return;
@@ -107,79 +102,87 @@ export const UserWishlists: React.FC = () => {
     );
   };
 
-  const renderWishlists = () => {
-    if (!userId) {
-      return <p className="p-2">Please sign in to view your wishlists.</p>;
-    }
-    if (wishlists && wishlists.length > 0) {
-      return wishlists.map((wishlist) => (
-        <WishlistCard
-          key={wishlist.id}
-          wishlist={wishlist}
-          editMode={editMode}
-          handleEdit={(wishlist) => {
-            setCurrentItem(wishlist);
-            setActionType("Update");
-            setDialogTitle("Edit Your Wishlist");
-            setHandleAction(() => handleEditWishlist);
-            setDialogOpen(true);
-          }}
-        ></WishlistCard>
-      ));
-    }
-    return <p className="p-2">You don't have any wishlists yet.</p>;
+  const openAddDialog = () => {
+    setCurrentItem(PLACEHOLDER_ITEM);
+    setActionType("Add");
+    setDialogOpen(true);
   };
 
+  const openEditDialog = (wishlist: Wishlist) => {
+    setCurrentItem(wishlist);
+    setActionType("Update");
+    setDialogOpen(true);
+  };
+
+  const firstName = userName.split(" ")[0];
+
   return (
-    <Card className="shadow-lg glass">
-      <CardHeader className="h-22">
-        <CardTitle className="h-10 flex justify-between items-center">
-          Your Wishlists
-          {userId && (
-            <div className="flex gap-1">
-              <Button
-                onClick={() => {
-                  setCurrentItem(PLACEHOLDER_ITEM);
-                  setActionType("Add");
-                  setDialogTitle("Add New Wishlist");
-                  setHandleAction(() => handleAddWishlist);
-                  setDialogOpen(true);
-                }}
-              >
-                Add new
-              </Button>
-              <Button
-                className="p-2"
-                variant={!editMode ? "default" : "destructive"}
-                aria-label={editMode ? "Exit edit mode" : "Edit wishlists"}
-                onClick={() => { setEditMode(!editMode); }}
-              >
-                {editMode ? <X /> : <Pencil />}
-              </Button>
-            </div>
-          )}
-        </CardTitle>
-      </CardHeader>
+    <>
+      <PageHeader
+        eyebrow={firstName ? `Welcome back, ${firstName}` : "Welcome back"}
+        title="Your wishlists"
+        description="Keep every occasion in its own list, then share a link when you're ready."
+        actions={
+          <Button onClick={openAddDialog}>
+            <Plus aria-hidden="true" /> New wishlist
+          </Button>
+        }
+      />
       <WishlistEditDialog
         isOpen={dialogOpen}
         isSubmitting={isSubmitting}
         actionType={actionType}
-        dialogTitle={dialogTitle}
-        handleAction={handleAction}
+        dialogTitle={actionType === "Add" ? "New wishlist" : "Edit wishlist"}
+        handleAction={(wishlist) => {
+          void (actionType === "Add"
+            ? handleAddWishlist(wishlist)
+            : handleEditWishlist(wishlist));
+        }}
         setDialogOpen={setDialogOpen}
         handleItemChange={handleItemChange}
-        handleDelete={handleDelete}
+        handleDelete={() => {
+          void handleDelete();
+        }}
         wishlist={currentItem}
       />
-      <CardContent>
-        <ScrollArea className="h-72 w-full rounded-md border place-items-center glass-fg">
-          {isLoading
-            ? ["user-skeleton-1", "user-skeleton-2", "user-skeleton-3"].map((key) => (
-                <WishlistCardSkeleton key={key} />
-              ))
-            : renderWishlists()}
-        </ScrollArea>
-      </CardContent>
-    </Card>
+      {isLoading ? (
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
+          {["a", "b", "c"].map((key) => (
+            <li key={key}>
+              <WishlistCardSkeleton />
+            </li>
+          ))}
+        </ul>
+      ) : wishlists && wishlists.length > 0 ? (
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {wishlists.map((wishlist) => (
+            <li key={wishlist.id} className="animate-rise">
+              <WishlistCard wishlist={wishlist} onEdit={openEditDialog} />
+            </li>
+          ))}
+          <li>
+            <button
+              type="button"
+              onClick={openAddDialog}
+              className="flex min-h-44 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-input text-muted-foreground transition-colors hover:border-primary hover:bg-card hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Plus className="size-6" aria-hidden="true" />
+              Start a new list
+            </button>
+          </li>
+        </ul>
+      ) : (
+        <EmptyState
+          icon={<Sprout aria-hidden="true" />}
+          title="Plant your first wishlist"
+          description="Create a list for a birthday, a new home, or just because. You can add items and share it any time."
+          action={
+            <Button onClick={openAddDialog}>
+              <Plus aria-hidden="true" /> New wishlist
+            </Button>
+          }
+        />
+      )}
+    </>
   );
 };

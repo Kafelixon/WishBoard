@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { loginUser, loginWithGoogle, registerUser } from "@/lib/authHandlers";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
@@ -58,43 +59,86 @@ export const SignInForm = () => {
   };
 
   return (
-      <Card className="p-5 glass m-auto w-60">
+    <div className="mx-auto grid w-full max-w-5xl items-center gap-12 pt-4 md:pt-10 lg:grid-cols-2">
+      <div className="hidden space-y-5 lg:block">
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+          WishBoard
+        </p>
+        <h2 className="font-display text-5xl font-semibold leading-[1.05] tracking-tight">
+          A quieter way to share what you wish for.
+        </h2>
+        <p className="max-w-md text-lg text-muted-foreground">
+          Create lists for every occasion, keep some items private, and send one
+          link to the people who matter.
+        </p>
+      </div>
+      <Card className="mx-auto w-full max-w-md p-8">
+        <h1 className="font-display text-3xl font-semibold tracking-tight">
+          {registered ? "Welcome back" : "Create your account"}
+        </h1>
+        <p className="mt-1.5 text-muted-foreground">
+          {registered
+            ? "Sign in to see your wishlists."
+            : "It takes a minute. No credit card, ever."}
+        </p>
         <form
           noValidate
           onSubmit={(e) => { void handleSubmit(e); }}
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "8px",
-            padding: "8px 0",
-          }}
+          className="mt-7 flex flex-col gap-4"
         >
           {registered ? null : (
-            <Input
-              name="username"
-              autoComplete="username"
-              type="text"
-              aria-label="Username"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => { setUsername(e.target.value); }}
-              className="glass-fg"
-            />
+            <Field label="Username" id="username">
+              <Input
+                id="username"
+                name="username"
+                autoComplete="username"
+                type="text"
+                value={username}
+                onChange={(e) => { setUsername(e.target.value); }}
+              />
+            </Field>
           )}
-          {renderEmailInput(email, setEmail)}
-          {renderPasswordInput(password, setPassword, registered)}
+          <Field label="Email" id="email">
+            {renderEmailInput(email, setEmail)}
+          </Field>
+          <Field label="Password" id="password">
+            {renderPasswordInput(password, setPassword, registered)}
+          </Field>
           {formError && (
-            <p role="alert" className="text-red-600 text-xs">
+            <p role="alert" className="text-sm text-destructive">
               {formError}
             </p>
           )}
           {renderSubmitButton(registered, isSubmitting)}
+          <div className="flex items-center gap-3 text-sm text-muted-foreground" aria-hidden="true">
+            <span className="h-px flex-1 bg-border" />
+            or
+            <span className="h-px flex-1 bg-border" />
+          </div>
           {renderGoogleLoginButton(handleGoogleLogin)}
         </form>
         {renderToggleRegisterLogin(registered, setRegistered)}
       </Card>
+    </div>
   );
 };
+
+function Field({
+  label,
+  id,
+  children,
+}: {
+  label: string;
+  id: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid gap-2">
+      <Label htmlFor={id}>{label}</Label>
+      {children}
+    </div>
+  );
+}
 
 function renderEmailInput(
   email: string,
@@ -102,14 +146,13 @@ function renderEmailInput(
 ) {
   return (
     <Input
+      id="email"
       name="email"
       autoComplete="email"
       type="email"
-      aria-label="Email"
-      placeholder="Email"
+      placeholder="name@example.com"
       value={email}
       onChange={(e) => { setEmail(e.target.value); }}
-      className="glass-fg"
     />
   );
 }
@@ -121,21 +164,19 @@ function renderPasswordInput(
 ) {
   return (
     <Input
+      id="password"
       name="password"
       autoComplete={registered ? "current-password" : "new-password"}
       type="password"
-      aria-label="Password"
-      placeholder="Password"
       value={password}
       onChange={(e) => { setPassword(e.target.value); }}
-      className="glass-fg"
     />
   );
 }
 
 function renderSubmitButton(registered: boolean, loggingIn: boolean) {
   return (
-    <Button type="submit" className="shadow-md" disabled={loggingIn}>
+    <Button type="submit" size="lg" disabled={loggingIn}>
       {loggingIn ? (
         <RotateCw className="animate-spin" aria-label="Signing in" />
       ) : registered ? (
@@ -153,10 +194,11 @@ function renderGoogleLoginButton(
   return (
     <Button
       onClick={(e) => { void handleGoogleLogin(e); }}
+      type="button"
       variant="outline"
-      className="glass-fg"
+      size="lg"
     >
-      Sign in with Google
+      Continue with Google
     </Button>
   );
 }
@@ -166,16 +208,16 @@ function renderToggleRegisterLogin(
   setRegistered: React.Dispatch<React.SetStateAction<boolean>>
 ) {
   return (
-    <small className="text-center -mb-1">
+    <p className="mt-6 text-center text-sm text-muted-foreground">
       {registered ? "Don't have an account? " : "Already have an account? "}
       <button
         type="button"
         onClick={() => { setRegistered(!registered); }}
-        className="text-violet-500 cursor-pointer bg-transparent border-0 p-0"
+        className="cursor-pointer rounded-sm border-0 bg-transparent p-0 font-medium text-primary underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {registered ? "Sign up" : "Sign in"}
       </button>
-    </small>
+    </p>
   );
 }
 

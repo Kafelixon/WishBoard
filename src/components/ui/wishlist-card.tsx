@@ -1,89 +1,99 @@
-import React from "react";
+import { Link } from "react-router-dom";
+import { Link2, MoreHorizontal, Pencil } from "lucide-react";
 import { Wishlist } from "@/lib/types";
 import Icon from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useNavigate } from "react-router-dom";
-import { Pencil } from "lucide-react";
-import { Button } from "./button";
+import { useToast } from "@/components/ui/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-interface WishlistProps {
+interface WishlistCardProps {
   wishlist: Wishlist;
-  editMode: boolean;
-  handleEdit: (wishlist: Wishlist) => void;
+  /** Owners get an actions menu; followed wishlists pass nothing. */
+  onEdit?: (wishlist: Wishlist) => void;
 }
 
-export const WishlistCard: React.FC<WishlistProps> = ({
-  wishlist,
-  editMode,
-  handleEdit,
-}) => {
-  const navigate = useNavigate();
+const formatUpdated = (timestamp: number) =>
+  new Date(timestamp).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
-  const summary = (
-    <div className="flex items-center space-x-3">
-      <Icon name={wishlist.icon} className="w-6 h-6" />
-      <div>
-        <p className="font-semibold break-words max-w-96">{wishlist.name}</p>
-        <p className="text-gray-500 text-sm text-left">{wishlist.author}</p>
-      </div>
-    </div>
-  );
+export function WishlistCard({ wishlist, onEdit }: WishlistCardProps) {
+  const { toast } = useToast();
 
-  // In edit mode the row holds its own Edit button, so the row itself must not
-  // be a button (buttons cannot be nested).
-  if (editMode) {
-    return (
-      <div className="space-y-1 w-full">
-        <div className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-50">
-          {summary}
-          <Button
-            variant="outline"
-            className="p-2 size-9"
-            aria-label={`Edit ${wishlist.name}`}
-            onClick={() => {
-              handleEdit(wishlist);
-            }}
-          >
-            <Pencil aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-    );
-  }
+  const copyLink = () => {
+    const url = `${window.location.origin}/wishlist/${wishlist.id}`;
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        toast({ title: "Link copied", description: "Anyone with it can view the public items." });
+      })
+      .catch(() => {
+        toast({ title: "Could not copy the link", variant: "destructive" });
+      });
+  };
 
   return (
-    <button
-      type="button"
-      className="space-y-1 w-full text-left bg-transparent border-0 p-0 cursor-pointer"
-      onClick={() => {
-        void navigate(`/wishlist/${wishlist.id}`);
-      }}
-    >
-      <div className="flex items-center justify-between p-4 rounded-lg hover:bg-gray-100">
-        {summary}
-        <div>
-          <p className="text-gray-400 text-sm">
-            {new Date(wishlist.updateTimestamp).toLocaleDateString()}
-          </p>
+    <div className="group relative flex min-h-44 flex-col justify-between gap-6 rounded-xl border border-border bg-card p-5 shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift">
+      <div className="flex items-start justify-between">
+        <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon name={wishlist.icon} className="size-6" aria-hidden="true" />
         </div>
+        {onEdit && (
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              aria-label={`Actions for ${wishlist.name}`}
+              className="relative z-10 -mr-2 -mt-1 rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <MoreHorizontal className="size-5" aria-hidden="true" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem
+                onSelect={() => {
+                  onEdit(wishlist);
+                }}
+              >
+                <Pencil aria-hidden="true" /> Edit wishlist
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={copyLink}>
+                <Link2 aria-hidden="true" /> Copy link
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
-    </button>
-  );
-};
-
-export const WishlistCardSkeleton: React.FC = () => (
-  <div className="space-y-1">
-    <div className="flex items-center justify-between p-5 rounded-lg">
-      <div className="flex items-center space-x-3">
-        <Skeleton className="size-9" />
-        <div>
-          <Skeleton className="w-40 h-4 mb-2" />
-          <Skeleton className="w-10 h-3" />
-        </div>
-      </div>
-      <div>
-        <Skeleton className="w-10 h-3" />
+      <div className="min-w-0 space-y-1">
+        <h2 className="break-words font-display text-xl font-semibold leading-snug tracking-tight">
+          <Link
+            to={`/wishlist/${wishlist.id}`}
+            className="rounded-sm after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+          >
+            {wishlist.name}
+          </Link>
+        </h2>
+        <p className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
+          <span className="truncate">{wishlist.author}</span>
+          <span className="tabular shrink-0">Updated {formatUpdated(wishlist.updateTimestamp)}</span>
+        </p>
       </div>
     </div>
-  </div>
-);
+  );
+}
+
+export function WishlistCardSkeleton() {
+  return (
+    <div className="flex min-h-44 flex-col justify-between rounded-xl border border-border bg-card p-5">
+      <Skeleton className="size-12" />
+      <div className="space-y-2">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-3.5 w-1/2" />
+      </div>
+    </div>
+  );
+}
