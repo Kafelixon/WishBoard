@@ -14,9 +14,10 @@ const firebaseConfig = {
 
 export const firebase = initializeApp(firebaseConfig);
 export const auth = getAuth(firebase);
-// Falls back to long polling when the streaming transport is blocked (proxies, VPNs, ad blockers).
+// Long polling avoids the streaming transport that browsers drop after sleep, VPN or network
+// changes ("Fetch API cannot load ... due to access control checks"), at a small speed cost.
 export const firestore = initializeFirestore(firebase, {
-  experimentalAutoDetectLongPolling: true,
+  experimentalForceLongPolling: true,
 });
 
 // const analytics = getAnalytics(firebase);
