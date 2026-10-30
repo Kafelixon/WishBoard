@@ -234,15 +234,13 @@ const Stat: FC<{ label: string; value: string }> = ({ label, value }) => (
   </div>
 );
 
+const GRID_CLASS = "grid gap-4 min-[480px]:grid-cols-2 md:grid-cols-3 sm:gap-5 xl:grid-cols-4";
+
 const CardsSkeletonLoader = () => (
-  <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" aria-busy="true">
+  <ul className={GRID_CLASS} aria-busy="true">
     {["a", "b", "c", "d"].map((key) => (
-      <li key={key} className="overflow-hidden rounded-xl border border-border bg-card">
-        <Skeleton className="aspect-[4/3] rounded-none" />
-        <div className="space-y-2 p-4">
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-4 w-1/3" />
-        </div>
+      <li key={key} className="relative aspect-[4/5] overflow-hidden rounded-xl border border-border bg-[hsl(41_36%_88%)]">
+        <Skeleton className="absolute inset-x-2.5 bottom-2.5 h-16 bg-white/60" />
       </li>
     ))}
   </ul>
@@ -256,7 +254,7 @@ const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
       <div
         role="img"
         aria-label={`No image for ${name}`}
-        className="absolute inset-0 flex items-center justify-center text-muted-foreground/60"
+        className="absolute inset-0 flex items-center justify-center pb-16 text-muted-foreground/60"
       >
         <Gift className="size-10" aria-hidden="true" />
       </div>
@@ -271,7 +269,7 @@ const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
       onError={() => {
         setFailed(true);
       }}
-      className="absolute inset-0 size-full object-contain p-3 mix-blend-multiply"
+      className="absolute inset-0 size-full object-contain p-3 pb-[4.75rem] mix-blend-multiply"
     />
   );
 };
@@ -282,58 +280,65 @@ const CardsList: FC<{
   setCurrentItem: (item: WishlistItem) => void;
   setEditDialogOpen: (open: boolean) => void;
 }> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen }) => (
-  <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+  <ul className={GRID_CLASS}>
     {items.map((item) => {
       const isPrivate = item.public === false;
+      const title = <span className="line-clamp-2">{item.name}</span>;
       return (
         <li
           key={item.id}
-          className="group relative flex animate-rise flex-col overflow-hidden rounded-xl border border-border bg-card shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
+          className="group relative aspect-[4/5] animate-rise overflow-hidden rounded-xl border border-border bg-[hsl(41_36%_88%)] shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
         >
-          <div className="relative aspect-[4/3] shrink-0 overflow-hidden bg-[hsl(41_36%_88%)]">
-            <ItemImage src={item.image} name={item.name} />
-            {isPrivate && (
-              <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-md bg-card/95 px-2.5 py-1 text-xs font-medium text-destructive shadow-sm">
-                <Lock className="size-3" aria-hidden="true" />
-                Private
-                <span className="sr-only">, only you can see this</span>
-              </span>
-            )}
-            {canEditWishlist && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="absolute right-3 top-3 size-9 bg-card/95"
-                aria-label={`Edit ${item.name}`}
-                onClick={() => {
-                  setCurrentItem(item);
-                  setEditDialogOpen(true);
-                }}
-              >
-                <Pencil aria-hidden="true" />
-              </Button>
-            )}
-          </div>
-          <div className="flex flex-1 flex-col gap-3 p-4">
-            <div className="min-w-0 space-y-1">
-              <h2 className="break-words font-display text-lg font-semibold leading-snug tracking-tight">
-                {item.name}
+          <ItemImage src={item.image} name={item.name} />
+          {isPrivate && (
+            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-card/95 px-2 py-0.5 text-xs font-medium text-destructive shadow-sm">
+              <Lock className="size-3" aria-hidden="true" />
+              Private
+              <span className="sr-only">, only you can see this</span>
+            </span>
+          )}
+          {canEditWishlist && (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="absolute right-2.5 top-2.5 z-10 size-8 rounded-lg text-primary shadow-sm"
+              aria-label={`Edit ${item.name}`}
+              onClick={() => {
+                setCurrentItem(item);
+                setEditDialogOpen(true);
+              }}
+            >
+              <Pencil aria-hidden="true" />
+            </Button>
+          )}
+          <div className="absolute inset-x-2.5 bottom-2.5 flex items-center gap-3 rounded-lg border border-white/70 bg-white/80 py-2 pl-3 pr-2 shadow-lift backdrop-blur-md">
+            <div className="min-w-0 flex-1">
+              <h2 className="break-words font-display text-[0.95rem] font-semibold leading-tight tracking-tight">
+                {item.link ? (
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-sm after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
+                    aria-label={`${item.name}, view online (opens in a new tab)`}
+                  >
+                    {title}
+                  </a>
+                ) : (
+                  title
+                )}
               </h2>
-              <p className="tabular text-muted-foreground">
+              <p className="tabular text-sm text-muted-foreground">
                 {item.price > 0 ? formatPrice(item.price) : "Price not set"}
               </p>
             </div>
             {item.link && (
-              <a
-                href={item.link}
-                className="mt-auto inline-flex items-center gap-1.5 self-start rounded-sm text-[0.95rem] font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={`View ${item.name} online (opens in a new tab)`}
+              <span
+                className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm"
+                aria-hidden="true"
               >
-                View product
-                <ExternalLink className="size-3.5" aria-hidden="true" />
-              </a>
+                <ExternalLink className="size-4" />
+              </span>
             )}
           </div>
         </li>
