@@ -9,6 +9,7 @@ import { SpeedInsights } from "@vercel/speed-insights/react"
 import { Analytics } from "@vercel/analytics/react"
 
 import { TopMenu } from "@/components/ui/TopMenu";
+import { VerifyEmailBanner } from "@/components/ui/VerifyEmailBanner";
 import { LandingPage } from "@/components/ui/LandingPage";
 import { NotFound } from "@/components/ui/NotFound";
 import { RequireAuth } from "@/components/ui/RequireAuth";
@@ -70,6 +71,7 @@ const App = () => {
             {t("app.skipToContent")}
           </a>
           <TopMenu />
+          <VerifyEmailBanner />
           <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-8 sm:px-5 sm:pt-10">
           <Suspense fallback={null}>
           <Routes>

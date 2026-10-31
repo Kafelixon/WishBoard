@@ -109,6 +109,15 @@
     "wishlistName": "Give your wishlist a name",
     "hex": "Use a hex code like #2563eb."
   },
+  "verifyEmail": {
+    "message": "Please verify your email address. We sent a confirmation link when you signed up.",
+    "resend": "Resend email",
+    "resendIn_one": "Resend in {{count}} second",
+    "resendIn_other": "Resend in {{count}} seconds",
+    "check": "I've verified",
+    "sent": "Verification email sent. Check your inbox.",
+    "stillUnverified": "Your email isn't verified yet."
+  },
   "authErrors": {
     "invalidCredential": "Invalid email or password.",
     "invalidEmail": "That email address doesn't look right.",

@@ -80,6 +80,7 @@ export const registerUser = async (
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await sendEmailVerification(userCredential.user);
+    lastVerificationSend = { uid: userCredential.user.uid, at: Date.now() };
     await changeUsername(username);
     completeLogin(userCredential, navigate, from);
   } catch (error) {
@@ -132,4 +133,40 @@ const completeLogin = (
   const { uid, email, displayName, photoURL } = credential.user;
   login({ uid, displayName, email, photoURL });
   void navigate(from, { replace: true });
+};
+
+const RESEND_COOLDOWN_MS = 60_000;
+let lastVerificationSend: { uid: string; at: number } | null = null;
+
+/** Seconds until the given user may ask for another verification email (0 when they may now). */
+export const resendCooldownSeconds = (uid: string): number =>
+  lastVerificationSend?.uid === uid
+    ? Math.max(0, Math.ceil((lastVerificationSend.at + RESEND_COOLDOWN_MS - Date.now()) / 1000))
+    : 0;
+
+/** Sends the verification email again. Firebase rate-limits this and answers `auth/too-many-requests`. */
+export const resendVerificationEmail = async () => {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error(i18n.t("authErrors.userNotFound"));
+  }
+  try {
+    await sendEmailVerification(user);
+    lastVerificationSend = { uid: user.uid, at: Date.now() };
+  } catch (error) {
+    // Rate-limited means one went out recently, so hold off the same way as after a send.
+    if (getAuthErrorCode(error) === "auth/too-many-requests") {
+      lastVerificationSend = { uid: user.uid, at: Date.now() };
+    }
+    throw error;
+  }
+};
+
+/** Re-reads the account from Firebase (the SDK otherwise only refreshes emailVerified on sign-in and at startup). */
+export const refreshEmailVerified = async (): Promise<boolean> => {
+  if (!auth.currentUser) {
+    throw new Error(i18n.t("authErrors.userNotFound"));
+  }
+  await auth.currentUser.reload();
+  return auth.currentUser.emailVerified;
 };
