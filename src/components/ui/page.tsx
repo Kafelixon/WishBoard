@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 interface PageHeaderProps {
   eyebrow?: ReactNode;
   title: ReactNode;
+  /** Shown beside the title, e.g. a wishlist's icon. */
+  icon?: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   className?: string;
@@ -13,6 +15,7 @@ interface PageHeaderProps {
 export function PageHeader({
   eyebrow,
   title,
+  icon,
   description,
   actions,
   className,
@@ -24,6 +27,8 @@ export function PageHeader({
         className,
       )}
     >
+      <div className="flex min-w-0 items-center gap-4">
+      {icon}
       <div className="min-w-0 space-y-2">
         {eyebrow && (
           <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
@@ -36,6 +41,7 @@ export function PageHeader({
         {description && (
           <p className="max-w-xl text-lg text-muted-foreground">{description}</p>
         )}
+      </div>
       </div>
       {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
     </header>

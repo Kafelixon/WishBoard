@@ -3,6 +3,7 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
+  deleteField,
   doc,
   getDoc,
   getDocs,
@@ -16,7 +17,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreDb } from "@/firestoreSetup";
 import { WishlistItem, Wishlist } from "@/lib/types";
-import { toWishlistIconName } from "@/lib/wishlistIcons";
+import { toWishlistIconColor, toWishlistIconName } from "@/lib/wishlistIcons";
 import { v4 as uuid } from "uuid";
 
 const WISHLISTS_COLLECTION = "wishlists";
@@ -38,6 +39,7 @@ export const createWishlist: WishlistChanger = async (
     ownerId: userId,
     author: wishlist.author,
     iconName: wishlist.icon,
+    iconColor: toWishlistIconColor(wishlist.iconColor) ?? null,
     items: [],
     updateTimestamp: new Date().getTime(),
   });
@@ -83,6 +85,7 @@ export const updateWishlist: WishlistChanger = async (
       wishlistName: wishlist.name,
       author: wishlist.author,
       iconName: wishlist.icon,
+      iconColor: toWishlistIconColor(wishlist.iconColor) ?? deleteField(),
       updateTimestamp: new Date().getTime(),
     });
   });
@@ -155,6 +158,7 @@ export const findWishlistsByOwner = async (userId: string) => {
       name: String(docSnap.data().wishlistName),
       author: String(docSnap.data().author),
       icon: toWishlistIconName(String(docSnap.data().iconName)),
+      iconColor: toWishlistIconColor(docSnap.data().iconColor),
       updateTimestamp: docSnap.data().updateTimestamp as number,
     };
   });
@@ -304,6 +308,7 @@ interface WishlistData {
   wishlistName: string;
   author: string;
   iconName: string;
+  iconColor?: string | null;
   wishlist: number;
   updateTimestamp: number;
 }
@@ -326,6 +331,7 @@ const toWishlist = (wishlistId: string, data: WishlistData): Wishlist => ({
   name: data.wishlistName,
   author: data.author,
   icon: toWishlistIconName(data.iconName),
+  iconColor: toWishlistIconColor(data.iconColor),
   updateTimestamp: data.updateTimestamp,
 });
 

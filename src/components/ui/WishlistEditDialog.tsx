@@ -1,9 +1,9 @@
 import { Wishlist } from "@/lib/types";
-import { FC } from "react";
+import { FC, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Icon from "@/components/ui/icon";
+import Icon, { WishlistIconBadge } from "@/components/ui/icon";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,13 @@ import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { wishlistIcons, type WishlistIconName } from "@/lib/wishlistIcons";
+import {
+  WISHLIST_ICON_COLORS,
+  isHexColor,
+  toWishlistIconColor,
+  wishlistIcons,
+  type WishlistIconName,
+} from "@/lib/wishlistIcons";
 import { cn } from "@/lib/utils";
 
 interface WishlistDialogProps {
@@ -60,6 +66,11 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
     resolver: yupResolver(wishlistSchema),
   });
 
+  // Text being typed in the hex field; null shows the wishlist's current color.
+  const [hexDraft, setHexDraft] = useState<string | null>(null);
+  const hexValue = hexDraft ?? wishlist.iconColor ?? "";
+  const hexInvalid = hexValue !== "" && !isHexColor(hexValue);
+
   return (
     <Dialog open={isOpen} onOpenChange={setDialogOpen}>
       <DialogContent>
@@ -95,6 +106,12 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
               </p>
             )}
           </div>
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <WishlistIconBadge name={wishlist.icon} color={wishlist.iconColor} />
+            <span className="truncate font-display text-lg font-semibold">
+              {wishlist.name || "Preview"}
+            </span>
+          </div>
           <fieldset className="grid gap-2">
             <legend className="mb-2 text-sm font-medium">Icon</legend>
             <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
@@ -117,6 +134,70 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
                   <Icon name={name} className="size-5" aria-hidden="true" />
                 </button>
               ))}
+            </div>
+          </fieldset>
+          <fieldset className="grid gap-3">
+            <legend className="mb-2 text-sm font-medium">Icon color</legend>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                aria-label="Default color"
+                aria-pressed={!wishlist.iconColor}
+                onClick={() => {
+                  setHexDraft(null);
+                  handleItemChange({ iconColor: undefined });
+                }}
+                className={cn(
+                  "size-8 cursor-pointer rounded-full border-2 bg-primary transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  !wishlist.iconColor ? "border-foreground" : "border-transparent",
+                )}
+              />
+              {WISHLIST_ICON_COLORS.map(({ name, value }) => (
+                <button
+                  key={value}
+                  type="button"
+                  aria-label={name}
+                  aria-pressed={wishlist.iconColor === value}
+                  onClick={() => {
+                    setHexDraft(null);
+                    handleItemChange({ iconColor: value });
+                  }}
+                  style={{ backgroundColor: value }}
+                  className={cn(
+                    "size-8 cursor-pointer rounded-full border-2 transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    wishlist.iconColor === value ? "border-foreground" : "border-transparent",
+                  )}
+                />
+              ))}
+            </div>
+            <div className="grid gap-1.5">
+              <Label htmlFor="icon-color">Custom hex code</Label>
+              <Input
+                id="icon-color"
+                value={hexValue}
+                placeholder="#2563eb"
+                maxLength={7}
+                autoComplete="off"
+                spellCheck={false}
+                className="max-w-40 font-mono"
+                aria-invalid={hexInvalid ? true : undefined}
+                aria-describedby={hexInvalid ? "icon-color-error" : undefined}
+                onChange={(e) => {
+                  const text = e.target.value.trim();
+                  setHexDraft(text);
+                  if (text === "") handleItemChange({ iconColor: undefined });
+                  else if (isHexColor(text))
+                    handleItemChange({ iconColor: toWishlistIconColor(text) });
+                }}
+                onBlur={() => {
+                  setHexDraft(null);
+                }}
+              />
+              {hexInvalid && (
+                <p id="icon-color-error" role="alert" className="text-sm text-destructive">
+                  Use a hex code like #2563eb.
+                </p>
+              )}
             </div>
           </fieldset>
           <div

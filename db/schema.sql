@@ -10,9 +10,11 @@ CREATE TABLE IF NOT EXISTS wishlists (
   owner_id    text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   name        text NOT NULL,
   icon_name   text NOT NULL,
+  icon_color  text,
   author      text NOT NULL,
   updated_at  timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE wishlists ADD COLUMN IF NOT EXISTS icon_color text;
 CREATE INDEX IF NOT EXISTS wishlists_owner_idx ON wishlists(owner_id);
 
 CREATE TABLE IF NOT EXISTS wishlist_items (
