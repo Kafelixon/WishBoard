@@ -16,6 +16,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { usePasswordPrompt } from "@/components/ui/PasswordPromptDialog";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { useToast } from "./use-toast";
 import { usePageTitle } from "@/lib/usePageTitle";
@@ -177,6 +179,7 @@ const ChangeEmail: React.FC = () => {
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [isValid, setIsValid] = useState(true);
+  const { askPassword, passwordDialog } = usePasswordPrompt();
 
   const isValidEmail = (email: string) => {
     const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
@@ -198,7 +201,7 @@ const ChangeEmail: React.FC = () => {
     }
 
     try {
-      const user = await reauthenticateWithPassword(t, toast);
+      const user = await reauthenticateWithPassword(t, toast, askPassword);
       if (!user) return;
 
       await verifyBeforeUpdateEmail(user, email);
@@ -234,6 +237,7 @@ const ChangeEmail: React.FC = () => {
       >
         {t("settings.email.button")}
       </Button>
+      {passwordDialog}
     </CommonSettingsForm>
   );
 };
@@ -253,7 +257,11 @@ const authErrorTitle = (t: TFunction, error: unknown, fallback: string): string 
  * stop quietly (session not ready, Google-only account, prompt cancelled).
  * Rejects when Firebase rejects the password.
  */
-async function reauthenticateWithPassword(t: TFunction, toast: Toast): Promise<User | null> {
+async function reauthenticateWithPassword(
+  t: TFunction,
+  toast: Toast,
+  askPassword: () => Promise<string | null>,
+): Promise<User | null> {
   const user = auth.currentUser;
   if (!user?.email) {
     toast({
@@ -272,7 +280,7 @@ async function reauthenticateWithPassword(t: TFunction, toast: Toast): Promise<U
     return null;
   }
 
-  const password = window.prompt(t("settings.reauth.prompt"));
+  const password = await askPassword();
   if (!password) return null;
 
   await reauthenticateWithCredential(
@@ -346,13 +354,12 @@ const RemoveAccount: React.FC = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const { askPassword, passwordDialog } = usePasswordPrompt();
 
   const removeAccount = async () => {
-    const confirmDelete = window.confirm(t("settings.delete.confirm"));
-    if (!confirmDelete) return;
-
     try {
-      const user = await reauthenticateWithPassword(t, toast);
+      const user = await reauthenticateWithPassword(t, toast, askPassword);
       if (!user) return;
 
       await deleteUserData(user.uid);
@@ -378,10 +385,19 @@ const RemoveAccount: React.FC = () => {
       <Button
         variant="outline"
         className="self-start border-destructive/40 text-destructive hover:bg-destructive/10"
-        onClick={() => void removeAccount()}
+        onClick={() => { setConfirmOpen(true); }}
       >
         {t("settings.delete.button")}
       </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={t("settings.delete.label")}
+        description={t("settings.delete.confirm")}
+        confirmLabel={t("settings.delete.button")}
+        onConfirm={() => void removeAccount()}
+      />
+      {passwordDialog}
     </CommonSettingsForm>
   );
 };
