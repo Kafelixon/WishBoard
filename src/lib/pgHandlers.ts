@@ -1,5 +1,6 @@
 import { auth } from "@/firebaseSetup";
 import { readCachedIdToken } from "@/lib/cachedToken";
+import { getStoredUser } from "@/lib/userStore";
 import { WishlistItem, Wishlist } from "@/lib/types";
 import { toWishlistIconName } from "@/lib/wishlistIcons";
 import type {
@@ -12,20 +13,10 @@ import type {
 /** Postgres-backed handlers: same contract as firestoreHandlers, over /api/wishlists. */
 
 /**
- * Whether a user was signed in last time, read straight from the persisted
- * user store (synchronous, so it doesn't depend on rehydration having finished).
- * Anything unreadable counts as signed in, so we only skip the auth wait when sure.
+ * Whether a user was signed in last time, read synchronously from the saved user
+ * so it doesn't depend on React or Firebase having started.
  */
-function wasSignedIn(): boolean {
-  try {
-    const raw = localStorage.getItem("persist:root");
-    if (raw === null) return false;
-    const slice = (JSON.parse(raw) as { user?: string }).user;
-    return slice === undefined || (JSON.parse(slice) as { user: unknown }).user !== null;
-  } catch {
-    return true;
-  }
-}
+const wasSignedIn = (): boolean => getStoredUser() !== null;
 
 async function send<T>(
   op: string,

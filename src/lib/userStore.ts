@@ -12,8 +12,9 @@ const read = (): User | null => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) return null;
-    const slice = (JSON.parse(raw) as { user?: string }).user;
-    return slice === undefined ? null : (JSON.parse(slice) as { user: User | null }).user;
+    // redux-persist stored each key of the slice as a JSON string: { user: '{"uid":…}' | 'null', _persist: … }
+    const stored = (JSON.parse(raw) as { user?: string }).user;
+    return stored === undefined ? null : (JSON.parse(stored) as User | null);
   } catch {
     return null;
   }
@@ -24,7 +25,7 @@ const write = (user: User | null) => {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        user: JSON.stringify({ user }),
+        user: JSON.stringify(user),
         _persist: JSON.stringify({ version: -1, rehydrated: true }),
       }),
     );
@@ -34,6 +35,9 @@ const write = (user: User | null) => {
 };
 
 let current = read();
+
+/** The saved user, without subscribing (for code that runs outside React). */
+export const getStoredUser = (): User | null => current;
 const listeners = new Set<() => void>();
 
 const setUser = (user: User | null) => {
