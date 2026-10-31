@@ -58,3 +58,13 @@ test.describe("Polish locale", () => {
     await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
   });
 });
+
+test("the landing footer links to LinkedIn in both languages", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("link", { name: "LinkedIn", exact: true })).toHaveAttribute(
+    "href",
+    /linkedin\.com/,
+  );
+  await page.getByLabel("Language").selectOption("pl");
+  await expect(page.getByRole("link", { name: "LinkedInie" })).toHaveAttribute("href", /linkedin\.com/);
+});

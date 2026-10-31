@@ -8,7 +8,7 @@ import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 const AccountMenu = lazy(() => import("./AccountMenu"));
 
 const navLinkClass =
-  "rounded-md px-2.5 py-1.5 text-sm text-muted-foreground sm:px-3.5 sm:text-[0.95rem] transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-secondary aria-[current=page]:text-foreground";
+  "rounded-md px-2.5 pb-1 pt-2 text-sm text-muted-foreground sm:px-3.5 sm:text-[0.95rem] transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-secondary aria-[current=page]:text-foreground";
 
 function LogoMark() {
   return (

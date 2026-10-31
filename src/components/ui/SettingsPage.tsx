@@ -80,7 +80,7 @@ const ChooseLanguage: React.FC = () => {
       label={t("settings.language.label")}
       description={t("settings.language.description")}
     >
-      <LanguageSwitcher compact className="self-start" />
+      <LanguageSwitcher hideLabel className="self-start" />
     </CommonSettingsForm>
   );
 };

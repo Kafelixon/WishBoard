@@ -167,7 +167,7 @@ export const LandingPage = () => {
         <Trans
           i18nKey="landing.footer"
           components={{
-            link: (
+            linkedin: (
               <LinkedInLink />
             ),
           }}
