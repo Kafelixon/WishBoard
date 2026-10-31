@@ -49,7 +49,8 @@ test.describe("Polish locale", () => {
 
   test("the language switcher changes and remembers the language", async ({ page }) => {
     await page.goto("/");
-    await page.getByLabel("Język").selectOption("en");
+    await page.getByRole("button", { name: /Język/ }).click();
+    await page.getByRole("menuitemradio", { name: "English" }).click();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
     await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
 
@@ -65,6 +66,7 @@ test("the landing footer links to LinkedIn in both languages", async ({ page }) 
     "href",
     /linkedin\.com/,
   );
-  await page.getByLabel("Language").selectOption("pl");
+  await page.getByRole("button", { name: /Language/ }).click();
+  await page.getByRole("menuitemradio", { name: "Polski" }).click();
   await expect(page.getByRole("link", { name: "LinkedInie" })).toHaveAttribute("href", /linkedin\.com/);
 });

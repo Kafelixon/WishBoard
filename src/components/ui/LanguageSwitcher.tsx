@@ -1,57 +1,54 @@
-import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Globe } from "lucide-react";
 import { SUPPORTED_LANGUAGES, currentLanguage } from "@/i18n";
-import { Label } from "@/components/ui/label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
 interface LanguageSwitcherProps {
   className?: string;
-  /** A quiet header-sized control with a globe icon and a hidden label. */
+  /** A quiet, borderless trigger sized for the header. */
   compact?: boolean;
-  /** Hides the visible label (it stays available to screen readers). Defaults to `compact`. */
-  hideLabel?: boolean;
 }
 
 /** Picks the UI language; the choice is saved to localStorage by the language detector. */
-export function LanguageSwitcher({ className, compact = false, hideLabel = compact }: LanguageSwitcherProps) {
+export function LanguageSwitcher({ className, compact = false }: LanguageSwitcherProps) {
   const { t, i18n } = useTranslation();
-  const id = useId();
+  const active = currentLanguage();
 
   return (
-    <div className={cn("grid gap-2", className)}>
-      <Label htmlFor={id} className={hideLabel ? "sr-only" : undefined}>
-        {t("language.label")}
-      </Label>
-      <div className="relative inline-flex items-center text-muted-foreground focus-within:text-foreground">
-        <Globe
-          className={cn("pointer-events-none absolute size-4", compact ? "left-2" : "left-3.5")}
-          aria-hidden="true"
-        />
-        <select
-          id={id}
-          value={currentLanguage()}
-          onChange={(event) => {
-            void i18n.changeLanguage(event.target.value);
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label={`${t("language.label")}: ${t(`language.${active}`)}`}
+        className={cn(
+          "inline-flex cursor-pointer items-center gap-2 rounded-lg pt-[0.2em] text-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-secondary [&_svg]:relative [&_svg]:-top-[0.1em] [&_svg]:size-4 [&_svg]:text-muted-foreground",
+          compact ? "h-9 px-2 text-sm" : "h-11 border border-input bg-card px-3.5 text-base",
+          className,
+        )}
+      >
+        <Globe aria-hidden="true" />
+        {t(`language.${active}`)}
+        <ChevronDown aria-hidden="true" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuRadioGroup
+          value={active}
+          onValueChange={(code) => {
+            void i18n.changeLanguage(code);
           }}
-          className={cn(
-            "cursor-pointer appearance-none rounded-lg pt-[0.2em] text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-            compact
-              ? "h-9 bg-transparent pl-8 pr-7 text-sm hover:bg-secondary"
-              : "h-11 border border-input bg-card pl-10 pr-9 text-base hover:border-foreground/30",
-          )}
         >
           {SUPPORTED_LANGUAGES.map((code) => (
-            <option key={code} value={code} lang={code}>
+            <DropdownMenuRadioItem key={code} value={code} lang={code}>
               {t(`language.${code}`)}
-            </option>
+            </DropdownMenuRadioItem>
           ))}
-        </select>
-        <ChevronDown
-          className={cn("pointer-events-none absolute size-4", compact ? "right-2" : "right-3")}
-          aria-hidden="true"
-        />
-      </div>
-    </div>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
