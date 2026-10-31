@@ -14,17 +14,17 @@ pnpm lint       # eslint . --max-warnings 0 (warnings fail the build)
 pnpm preview
 ```
 
-There is no test runner configured. `pnpm build` (type-check) and `pnpm lint` are the verification steps; CI runs ESLint (`.github/workflows/eslint.yml`) and deploys `pnpm run build` output to Firebase Hosting on merge to `main`.
+There is no test runner configured. `pnpm build` (type-check) and `pnpm lint` are the verification steps; CI runs ESLint (`.github/workflows/eslint.yml`); deployment is Vercel.
 
 ESLint uses `typescript-eslint` **strictTypeChecked** + stylistic, `@eslint-react` strict, react-hooks and jsx-a11y strict, with `reportUnusedDisableDirectives: "error"`. Unused vars must be prefixed with `_`.
 
 ## Environment
 
-Firebase config is read from `VITE_APP_FIREBASE_*` env vars (`src/firebaseSetup.ts`); the same vars are injected from GitHub secrets in the Firebase deploy workflows. `.env` also contains Supabase/Turso entries that nothing in `src/` uses.
+Firebase config is read from `VITE_APP_FIREBASE_*` env vars (`src/firebaseSetup.ts`), and must be set in the Vercel project. `.env` also contains Supabase/Turso entries that nothing in `src/` uses.
 
 ## Architecture
 
-Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No backend of its own: the browser talks directly to Firebase Auth and Firestore. SPA fallback rewrites exist for both Firebase Hosting (`firebase.json`) and Vercel (`vercel.json`; Vercel Analytics/SpeedInsights are mounted in `App.tsx`).
+Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No backend of its own: the browser talks directly to Firebase Auth and Firestore. Deployed on Vercel, whose SPA fallback rewrites live in `vercel.json`; Vercel Analytics/SpeedInsights are mounted in `App.tsx`.
 
 - `@/` alias -> `src/` (set in both `vite.config.ts` and `tsconfig.json`).
 - **Routing** (`src/App.tsx`): `/`, `/login`, `/wishlists`, `/wishlist/:wishlistId`, `/settings`, under `BrowserRouter` (`main.tsx`).
@@ -44,7 +44,7 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
 - `DATABASE_URL` (server only, never `VITE_`-prefixed) comes from `neon env pull` into `.env.local`; local dev uses the Neon `test` branch.
 - `npm test` runs integration tests against that DB (`node --test` via tsx). `npm run dev:api` serves the function on :3001 and Vite proxies `/api` to it.
 - `scripts/migrate-firestore.ts` copies Firestore into Postgres (needs a service-account key; `--dry-run` first).
-- Postgres is the default, so any deployment needs the `/api` function (Vercel) and `DATABASE_URL`; the Firebase Hosting deploy serves static files only and has no `/api`. Set `VITE_BACKEND=firestore` for a Firestore-only build.
+- Postgres is the default, so any deployment needs the `/api` function (Vercel) and `DATABASE_URL`. Set `VITE_BACKEND=firestore` for a Firestore-only build (still deployed on Vercel).
 
 ## Known rough edges
 

@@ -75,3 +75,7 @@ lib-cov
 *.local
 .neon
 .vercel
+
+# Playwright
+test-results/
+playwright-report/
