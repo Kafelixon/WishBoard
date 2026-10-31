@@ -7,7 +7,9 @@
     "close": "Zamknij",
     "dismiss": "Odrzuć",
     "saving": "Zapisywanie",
-    "somethingWrong": "Coś poszło nie tak. Spróbuj ponownie."
+    "somethingWrong": "Coś poszło nie tak. Spróbuj ponownie.",
+    "cancel": "Anuluj",
+    "continue": "Dalej"
   },
   "language": {
     "label": "Język",
@@ -161,7 +163,9 @@
       "loadingDescription": "Spróbuj ponownie za chwilę.",
       "unavailable": "Niedostępne dla tego konta",
       "unavailableDescription": "Konta logujące się przez Google nie mogą tego zrobić w Ustawieniach.",
-      "prompt": "Podaj hasło, aby kontynuować."
+      "prompt": "Podaj hasło, aby kontynuować.",
+      "title": "Potwierdź hasło",
+      "passwordLabel": "Hasło"
     },
     "export": {
       "label": "Eksport danych",
