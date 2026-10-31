@@ -19,6 +19,9 @@ import { usePageTitle } from "@/lib/usePageTitle";
 import { changeUsername } from "@/lib/authHandlers";
 import {
   deleteUserData,
+  fetchFollowedWishlists,
+  fetchWishlistView,
+  findWishlistsByOwner,
   updateExistingWishlistsAuthor,
 } from "@/lib/wishlistHandlers";
 import { useUserId } from "@/lib/common";
@@ -36,6 +39,7 @@ export const SettingsPage = () => {
         <ChangeUsername />
         <ResetPassword />
         <ChangeEmail />
+        <ExportData />
         <RemoveAccount />
       </Card>
     </div>
@@ -247,6 +251,62 @@ async function reauthenticateWithPassword(toast: Toast): Promise<User | null> {
   );
   return user;
 }
+
+const ExportData: React.FC = () => {
+  const { toast } = useToast();
+  const userId = useUserId();
+  const [isExporting, setIsExporting] = useState(false);
+
+  const exportData = async () => {
+    setIsExporting(true);
+    try {
+      const [owned, followed] = await Promise.all([
+        findWishlistsByOwner(userId),
+        fetchFollowedWishlists(userId),
+      ]);
+      const wishlists = await Promise.all(
+        owned.map(async (wishlist) => ({
+          ...wishlist,
+          items: (await fetchWishlistView(wishlist.id, userId))?.items ?? [],
+        })),
+      );
+      const data = {
+        exportedAt: new Date().toISOString(),
+        email: auth.currentUser?.email ?? null,
+        wishlists,
+        followedWishlists: followed,
+      };
+
+      const url = URL.createObjectURL(
+        new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+      );
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "wishboard-export.json";
+      link.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Your data was exported" });
+    } catch (error) {
+      console.error("Error exporting data:", error);
+      toast({ title: "Failed to export your data.", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <CommonSettingsForm label="Export data" description="Download your wishlists, including private items, and the wishlists you follow as a JSON file.">
+      <Button
+        variant="outline"
+        className="self-start"
+        disabled={isExporting}
+        onClick={() => void exportData()}
+      >
+        {isExporting ? "Exporting…" : "Export my data"}
+      </Button>
+    </CommonSettingsForm>
+  );
+};
 
 const RemoveAccount: React.FC = () => {
   const { toast } = useToast();
