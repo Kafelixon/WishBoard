@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     // `pnpm dev:api` serves /api/wishlists locally (the default backend).
-    server: { proxy: { "/api": "http://localhost:3001" } },
+    server: { proxy: { "/api": `http://localhost:${process.env.API_PORT ?? "3001"}` } },
     resolve: {
       alias: [
         // Must come before "@": swaps the data layer so only one backend is bundled.

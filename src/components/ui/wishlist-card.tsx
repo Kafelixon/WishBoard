@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Link2, MoreHorizontal, Pencil } from "lucide-react";
 import { Wishlist } from "@/lib/types";
-import Icon from "@/components/ui/icon";
+import { WishlistIconBadge } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import {
@@ -46,9 +46,7 @@ export function WishlistCard({ wishlist, onEdit, onRename }: WishlistCardProps) 
   return (
     <div className="group relative flex min-h-44 flex-col justify-between gap-6 rounded-xl border border-border bg-card p-5 shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-start justify-between">
-        <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-          <Icon name={wishlist.icon} className="size-6" aria-hidden="true" />
-        </div>
+        <WishlistIconBadge name={wishlist.icon} color={wishlist.iconColor} />
         {(onEdit ?? onRename) && (
           <DropdownMenu>
             <DropdownMenuTrigger

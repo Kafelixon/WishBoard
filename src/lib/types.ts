@@ -14,6 +14,8 @@ export interface Wishlist {
   name: string;
   author: string;
   icon: WishlistIconName;
+  /** `#rrggbb`; undefined uses the theme color. */
+  iconColor?: string;
   updateTimestamp: number;
   /** The viewer's own name for a wishlist they follow; shown instead of `name`. */
   customName?: string;

@@ -20,7 +20,7 @@ interface Item {
   public: boolean;
 }
 
-const WISHLIST_COLUMNS = `id, name, author, icon_name,
+const WISHLIST_COLUMNS = `id, name, author, icon_name, icon_color,
   (extract(epoch from updated_at) * 1000)::bigint as updated_ms`;
 
 const toWishlist = (row: Row) => ({
@@ -28,6 +28,7 @@ const toWishlist = (row: Row) => ({
   name: String(row.name),
   author: String(row.author),
   icon: String(row.icon_name),
+  iconColor: typeof row.icon_color === "string" ? row.icon_color : undefined,
   updateTimestamp: Number(row.updated_ms),
 });
 
@@ -44,6 +45,16 @@ const toItem = (row: Row): Item => ({
   image: typeof row.image === "string" ? row.image : "",
   public: Boolean(row.is_public),
 });
+
+const HEX_COLOR = /^#[0-9a-f]{6}$/;
+
+const color = (value: unknown): string | null => {
+  if (value === undefined || value === null || value === "") return null;
+  if (typeof value !== "string" || !HEX_COLOR.test(value)) {
+    throw new HttpError(400, "iconColor must be a #rrggbb color.");
+  }
+  return value;
+};
 
 const str = (value: unknown, field: string, allowEmpty = false): string => {
   if (typeof value !== "string" || (!allowEmpty && !value.trim())) {
@@ -142,14 +153,15 @@ export async function handleOp(
       await db.transaction(async (q) => {
         await ensureUser(q, user);
         await q.query(
-          `insert into wishlists (id, owner_id, name, author, icon_name)
-           values ($1, $2, $3, $4, $5)`,
+          `insert into wishlists (id, owner_id, name, author, icon_name, icon_color)
+           values ($1, $2, $3, $4, $5, $6)`,
           [
             id,
             user.uid,
             str(body.name, "name"),
             str(body.author, "author", true),
             str(body.icon, "icon"),
+            color(body.iconColor),
           ],
         );
       });
@@ -163,12 +175,13 @@ export async function handleOp(
         await lockOwned(q, user, id);
         await q.query(
           `update wishlists set name = $2, author = $3, icon_name = $4,
-           updated_at = now() where id = $1`,
+           icon_color = $5, updated_at = now() where id = $1`,
           [
             id,
             str(body.name, "name"),
             str(body.author, "author", true),
             str(body.icon, "icon"),
+            color(body.iconColor),
           ],
         );
       });

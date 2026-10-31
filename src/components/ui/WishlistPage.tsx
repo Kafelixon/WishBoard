@@ -19,6 +19,7 @@ import { ArrowLeft, Heart, Link2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { PageHeader } from "@/components/ui/page";
+import { WishlistIconBadge } from "@/components/ui/icon";
 
 interface FollowButtonProps {
   isWishlistOwner: boolean;
@@ -217,6 +218,7 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
         <PageHeader
           eyebrow={wishlistInfo.author ? `Wishlist by ${wishlistInfo.author}` : "Wishlist"}
           title={wishlistInfo.name}
+          icon={<WishlistIconBadge name={wishlistInfo.icon} color={wishlistInfo.iconColor} />}
           actions={
             <>
               <ShareButton wishlistId={wishlistId} toast={toast} />

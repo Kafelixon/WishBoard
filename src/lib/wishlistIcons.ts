@@ -53,3 +53,29 @@ export const isWishlistIconName = (name: string): name is WishlistIconName =>
 
 export const toWishlistIconName = (name: string): WishlistIconName =>
   isWishlistIconName(name) ? name : WISHLIST_ICON_FALLBACK;
+
+/** Suggested icon colors; users can also enter any hex code. */
+export const WISHLIST_ICON_COLORS = [
+  { name: "Red", value: "#dc2626" },
+  { name: "Orange", value: "#ea580c" },
+  { name: "Amber", value: "#d97706" },
+  { name: "Green", value: "#16a34a" },
+  { name: "Teal", value: "#0d9488" },
+  { name: "Blue", value: "#2563eb" },
+  { name: "Purple", value: "#7c3aed" },
+  { name: "Pink", value: "#db2777" },
+  { name: "Slate", value: "#475569" },
+] as const;
+
+const HEX_COLOR = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i;
+
+export const isHexColor = (value: string): boolean => HEX_COLOR.test(value);
+
+/** Normalizes `#abc`/`#AABBCC` to lowercase `#rrggbb`; anything else becomes undefined (theme default). */
+export const toWishlistIconColor = (value: unknown): string | undefined => {
+  if (typeof value !== "string" || !isHexColor(value)) return undefined;
+  const hex = value.toLowerCase();
+  if (hex.length === 7) return hex;
+  const [, r, g, b] = hex;
+  return `#${r}${r}${g}${g}${b}${b}`;
+};

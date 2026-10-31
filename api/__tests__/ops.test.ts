@@ -36,6 +36,20 @@ describe("wishlist operations", () => {
     assert.deepEqual(mine.map((w) => w.id), [wishlistId]);
   });
 
+  it("stores, changes and clears the icon color", async () => {
+    const view = async () =>
+      ((await op(alice, { op: "view", wishlistId })) as { info: { iconColor?: string } }).info
+        .iconColor;
+    assert.equal(await view(), undefined);
+    const update = (iconColor?: string) =>
+      op(alice, { op: "updateWishlist", id: wishlistId, name: "Birthday", author: "Alice", icon: "gift", iconColor });
+    await update("#2563eb");
+    assert.equal(await view(), "#2563eb");
+    await rejects(update("blue"), 400);
+    await update();
+    assert.equal(await view(), undefined);
+  });
+
   it("requires sign-in for writes", async () => {
     await rejects(op(null, { op: "listMine" }), 401);
   });

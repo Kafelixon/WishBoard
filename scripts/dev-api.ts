@@ -2,6 +2,8 @@
 import { createServer } from "node:http";
 import { POST } from "../api/wishlists.js";
 
+const port = Number(process.env.API_PORT ?? 3001);
+
 createServer((req, res) => {
   void (async () => {
     const chunks: Buffer[] = [];
@@ -20,6 +22,6 @@ createServer((req, res) => {
     res.writeHead(response.status, Object.fromEntries(response.headers));
     res.end(await response.text());
   })();
-}).listen(3001, () => {
-  console.log("dev api on http://localhost:3001");
+}).listen(port, () => {
+  console.log(`dev api on http://localhost:${String(port)}`);
 });
