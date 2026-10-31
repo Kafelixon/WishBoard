@@ -9,12 +9,29 @@ import type { Page, Route } from "@playwright/test";
  * so these tests prove the UI talks to the API correctly, not that the API is right.
  */
 
-export const TEST_USER = {
+export interface TestUser {
+  uid: string;
+  email: string;
+  password: string;
+  name: string;
+}
+
+export const TEST_USER: TestUser = {
   uid: "user-e2e",
   email: "e2e@example.com",
   password: "correct-horse",
   name: "E2E Tester",
 };
+
+/** A second account, for visitors of the test user's wishlists. */
+export const FRIEND_USER: TestUser = {
+  uid: "user-friend",
+  email: "friend@example.com",
+  password: "correct-horse",
+  name: "Friendly Visitor",
+};
+
+const USERS = [TEST_USER, FRIEND_USER];
 
 interface Item {
   id: string;
@@ -24,6 +41,8 @@ interface Item {
   link: string;
   image: string;
   public: boolean;
+  /** Visitors only: whether someone reserved it. Never sent to the owner. */
+  reservation?: "mine" | "taken";
 }
 
 interface StoredWishlist {
@@ -51,7 +70,7 @@ class ApiError extends Error {
 const base64Url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
 
 /** An unsigned token in the shape Firebase's client parses (and our fake API reads `sub` from). */
-const makeIdToken = (user: typeof TEST_USER) => {
+const makeIdToken = (user: TestUser) => {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
     iss: "https://securetoken.google.com/e2e",
@@ -120,6 +139,8 @@ const toItem = (raw: unknown, id: string): Item => {
 export class FakeBackend {
   private readonly wishlists = new Map<string, StoredWishlist>();
   /** user id -> followed wishlist id -> the follower's own name for it */
+  /** item id -> the user who reserved it */
+  private readonly reservations = new Map<string, string>();
   private readonly follows = new Map<string, Map<string, string | undefined>>();
 
   /** Adds a wishlist owned by someone else (or the test user), without going through the UI. */
@@ -135,6 +156,25 @@ export class FakeBackend {
       items: (wishlist.items ?? []).map((item) => toItem(item, randomUUID())),
     });
     return id;
+  }
+
+  /** The id of a seeded or created item, found by name. */
+  itemId(wishlistId: string, itemName: string): string {
+    const item = this.wishlists.get(wishlistId)?.items.find((candidate) => candidate.name === itemName);
+    if (!item) throw new Error(`No item "${itemName}" on wishlist ${wishlistId}`);
+    return item.id;
+  }
+
+  /** The owner's view has every item and no reservation info; a visitor's has public items, with reservations when signed in. */
+  private visibleItems(wishlist: StoredWishlist, uid: string | null): Item[] {
+    if (uid === wishlist.ownerId) return wishlist.items;
+    return wishlist.items
+      .filter((item) => item.public)
+      .map((item) => {
+        const holder = this.reservations.get(item.id);
+        if (!uid || !holder) return item;
+        return { ...item, reservation: holder === uid ? ("mine" as const) : ("taken" as const) };
+      });
   }
 
   handle(uid: string | null, body: Body): unknown {
@@ -208,6 +248,24 @@ export class FakeBackend {
         return wishlist.items;
       }
 
+      case "reserveItem":
+      case "unreserveItem": {
+        const me = user();
+        const wishlist = this.wishlists.get(required(body.wishlistId, "wishlistId"));
+        const itemId = required(body.itemId, "itemId");
+        const item = wishlist?.items.find((candidate) => candidate.id === itemId && candidate.public);
+        if (!wishlist || !item) throw new ApiError(404, "Item not found.");
+        if (wishlist.ownerId === me) throw new ApiError(403, "You cannot reserve items on your own wishlist.");
+        const holder = this.reservations.get(itemId);
+        if (body.op === "reserveItem") {
+          if (holder && holder !== me) throw new ApiError(409, "Someone has already reserved this item.");
+          this.reservations.set(itemId, me);
+        } else if (holder === me) {
+          this.reservations.delete(itemId);
+        }
+        return this.visibleItems(wishlist, me);
+      }
+
       case "listMine":
         return [...this.wishlists.values()]
           .filter((wishlist) => wishlist.ownerId === user())
@@ -221,7 +279,7 @@ export class FakeBackend {
         return {
           info: summary(wishlist),
           isOwner,
-          items: isOwner ? wishlist.items : wishlist.items.filter((item) => item.public),
+          items: this.visibleItems(wishlist, uid),
         };
       }
 
@@ -294,37 +352,40 @@ export async function installFakeBackend(page: Page, backend: FakeBackend): Prom
 
   await page.route(/identitytoolkit\.googleapis\.com\/v1\/accounts:signInWithPassword/, (route) => {
     const { email, password } = route.request().postDataJSON() as { email: string; password: string };
-    if (email !== TEST_USER.email || password !== TEST_USER.password) {
+    const user = USERS.find((candidate) => candidate.email === email);
+    if (password !== user?.password) {
       return json(route, 400, {
         error: { code: 400, message: "INVALID_LOGIN_CREDENTIALS", errors: [{ message: "INVALID_LOGIN_CREDENTIALS" }] },
       });
     }
     return json(route, 200, {
-      localId: TEST_USER.uid,
-      email: TEST_USER.email,
-      displayName: TEST_USER.name,
+      localId: user.uid,
+      email: user.email,
+      displayName: user.name,
       registered: true,
-      idToken: makeIdToken(TEST_USER),
-      refreshToken: "e2e-refresh-token",
+      idToken: makeIdToken(user),
+      refreshToken: `e2e-refresh-${user.uid}`,
       expiresIn: "3600",
     });
   });
 
-  await page.route(/identitytoolkit\.googleapis\.com\/v1\/accounts:lookup/, (route) =>
-    json(route, 200, {
+  await page.route(/identitytoolkit\.googleapis\.com\/v1\/accounts:lookup/, (route) => {
+    const { idToken } = route.request().postDataJSON() as { idToken: string };
+    const user = USERS.find((candidate) => candidate.uid === callerFrom(`Bearer ${idToken}`)) ?? TEST_USER;
+    return json(route, 200, {
       users: [
         {
-          localId: TEST_USER.uid,
-          email: TEST_USER.email,
-          displayName: TEST_USER.name,
+          localId: user.uid,
+          email: user.email,
+          displayName: user.name,
           emailVerified: true,
-          providerUserInfo: [{ providerId: "password", email: TEST_USER.email, federatedId: TEST_USER.email }],
+          providerUserInfo: [{ providerId: "password", email: user.email, federatedId: user.email }],
           createdAt: String(Date.now()),
           lastLoginAt: String(Date.now()),
         },
       ],
-    }),
-  );
+    });
+  });
 
   await page.route(/identitytoolkit\.googleapis\.com\/v2\/recaptchaConfig/, (route) =>
     json(route, 200, {
@@ -332,15 +393,17 @@ export async function installFakeBackend(page: Page, backend: FakeBackend): Prom
     }),
   );
 
-  await page.route(/securetoken\.googleapis\.com/, (route) =>
-    json(route, 200, {
-      access_token: makeIdToken(TEST_USER),
-      id_token: makeIdToken(TEST_USER),
-      refresh_token: "e2e-refresh-token",
+  await page.route(/securetoken\.googleapis\.com/, (route) => {
+    const refreshToken = new URLSearchParams(route.request().postData() ?? "").get("refresh_token") ?? "";
+    const user = USERS.find((candidate) => refreshToken === `e2e-refresh-${candidate.uid}`) ?? TEST_USER;
+    return json(route, 200, {
+      access_token: makeIdToken(user),
+      id_token: makeIdToken(user),
+      refresh_token: `e2e-refresh-${user.uid}`,
       expires_in: "3600",
-      user_id: TEST_USER.uid,
-    }),
-  );
+      user_id: user.uid,
+    });
+  });
 
   await page.route("**/api/wishlists", (route) => {
     try {

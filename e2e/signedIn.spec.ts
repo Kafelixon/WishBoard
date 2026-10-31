@@ -1,5 +1,5 @@
-import { expect, test as base, type Page } from "@playwright/test";
-import { FakeBackend, installFakeBackend, TEST_USER } from "./fakeBackend";
+import { expect, test as base, type Browser, type Page } from "@playwright/test";
+import { FakeBackend, FRIEND_USER, installFakeBackend, TEST_USER, type TestUser } from "./fakeBackend";
 
 // Signed-in flows against the production build, with Firebase Auth and the API faked (see fakeBackend.ts).
 const test = base.extend<{ backend: FakeBackend }>({
@@ -13,10 +13,10 @@ const test = base.extend<{ backend: FakeBackend }>({
   },
 });
 
-const signIn = async (page: Page) => {
+const signIn = async (page: Page, user: TestUser = TEST_USER) => {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(TEST_USER.email);
-  await page.getByLabel("Password").fill(TEST_USER.password);
+  await page.getByLabel("Email").fill(user.email);
+  await page.getByLabel("Password").fill(user.password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("button", { name: "Account menu" })).toBeVisible();
 };
@@ -175,5 +175,118 @@ test.describe("following", () => {
 
     await page.goto("/following");
     await expect(page.getByText("Nothing followed yet")).toBeVisible();
+  });
+});
+
+test.describe("reservations", () => {
+  const seedGifts = (backend: FakeBackend) => {
+    const id = backend.seed({
+      ownerId: TEST_USER.uid,
+      name: "Housewarming",
+      author: TEST_USER.name,
+      items: [
+        { name: "Tea set", public: true },
+        { name: "Candle", public: true },
+        { name: "Secret gift", public: false },
+      ],
+    });
+    return { id, tea: backend.itemId(id, "Tea set") };
+  };
+
+  /** A second, independent browser session signed in as `user`. */
+  const newSession = async (browser: Browser, backend: FakeBackend, user: TestUser) => {
+    const context = await browser.newContext();
+    const page = await context.newPage();
+    page.on("pageerror", (error) => {
+      throw error;
+    });
+    await installFakeBackend(page, backend);
+    await signIn(page, user);
+    return { page, close: () => context.close() };
+  };
+
+  test("signed-out visitors are asked to sign in and cannot reserve", async ({ page, backend }) => {
+    const { id } = seedGifts(backend);
+    await page.goto(`/wishlist/${id}`);
+    await expect(page.getByRole("heading", { name: "Tea set" })).toBeVisible();
+    await expect(page.getByText("Sign in to reserve a gift", { exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Reserve / })).toHaveCount(0);
+  });
+
+  test("a visitor reserves an item and then cancels the reservation", async ({ page, backend }) => {
+    const { id } = seedGifts(backend);
+    await signIn(page, FRIEND_USER);
+    await page.goto(`/wishlist/${id}`);
+    await expect(page.getByRole("button", { name: /^Reserve / })).toHaveCount(2);
+    await expect(page.getByRole("heading", { name: "Secret gift" })).toBeHidden();
+
+    await page.getByRole("button", { name: /^Reserve Tea set/ }).click();
+    await expect(page.getByText("Reserved. Other visitors will see it's taken.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Reserved by you", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toHaveCount(0);
+
+    // It is still there after a reload: the reservation lives on the server.
+    await page.reload();
+    await expect(page.getByText("Reserved by you", { exact: true })).toBeVisible();
+
+    await page.getByRole("button", { name: "Cancel your reservation of Tea set" }).click();
+    await expect(page.getByText("Reservation cancelled.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Reserved by you", { exact: true })).toBeHidden();
+    await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toBeVisible();
+  });
+
+  test("other visitors see a reserved item as taken, the owner and signed-out visitors see nothing", async ({
+    page,
+    backend,
+    browser,
+  }) => {
+    const { id } = seedGifts(backend);
+    await signIn(page, FRIEND_USER);
+    await page.goto(`/wishlist/${id}`);
+    await page.getByRole("button", { name: /^Reserve Tea set/ }).click();
+    await expect(page.getByText("Reserved by you", { exact: true })).toBeVisible();
+
+    const owner = await newSession(browser, backend, TEST_USER);
+    await owner.page.goto(`/wishlist/${id}`);
+    await expect(owner.page.getByRole("heading", { name: "Secret gift" })).toBeVisible();
+    await expect(owner.page.getByText(/^Reserved/)).toHaveCount(0);
+    await expect(owner.page.getByRole("button", { name: /Reserve / })).toHaveCount(0);
+    await owner.close();
+
+    const visitor = await browser.newContext();
+    const visitorPage = await visitor.newPage();
+    await installFakeBackend(visitorPage, backend);
+    await visitorPage.goto(`/wishlist/${id}`);
+    await expect(visitorPage.getByRole("heading", { name: "Tea set" })).toBeVisible();
+    await expect(visitorPage.getByText(/^Reserved/)).toHaveCount(0);
+    await visitor.close();
+  });
+
+  test("an item reserved by someone else shows as taken and has no Reserve button", async ({ page, backend }) => {
+    const { id, tea } = seedGifts(backend);
+    backend.handle("someone-else", { op: "reserveItem", wishlistId: id, itemId: tea });
+    await signIn(page, FRIEND_USER);
+    await page.goto(`/wishlist/${id}`);
+    await expect(page.getByText(/^Reserved, someone else is getting this/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Reserve Candle/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /Cancel your reservation/ })).toHaveCount(0);
+  });
+
+  test("losing a race for an item shows an error and refreshes it as taken", async ({ page, backend }) => {
+    const { id, tea } = seedGifts(backend);
+    await signIn(page, FRIEND_USER);
+    await page.goto(`/wishlist/${id}`);
+    await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toBeVisible();
+
+    // Someone else reserves it after this page loaded.
+    backend.handle("someone-else", { op: "reserveItem", wishlistId: id, itemId: tea });
+    await page.getByRole("button", { name: /^Reserve Tea set/ }).click();
+
+    await expect(
+      page.getByText("Couldn't reserve this item. Someone may have just reserved it.", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText(/^Reserved, someone else is getting this/)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toHaveCount(0);
   });
 });
