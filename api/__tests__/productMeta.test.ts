@@ -29,6 +29,11 @@ test("reads a product group's first variant offer", () => {
   assert.deepEqual(parseProductMeta(html, page), { name: "Printer", image: null, price: 599, currency: "EUR" });
 });
 
+test("cleans spacing entities out of titles", () => {
+  const html = `<meta property="og:title" content="AirPods 5 &NegativeMediumSpace;&amp;nbsp;White &ndash; 2025">`;
+  assert.equal(parseProductMeta(html, page).name, "AirPods 5 &nbsp;White – 2025");
+});
+
 test("returns nulls when nothing is found", () => {
   assert.deepEqual(parseProductMeta("<p>hi</p>", page), { name: null, image: null, price: null, currency: null });
 });

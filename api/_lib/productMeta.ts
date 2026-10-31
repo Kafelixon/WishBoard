@@ -10,6 +10,8 @@ export interface ProductMeta {
   currency: string | null;
 }
 
+const BLOCKED_MESSAGE =
+  "Couldn't read that page. The shop may block automated lookups, so fill in the details by hand.";
 const MAX_BYTES = 1_000_000;
 const MAX_REDIRECTS = 3;
 const TIMEOUT_MS = 6000;
@@ -75,9 +77,12 @@ export async function fetchPage(rawUrl: string): Promise<{ html: string; url: UR
         accept: "text/html,application/xhtml+xml",
       },
     }).catch(() => {
-      throw new HttpError(502, "Couldn't open that link.");
+      throw new HttpError(502, BLOCKED_MESSAGE);
     });
     const location = response.headers.get("location");
+    if (/captcha|challenge/i.test(location ?? "") || [401, 403, 429, 503].includes(response.status)) {
+      throw new HttpError(422, BLOCKED_MESSAGE);
+    }
     if (response.status >= 300 && response.status < 400 && location) {
       url = new URL(location, url);
       continue;
@@ -91,15 +96,22 @@ export async function fetchPage(rawUrl: string): Promise<{ html: string; url: UR
   throw new HttpError(502, "Too many redirects.");
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  quot: '"', apos: "'", lt: "<", gt: ">", amp: "&", nbsp: " ", ndash: "–", mdash: "—",
+  hellip: "…", lsquo: "‘", rsquo: "’", ldquo: "“", rdquo: "”", reg: "®", copy: "©", trade: "™",
+};
+
 const decodeEntities = (s: string): string =>
   s
     .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
     .replace(/&#x([0-9a-f]+);/gi, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;|&#039;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&amp;/g, "&");
+    .replace(/&([A-Za-z]+);/g, (whole, name: string) =>
+      // Spacing entities such as &NegativeMediumSpace; are noise in a title.
+      NAMED_ENTITIES[name] ?? (name.endsWith("Space") ? " " : whole),
+    )
+    .replace(/[\u200b-\u200d\u2060\ufeff]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /** Value of the first <meta> whose property/name/itemprop equals one of `keys`. */
 const metaContent = (html: string, keys: string[]): string | null => {

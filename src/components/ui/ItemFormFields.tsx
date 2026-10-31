@@ -63,8 +63,10 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
   } = useFormContext();
   const [fetching, setFetching] = useState(false);
   const [fetchMessage, setFetchMessage] = useState<string | null>(null);
+  // What the last fetch overwrote, so it can be taken back.
+  const [undoValues, setUndoValues] = useState<Partial<WishlistItem> | null>(null);
 
-  /** Fills name, image and price from the product link, without overwriting what's already typed. */
+  /** Fills name and image from the product link where empty, and sets the price and currency. */
   const fetchDetails = async () => {
     const link = normalizeUrl(getValues("link") as string);
     if (!link || !isValidWebUrl(link)) {
@@ -73,21 +75,25 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
     }
     setFetching(true);
     setFetchMessage(null);
+    setUndoValues(null);
     try {
       const meta = await fetchProductMeta(link);
       const changes: Partial<WishlistItem> = {};
       if (meta.name && !(getValues("name") as string)) changes.name = meta.name;
       if (meta.image && !(getValues("image") as string)) changes.image = meta.image;
-      const price = Number(getValues("price"));
-      if (meta.price !== null && !price) {
+      // The shop's price replaces any typed one (Undo brings it back); name and image only fill gaps.
+      if (meta.price !== null) {
         changes.price = meta.price;
         // The price is only meaningful in the currency the shop quoted it in.
         if (meta.currency) changes.currency = meta.currency;
       }
+      const previous: Record<string, unknown> = {};
+      for (const key of Object.keys(changes)) previous[key] = getValues(key);
       for (const [key, value] of Object.entries(changes)) {
         setValue(key, value, { shouldDirty: true, shouldValidate: true });
       }
       handleItemChange(changes);
+      setUndoValues(Object.keys(changes).length > 0 ? (previous) : null);
       setFetchMessage(
         Object.keys(changes).length > 0
           ? "Filled in what we could find."
@@ -101,6 +107,16 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
   };
   const currency = (watch("currency", currentItem.currency) as string | undefined) ?? DEFAULT_CURRENCY;
   const publicField = watch("public", currentItem.public) as boolean;
+
+  const undoFetch = () => {
+    if (!undoValues) return;
+    for (const [key, value] of Object.entries(undoValues)) {
+      setValue(key, value, { shouldDirty: true, shouldValidate: true });
+    }
+    handleItemChange(undoValues);
+    setUndoValues(null);
+    setFetchMessage("Put your earlier values back.");
+  };
 
   return (
     <>
@@ -140,7 +156,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
             </p>
           )}
           {field === "link" && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Button
                 type="button"
                 variant="outline"
@@ -155,6 +171,11 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
                 <p role="status" className="text-sm text-muted-foreground">
                   {fetchMessage}
                 </p>
+              )}
+              {undoValues && (
+                <Button type="button" variant="ghost" size="sm" onClick={undoFetch}>
+                  Undo
+                </Button>
               )}
             </div>
           )}
