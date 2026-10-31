@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { Page, Route } from "@playwright/test";
-import { MAX_RESERVATIONS_PER_WISHLIST, RESERVATION_DAYS } from "../api/_lib/limits";
+import { RESERVATION_DAYS } from "../api/_lib/limits";
 
 /**
  * Stands in for Firebase Auth and the /api/wishlists function, so signed-in flows
@@ -66,7 +66,6 @@ class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
-    readonly code?: string,
   ) {
     super(message);
   }
@@ -285,13 +284,7 @@ export class FakeBackend {
         if (body.op === "reserveItem") {
           const holder = this.activeReservation(itemId);
           if (holder && holder.userId !== me) throw new ApiError(409, "Someone has already reserved this item.");
-          if (!holder) {
-            const held = wishlist.items.filter((candidate) => this.activeReservation(candidate.id)?.userId === me);
-            if (held.length >= MAX_RESERVATIONS_PER_WISHLIST) {
-              throw new ApiError(429, "Reservation limit reached.", "reservation-limit");
-            }
-            this.reservations.set(itemId, { userId: me, until: Date.now() + RESERVATION_MS });
-          }
+          if (!holder) this.reservations.set(itemId, { userId: me, until: Date.now() + RESERVATION_MS });
         } else if (this.reservations.get(itemId)?.userId === me) {
           this.reservations.delete(itemId);
         }
@@ -455,9 +448,7 @@ export async function installFakeBackend(page: Page, backend: FakeBackend): Prom
       return json(route, 200, { data: backend.handle(uid, body) });
     } catch (error) {
       // Fulfil even unexpected errors so a fake bug fails the test instead of hanging the request.
-      if (error instanceof ApiError) {
-        return json(route, error.status, { error: error.message, code: error.code });
-      }
+      if (error instanceof ApiError) return json(route, error.status, { error: error.message });
       return json(route, 500, { error: String(error) });
     }
   });

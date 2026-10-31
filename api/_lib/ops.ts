@@ -5,7 +5,6 @@ import {
   MAX_AUTHOR_LENGTH,
   MAX_NAME_LENGTH,
   MAX_PRICE,
-  MAX_RESERVATIONS_PER_WISHLIST,
   MAX_URL_LENGTH,
   RESERVATION_DAYS,
 } from "./limits.js";
@@ -14,8 +13,6 @@ export class HttpError extends Error {
   constructor(
     readonly status: number,
     message: string,
-    /** Machine-readable reason, for errors the client explains in its own words. */
-    readonly code?: string,
   ) {
     super(message);
   }
@@ -364,22 +361,6 @@ export async function handleOp(
             throw new HttpError(409, "Someone has already reserved this item.");
           }
           if (!rows[0]) {
-            // Locking the visitor's row serializes their reservations, so parallel requests can't pass the cap together.
-            await q.query("select 1 from users where id = $1 for update", [user.uid]);
-            const { rows: counted } = await q.query(
-              `select count(*)::int as n from item_reservations r
-               join wishlist_items i on i.id = r.item_id
-               where r.user_id = $1 and i.wishlist_id = $2
-                 and r.reserved_at > now() - make_interval(days => $3)`,
-              [user.uid, wishlistId, RESERVATION_DAYS],
-            );
-            if (Number(counted[0]?.n) >= MAX_RESERVATIONS_PER_WISHLIST) {
-              throw new HttpError(
-                429,
-                `You can reserve at most ${String(MAX_RESERVATIONS_PER_WISHLIST)} items on one wishlist.`,
-                "reservation-limit",
-              );
-            }
             // A lapsed reservation, whoever made it, is taken over and starts a fresh period.
             await q.query(
               `insert into item_reservations (item_id, user_id) values ($1, $2)

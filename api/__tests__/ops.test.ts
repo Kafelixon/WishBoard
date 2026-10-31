@@ -6,7 +6,7 @@ import { exportJWK, generateKeyPair, SignJWT, createLocalJWKSet } from "jose";
 import { createVerifier, type Caller } from "../_lib/auth.js";
 import { poolDb } from "../_lib/db.js";
 import { handleOp, HttpError } from "../_lib/ops.js";
-import { MAX_PRICE, MAX_RESERVATIONS_PER_WISHLIST, RESERVATION_DAYS } from "../_lib/limits.js";
+import { MAX_PRICE, RESERVATION_DAYS } from "../_lib/limits.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = poolDb(pool);
@@ -14,7 +14,6 @@ const run = randomUUID().slice(0, 8);
 const alice: Caller = { uid: `t-alice-${run}`, name: "Alice" };
 const bob: Caller = { uid: `t-bob-${run}`, name: "Bob" };
 const carol: Caller = { uid: `t-carol-${run}`, name: "Carol" };
-const dave: Caller = { uid: `t-dave-${run}`, name: "Dave" };
 
 const op = (caller: Caller | null, body: Record<string, unknown>) =>
   handleOp(db, caller, body);
@@ -23,7 +22,7 @@ const rejects = (promise: Promise<unknown>, status: number) =>
 
 after(async () => {
   await pool.query("delete from users where id = any($1)", [
-    [alice.uid, bob.uid, carol.uid, dave.uid],
+    [alice.uid, bob.uid, carol.uid],
   ]);
   await pool.end();
 });
@@ -275,33 +274,6 @@ describe("item reservations", () => {
     await reserve(bob); // takes over carol's lapsed reservation
     assert.equal(await reservationOf(bob), "mine");
     assert.equal(await reservationOf(carol), "taken");
-  });
-
-  it("caps how many items one visitor can reserve on a wishlist", async () => {
-    const { id: listId } = (await op(alice, {
-      op: "createWishlist", name: "Big list", author: "Alice", icon: "gift",
-    })) as { id: string };
-    for (let i = 0; i <= MAX_RESERVATIONS_PER_WISHLIST; i++) {
-      await op(alice, { op: "addItem", wishlistId: listId, item: { name: `Big ${String(i)}`, public: true } });
-    }
-    const ids = ((await op(alice, { op: "view", wishlistId: listId })) as { items: ViewItem[] }).items.map(
-      (i) => i.id,
-    );
-    const reserveOn = (itemId: string | undefined) =>
-      op(dave, { op: "reserveItem", wishlistId: listId, itemId });
-    for (const itemId of ids.slice(0, MAX_RESERVATIONS_PER_WISHLIST)) await reserveOn(itemId);
-    await assert.rejects(
-      reserveOn(ids[MAX_RESERVATIONS_PER_WISHLIST]),
-      (e) => e instanceof HttpError && e.status === 429 && e.code === "reservation-limit",
-    );
-    await reserveOn(ids[0]); // re-reserving one already held is still fine
-    await op(dave, { op: "unreserveItem", wishlistId: listId, itemId: ids[0] });
-    await reserveOn(ids[MAX_RESERVATIONS_PER_WISHLIST]);
-    // Lapsed reservations don't count towards the cap either.
-    await rejects(reserveOn(ids[0]), 429);
-    await lapse(ids[1] ?? "");
-    await reserveOn(ids[0]);
-    await op(alice, { op: "deleteWishlist", id: listId });
   });
 
   it("rejects the owner, signed-out callers, private and unknown items", async () => {

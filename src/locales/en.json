@@ -341,7 +341,6 @@
     "reservedUntil": "until {{date}}",
     "reservedToast": "Reserved. Other visitors will see it's taken.",
     "reserveFailed": "Couldn't reserve this item. Someone may have just reserved it.",
-    "reserveLimit": "You've reached the limit of {{max}} reservations on this wishlist.",
     "unreservedToast": "Reservation cancelled.",
     "unreserveFailed": "Couldn't cancel the reservation.",
     "signInToReserve": "Sign in to reserve a gift and see which ones are already taken.",

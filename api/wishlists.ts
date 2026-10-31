@@ -55,9 +55,7 @@ export async function POST(request: Request): Promise<Response> {
     timings.total = performance.now() - start;
     return json(200, { data }, timings);
   } catch (error) {
-    if (error instanceof HttpError) {
-      return json(error.status, { error: error.message, code: error.code }, timings);
-    }
+    if (error instanceof HttpError) return json(error.status, { error: error.message }, timings);
     console.error("wishlists api failed", error);
     return json(500, { error: "Something went wrong." });
   }

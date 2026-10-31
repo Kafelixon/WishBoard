@@ -347,7 +347,6 @@
     "reservedUntil": "do {{date}}",
     "reservedToast": "Zarezerwowano. Inni odwiedzający zobaczą, że jest zajęte.",
     "reserveFailed": "Nie udało się zarezerwować. Ktoś mógł właśnie to zarezerwować.",
-    "reserveLimit": "Osiągnięto limit rezerwacji na tej liście ({{max}}).",
     "unreservedToast": "Rezerwacja anulowana.",
     "unreserveFailed": "Nie udało się anulować rezerwacji.",
     "signInToReserve": "Zaloguj się, aby zarezerwować prezent i zobaczyć, które są już zajęte.",
