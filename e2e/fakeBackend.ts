@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { createHmac, randomUUID } from "node:crypto";
 import type { Page, Route } from "@playwright/test";
 
 /**
@@ -16,10 +16,11 @@ export interface TestUser {
   name: string;
 }
 
+// Random per run: these accounts only exist inside the fake, so there is no credential to hard-code.
 export const TEST_USER: TestUser = {
   uid: "user-e2e",
   email: "e2e@example.com",
-  password: "correct-horse",
+  password: randomUUID(),
   name: "E2E Tester",
 };
 
@@ -27,7 +28,7 @@ export const TEST_USER: TestUser = {
 export const FRIEND_USER: TestUser = {
   uid: "user-friend",
   email: "friend@example.com",
-  password: "correct-horse",
+  password: randomUUID(),
   name: "Friendly Visitor",
 };
 
@@ -69,7 +70,9 @@ class ApiError extends Error {
 
 const base64Url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
 
-/** An unsigned token in the shape Firebase's client parses (and our fake API reads `sub` from). */
+const TOKEN_SECRET = randomUUID();
+
+/** A throwaway-signed token in the shape Firebase's client parses (and our fake API reads `sub` from). */
 const makeIdToken = (user: TestUser) => {
   const now = Math.floor(Date.now() / 1000);
   const payload = {
@@ -84,7 +87,9 @@ const makeIdToken = (user: TestUser) => {
     exp: now + 3600,
     firebase: { identities: { email: [user.email] }, sign_in_provider: "password" },
   };
-  return `${base64Url({ alg: "none", typ: "JWT" })}.${base64Url(payload)}.signature`;
+  const unsigned = `${base64Url({ alg: "HS256", typ: "JWT" })}.${base64Url(payload)}`;
+  const signature = createHmac("sha256", TOKEN_SECRET).update(unsigned).digest("base64url");
+  return `${unsigned}.${signature}`;
 };
 
 const callerFrom = (authorization: string | undefined): string | null => {
@@ -138,9 +143,9 @@ const toItem = (raw: unknown, id: string): Item => {
 
 export class FakeBackend {
   private readonly wishlists = new Map<string, StoredWishlist>();
-  /** user id -> followed wishlist id -> the follower's own name for it */
   /** item id -> the user who reserved it */
   private readonly reservations = new Map<string, string>();
+  /** user id -> followed wishlist id -> the follower's own name for it */
   private readonly follows = new Map<string, Map<string, string | undefined>>();
 
   /** Adds a wishlist owned by someone else (or the test user), without going through the UI. */
@@ -333,6 +338,9 @@ export class FakeBackend {
           if (wishlist.ownerId === user()) this.wishlists.delete(id);
         }
         this.follows.delete(user());
+        for (const [itemId, holder] of this.reservations) {
+          if (holder === user()) this.reservations.delete(itemId);
+        }
         return {};
       }
 
@@ -371,7 +379,14 @@ export async function installFakeBackend(page: Page, backend: FakeBackend): Prom
 
   await page.route(/identitytoolkit\.googleapis\.com\/v1\/accounts:lookup/, (route) => {
     const { idToken } = route.request().postDataJSON() as { idToken: string };
-    const user = USERS.find((candidate) => candidate.uid === callerFrom(`Bearer ${idToken}`)) ?? TEST_USER;
+    let uid: string | null = null;
+    try {
+      uid = callerFrom(`Bearer ${idToken}`);
+    } catch {
+      // handled as an unknown token below
+    }
+    const user = USERS.find((candidate) => candidate.uid === uid);
+    if (!user) return json(route, 400, { error: { code: 400, message: "INVALID_ID_TOKEN" } });
     return json(route, 200, {
       users: [
         {
@@ -395,7 +410,8 @@ export async function installFakeBackend(page: Page, backend: FakeBackend): Prom
 
   await page.route(/securetoken\.googleapis\.com/, (route) => {
     const refreshToken = new URLSearchParams(route.request().postData() ?? "").get("refresh_token") ?? "";
-    const user = USERS.find((candidate) => refreshToken === `e2e-refresh-${candidate.uid}`) ?? TEST_USER;
+    const user = USERS.find((candidate) => refreshToken === `e2e-refresh-${candidate.uid}`);
+    if (!user) return json(route, 400, { error: { code: 400, message: "INVALID_REFRESH_TOKEN" } });
     return json(route, 200, {
       access_token: makeIdToken(user),
       id_token: makeIdToken(user),

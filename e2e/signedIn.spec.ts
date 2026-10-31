@@ -209,7 +209,7 @@ test.describe("reservations", () => {
     const { id } = seedGifts(backend);
     await page.goto(`/wishlist/${id}`);
     await expect(page.getByRole("heading", { name: "Tea set" })).toBeVisible();
-    await expect(page.getByText("Sign in to reserve a gift", { exact: false })).toBeVisible();
+    await expect(page.getByText("Sign in to reserve a gift")).toBeVisible();
     await expect(page.getByRole("button", { name: /^Reserve / })).toHaveCount(0);
   });
 
@@ -235,6 +235,8 @@ test.describe("reservations", () => {
     await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toBeVisible();
   });
 
+  // Hiding reservations from the owner and anonymous visitors is the API's job (api/__tests__/ops.test.ts);
+  // this checks the page shows what a given viewer's API response contains, and nothing more.
   test("other visitors see a reserved item as taken, the owner and signed-out visitors see nothing", async ({
     page,
     backend,
@@ -281,7 +283,12 @@ test.describe("reservations", () => {
 
     // Someone else reserves it after this page loaded.
     backend.handle("someone-else", { op: "reserveItem", wishlistId: id, itemId: tea });
+    const response = page.waitForResponse(
+      (candidate) =>
+        candidate.url().endsWith("/api/wishlists") && candidate.request().postData()?.includes('"reserveItem"') === true,
+    );
     await page.getByRole("button", { name: /^Reserve Tea set/ }).click();
+    expect((await response).status()).toBe(409);
 
     await expect(
       page.getByText("Couldn't reserve this item. Someone may have just reserved it.", { exact: true }),
