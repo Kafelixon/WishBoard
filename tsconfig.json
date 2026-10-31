@@ -23,6 +23,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "api", "scripts", "neon.ts"],
+  "include": ["src", "api", "scripts", "e2e", "neon.ts", "playwright.config.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
