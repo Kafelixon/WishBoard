@@ -3,7 +3,7 @@
   "name": "wish-board",
   "private": true,
   "type": "module",
-  "version": "0.0.0",
+  "version": "1.1.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
