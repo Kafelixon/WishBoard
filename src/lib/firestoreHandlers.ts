@@ -387,6 +387,14 @@ export const updateExistingWishlistsAuthor = async (
 export const deleteUserData = (_userId: string): Promise<void> =>
   Promise.resolve();
 
+/** Reservations live in Postgres; the Firestore-only build hides the controls. */
+const reservationsUnavailable = (): Promise<WishlistItem[]> =>
+  Promise.reject(new Error("Reserving items isn't available in this build."));
+export const reserveItem = (_userId: string, _wishlistId: string, _itemId: string) =>
+  reservationsUnavailable();
+export const unreserveItem = (_userId: string, _wishlistId: string, _itemId: string) =>
+  reservationsUnavailable();
+
 /** Product lookup needs the /api function, which the Firestore-only build doesn't have. */
 export const fetchProductMeta = (_link: string): Promise<ProductMeta> =>
   Promise.reject(new Error("Fetching product details isn't available in this build."));

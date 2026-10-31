@@ -321,7 +321,19 @@
     "private": "Private",
     "privateHint": ", only you can see this",
     "edit": "Edit {{name}}",
-    "viewOnline": "{{name}}, view online (opens in a new tab)"
+    "viewOnline": "{{name}}, view online (opens in a new tab)",
+    "reserve": "Reserve",
+    "reserveLabel": "Reserve {{name}} so nobody else buys it",
+    "unreserveLabel": "Cancel your reservation of {{name}}",
+    "reserved": "Reserved",
+    "reservedHint": ", someone else is getting this",
+    "reservedByYou": "Reserved by you",
+    "reservedToast": "Reserved. Other visitors will see it's taken.",
+    "reserveFailed": "Couldn't reserve this item. Someone may have just reserved it.",
+    "unreservedToast": "Reservation cancelled.",
+    "unreserveFailed": "Couldn't cancel the reservation.",
+    "signInToReserve": "Sign in to reserve a gift and see which ones are already taken.",
+    "signInToReserveLink": "Sign in"
   },
   "itemForm": {
     "name": "Name",

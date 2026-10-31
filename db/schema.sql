@@ -40,3 +40,11 @@ CREATE TABLE IF NOT EXISTS user_follows (
 );
 -- For databases created before followers could rename a wishlist.
 ALTER TABLE user_follows ADD COLUMN IF NOT EXISTS custom_name text;
+
+-- A visitor's claim on an item so gifts aren't bought twice. Never shown to the wishlist owner.
+CREATE TABLE IF NOT EXISTS item_reservations (
+  item_id      text PRIMARY KEY REFERENCES wishlist_items(id) ON DELETE CASCADE,
+  user_id      text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reserved_at  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS item_reservations_user_idx ON item_reservations(user_id);
