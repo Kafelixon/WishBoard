@@ -1,5 +1,6 @@
 import { expect, test as base, type Browser, type Page } from "@playwright/test";
 import { FakeBackend, FRIEND_USER, installFakeBackend, TEST_USER, type TestUser } from "./fakeBackend";
+import { MAX_RESERVATIONS_PER_WISHLIST } from "../api/_lib/limits";
 
 // Signed-in flows against the production build, with Firebase Auth and the API faked (see fakeBackend.ts).
 const test = base.extend<{ backend: FakeBackend }>({
@@ -223,6 +224,8 @@ test.describe("reservations", () => {
     await page.getByRole("button", { name: /^Reserve Tea set/ }).click();
     await expect(page.getByText("Reserved. Other visitors will see it's taken.", { exact: true })).toBeVisible();
     await expect(page.getByText("Reserved by you", { exact: true })).toBeVisible();
+    // Reservations lapse after a while; the reserver sees until when it holds.
+    await expect(page.getByText(/^until [A-Z][a-z]{2} \d{1,2}$/)).toBeVisible();
     await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toHaveCount(0);
 
     // It is still there after a reload: the reservation lives on the server.
@@ -273,6 +276,30 @@ test.describe("reservations", () => {
     await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Reserve Candle/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /Cancel your reservation/ })).toHaveCount(0);
+  });
+
+  test("a visitor at the reservation limit for a wishlist is told so", async ({ page, backend }) => {
+    const names = Array.from({ length: MAX_RESERVATIONS_PER_WISHLIST + 1 }, (_, i) => `Gift ${String(i + 1)}`);
+    const id = backend.seed({
+      ownerId: TEST_USER.uid,
+      name: "Wedding",
+      author: TEST_USER.name,
+      items: names.map((name) => ({ name, public: true })),
+    });
+    const last = names[MAX_RESERVATIONS_PER_WISHLIST] ?? "";
+    for (const name of names.slice(0, MAX_RESERVATIONS_PER_WISHLIST)) {
+      backend.handle(FRIEND_USER.uid, { op: "reserveItem", wishlistId: id, itemId: backend.itemId(id, name) });
+    }
+    await signIn(page, FRIEND_USER);
+    await page.goto(`/wishlist/${id}`);
+    await page.getByRole("button", { name: `Reserve ${last} so nobody else buys it`, exact: true }).click();
+    await expect(
+      page.getByText(
+        `You've reached the limit of ${String(MAX_RESERVATIONS_PER_WISHLIST)} reservations on this wishlist.`,
+        { exact: true },
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole("button", { name: `Reserve ${last} so nobody else buys it`, exact: true })).toBeVisible();
   });
 
   test("losing a race for an item shows an error and refreshes it as taken", async ({ page, backend }) => {

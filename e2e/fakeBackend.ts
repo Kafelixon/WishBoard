@@ -1,5 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { Page, Route } from "@playwright/test";
+import { MAX_RESERVATIONS_PER_WISHLIST, RESERVATION_DAYS } from "../api/_lib/limits";
 
 /**
  * Stands in for Firebase Auth and the /api/wishlists function, so signed-in flows
@@ -44,6 +45,8 @@ interface Item {
   public: boolean;
   /** Visitors only: whether someone reserved it. Never sent to the owner. */
   reservation?: "mine" | "taken";
+  /** With `reservation: "mine"`: when it lapses (ms since epoch). */
+  reservedUntil?: number;
 }
 
 interface StoredWishlist {
@@ -63,10 +66,13 @@ class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    readonly code?: string,
   ) {
     super(message);
   }
 }
+
+const RESERVATION_MS = RESERVATION_DAYS * 24 * 60 * 60 * 1000;
 
 const base64Url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
 
@@ -150,8 +156,8 @@ const toItem = (raw: unknown, id: string): Item => {
 
 export class FakeBackend {
   private readonly wishlists = new Map<string, StoredWishlist>();
-  /** item id -> the user who reserved it */
-  private readonly reservations = new Map<string, string>();
+  /** item id -> who reserved it and when that lapses */
+  private readonly reservations = new Map<string, { userId: string; until: number }>();
   /** user id -> followed wishlist id -> the follower's own name for it */
   private readonly follows = new Map<string, Map<string, string | undefined>>();
 
@@ -177,15 +183,23 @@ export class FakeBackend {
     return item.id;
   }
 
+  /** An item's reservation, unless it has lapsed. */
+  private activeReservation(itemId: string) {
+    const reservation = this.reservations.get(itemId);
+    return reservation && reservation.until > Date.now() ? reservation : undefined;
+  }
+
   /** The owner's view has every item and no reservation info; a visitor's has public items, with reservations when signed in. */
   private visibleItems(wishlist: StoredWishlist, uid: string | null): Item[] {
     if (uid === wishlist.ownerId) return wishlist.items;
     return wishlist.items
       .filter((item) => item.public)
       .map((item) => {
-        const holder = this.reservations.get(item.id);
+        const holder = this.activeReservation(item.id);
         if (!uid || !holder) return item;
-        return { ...item, reservation: holder === uid ? ("mine" as const) : ("taken" as const) };
+        return holder.userId === uid
+          ? { ...item, reservation: "mine" as const, reservedUntil: holder.until }
+          : { ...item, reservation: "taken" as const };
       });
   }
 
@@ -268,11 +282,17 @@ export class FakeBackend {
         const item = wishlist?.items.find((candidate) => candidate.id === itemId && candidate.public);
         if (!wishlist || !item) throw new ApiError(404, "Item not found.");
         if (wishlist.ownerId === me) throw new ApiError(403, "You cannot reserve items on your own wishlist.");
-        const holder = this.reservations.get(itemId);
         if (body.op === "reserveItem") {
-          if (holder && holder !== me) throw new ApiError(409, "Someone has already reserved this item.");
-          this.reservations.set(itemId, me);
-        } else if (holder === me) {
+          const holder = this.activeReservation(itemId);
+          if (holder && holder.userId !== me) throw new ApiError(409, "Someone has already reserved this item.");
+          if (!holder) {
+            const held = wishlist.items.filter((candidate) => this.activeReservation(candidate.id)?.userId === me);
+            if (held.length >= MAX_RESERVATIONS_PER_WISHLIST) {
+              throw new ApiError(429, "Reservation limit reached.", "reservation-limit");
+            }
+            this.reservations.set(itemId, { userId: me, until: Date.now() + RESERVATION_MS });
+          }
+        } else if (this.reservations.get(itemId)?.userId === me) {
           this.reservations.delete(itemId);
         }
         return this.visibleItems(wishlist, me);
@@ -346,7 +366,7 @@ export class FakeBackend {
         }
         this.follows.delete(user());
         for (const [itemId, holder] of this.reservations) {
-          if (holder === user()) this.reservations.delete(itemId);
+          if (holder.userId === user()) this.reservations.delete(itemId);
         }
         return {};
       }
@@ -435,7 +455,9 @@ export async function installFakeBackend(page: Page, backend: FakeBackend): Prom
       return json(route, 200, { data: backend.handle(uid, body) });
     } catch (error) {
       // Fulfil even unexpected errors so a fake bug fails the test instead of hanging the request.
-      if (error instanceof ApiError) return json(route, error.status, { error: error.message });
+      if (error instanceof ApiError) {
+        return json(route, error.status, { error: error.message, code: error.code });
+      }
       return json(route, 500, { error: String(error) });
     }
   });

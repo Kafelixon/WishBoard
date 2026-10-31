@@ -6,17 +6,15 @@ import { exportJWK, generateKeyPair, SignJWT, createLocalJWKSet } from "jose";
 import { createVerifier, type Caller } from "../_lib/auth.js";
 import { poolDb } from "../_lib/db.js";
 import { handleOp, HttpError } from "../_lib/ops.js";
-import { MAX_PRICE, MAX_RESERVATIONS_PER_WISHLIST } from "../_lib/limits.js";
+import { MAX_PRICE, MAX_RESERVATIONS_PER_WISHLIST, RESERVATION_DAYS } from "../_lib/limits.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = poolDb(pool);
 const run = randomUUID().slice(0, 8);
-const alice: Caller = { uid: `t-alice-${run}`, name: "Alice", emailVerified: true };
-const bob: Caller = { uid: `t-bob-${run}`, name: "Bob", emailVerified: true };
-const carol: Caller = { uid: `t-carol-${run}`, name: "Carol", emailVerified: true };
-const dave: Caller = { uid: `t-dave-${run}`, name: "Dave", emailVerified: true };
-/** Signed up with email and password but never opened the confirmation link. */
-const erin: Caller = { uid: `t-erin-${run}`, name: "Erin", emailVerified: false };
+const alice: Caller = { uid: `t-alice-${run}`, name: "Alice" };
+const bob: Caller = { uid: `t-bob-${run}`, name: "Bob" };
+const carol: Caller = { uid: `t-carol-${run}`, name: "Carol" };
+const dave: Caller = { uid: `t-dave-${run}`, name: "Dave" };
 
 const op = (caller: Caller | null, body: Record<string, unknown>) =>
   handleOp(db, caller, body);
@@ -25,7 +23,7 @@ const rejects = (promise: Promise<unknown>, status: number) =>
 
 after(async () => {
   await pool.query("delete from users where id = any($1)", [
-    [alice.uid, bob.uid, carol.uid, dave.uid, erin.uid],
+    [alice.uid, bob.uid, carol.uid, dave.uid],
   ]);
   await pool.end();
 });
@@ -198,7 +196,7 @@ describe("wishlist operations", () => {
 });
 
 describe("item reservations", () => {
-  interface ViewItem { id: string; name: string; reservation?: string }
+  interface ViewItem { id: string; name: string; reservation?: string; reservedUntil?: number }
   let wishlistId = "";
   let giftId = "";
   let secretId = "";
@@ -211,6 +209,12 @@ describe("item reservations", () => {
     op(caller, { op: "reserveItem", wishlistId, itemId });
   const unreserve = (caller: Caller | null, itemId = giftId) =>
     op(caller, { op: "unreserveItem", wishlistId, itemId });
+  /** Backdates a reservation so it lapsed a minute ago. */
+  const lapse = (itemId: string) =>
+    pool.query(
+      "update item_reservations set reserved_at = now() - make_interval(days => $2, mins => 1) where item_id = $1",
+      [itemId, RESERVATION_DAYS],
+    );
 
   it("sets up a wishlist with a public and a private item", async () => {
     ({ id: wishlistId } = (await op(alice, {
@@ -237,7 +241,7 @@ describe("item reservations", () => {
     for (const caller of [alice, null]) {
       const visible = await items(caller);
       assert.ok(visible.length > 0);
-      assert.ok(visible.every((i) => !("reservation" in i)));
+      assert.ok(visible.every((i) => !("reservation" in i) && !("reservedUntil" in i)));
     }
     const ownerLists = [
       await op(alice, { op: "updateItem", wishlistId, item: { id: giftId, name: "Gift", public: true } }),
@@ -257,12 +261,20 @@ describe("item reservations", () => {
     assert.equal(await reservationOf(bob), "taken");
   });
 
-  it("asks visitors to confirm their email before reserving", async () => {
-    await assert.rejects(
-      reserve(erin),
-      (e) => e instanceof HttpError && e.status === 403 && e.code === "email-unverified",
-    );
-    assert.equal(await reservationOf(erin), "taken");
+  it("tells only the reserver when their reservation lapses", async () => {
+    const until = (await items(carol)).find((i) => i.id === giftId)?.reservedUntil ?? 0;
+    const expected = Date.now() + RESERVATION_DAYS * 24 * 60 * 60 * 1000;
+    assert.ok(Math.abs(until - expected) < 60_000, `reservedUntil ${String(until)} vs ${String(expected)}`);
+    assert.equal((await items(bob)).find((i) => i.id === giftId)?.reservedUntil, undefined);
+  });
+
+  it("frees an item once its reservation has lapsed", async () => {
+    await lapse(giftId);
+    assert.equal(await reservationOf(carol), undefined);
+    assert.equal(await reservationOf(bob), undefined);
+    await reserve(bob); // takes over carol's lapsed reservation
+    assert.equal(await reservationOf(bob), "mine");
+    assert.equal(await reservationOf(carol), "taken");
   });
 
   it("caps how many items one visitor can reserve on a wishlist", async () => {
@@ -285,6 +297,10 @@ describe("item reservations", () => {
     await reserveOn(ids[0]); // re-reserving one already held is still fine
     await op(dave, { op: "unreserveItem", wishlistId: listId, itemId: ids[0] });
     await reserveOn(ids[MAX_RESERVATIONS_PER_WISHLIST]);
+    // Lapsed reservations don't count towards the cap either.
+    await rejects(reserveOn(ids[0]), 429);
+    await lapse(ids[1] ?? "");
+    await reserveOn(ids[0]);
     await op(alice, { op: "deleteWishlist", id: listId });
   });
 
@@ -316,8 +332,8 @@ describe("firebase token verification", () => {
     const other = await generateKeyPair("RS256");
     const jwk = { ...(await exportJWK(publicKey)), alg: "RS256", kid: "k1" };
     const verify = createVerifier("proj", createLocalJWKSet({ keys: [jwk] }));
-    const sign = (key: typeof privateKey, claims: { iss?: string; aud?: string; verified?: boolean }) =>
-      new SignJWT({ name: "Zed", ...(claims.verified !== undefined && { email_verified: claims.verified }) })
+    const sign = (key: typeof privateKey, claims: { iss?: string; aud?: string }) =>
+      new SignJWT({ name: "Zed" })
         .setProtectedHeader({ alg: "RS256", kid: "k1" })
         .setSubject("uid-1")
         .setIssuer(claims.iss ?? "https://securetoken.google.com/proj")
@@ -326,12 +342,7 @@ describe("firebase token verification", () => {
         .setExpirationTime("1h")
         .sign(key);
 
-    assert.deepEqual(await verify(await sign(privateKey, {})), {
-      uid: "uid-1",
-      name: "Zed",
-      emailVerified: false,
-    });
-    assert.equal((await verify(await sign(privateKey, { verified: true }))).emailVerified, true);
+    assert.deepEqual(await verify(await sign(privateKey, {})), { uid: "uid-1", name: "Zed" });
     await assert.rejects(verify(await sign(privateKey, { aud: "evil" })));
     await assert.rejects(verify(await sign(privateKey, { iss: "https://evil.example" })));
     await assert.rejects(verify(await sign(other.privateKey, {})));

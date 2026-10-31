@@ -7,6 +7,7 @@ import {
   MAX_PRICE,
   MAX_RESERVATIONS_PER_WISHLIST,
   MAX_URL_LENGTH,
+  RESERVATION_DAYS,
 } from "./limits.js";
 
 export class HttpError extends Error {
@@ -30,6 +31,8 @@ interface Item {
   public: boolean;
   /** Visitors only: whether someone reserved it. Never sent to the owner. */
   reservation?: "mine" | "taken";
+  /** Visitors only, on their own reservation: when it lapses (ms since epoch). */
+  reservedUntil?: number;
 }
 
 const WISHLIST_COLUMNS = `id, name, author, icon_name, icon_color,
@@ -60,6 +63,7 @@ const toItem = (row: Row): Item => ({
   ...((row.reservation === "mine" || row.reservation === "taken") && {
     reservation: row.reservation,
   }),
+  ...(row.reservation === "mine" && { reservedUntil: Number(row.reserved_until_ms) }),
 });
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/;
@@ -159,9 +163,14 @@ const ITEM_COLUMNS =
 const ALL_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 order by sort_order, id`;
 const PUBLIC_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 and is_public order by sort_order, id`;
 // Reservation state only goes to signed-in visitors, so the owner can't spot it by opening their own link signed out.
+// Reservations older than $3 days have lapsed and count as no reservation at all.
 const VISITOR_ITEMS = `select i.id, i.name, i.price_cents, i.currency, i.link, i.image, i.is_public,
-    case when r.user_id is null then null when r.user_id = $2 then 'mine' else 'taken' end as reservation
-  from wishlist_items i left join item_reservations r on r.item_id = i.id
+    case when r.user_id is null then null when r.user_id = $2 then 'mine' else 'taken' end as reservation,
+    case when r.user_id = $2
+      then (extract(epoch from r.reserved_at + make_interval(days => $3)) * 1000)::bigint
+    end as reserved_until_ms
+  from wishlist_items i left join item_reservations r
+    on r.item_id = i.id and r.reserved_at > now() - make_interval(days => $3)
   where i.wishlist_id = $1 and i.is_public order by i.sort_order, i.id`;
 
 /** The owner's view: every item, and nothing about reservations. */
@@ -178,7 +187,7 @@ const listVisitorItems = async (
   visitorId: string | null,
 ): Promise<Item[]> => {
   const { rows } = visitorId
-    ? await q.query(VISITOR_ITEMS, [wishlistId, visitorId])
+    ? await q.query(VISITOR_ITEMS, [wishlistId, visitorId, RESERVATION_DAYS])
     : await q.query(PUBLIC_ITEMS, [wishlistId]);
   return rows.map(toItem); // nosemgrep
 };
@@ -344,19 +353,12 @@ export async function handleOp(
       return db.transaction(async (q) => {
         await lockReservable(q, user, wishlistId, itemId);
         if (reserve) {
-          // Throwaway accounts could otherwise reserve a whole wishlist to spoil it.
-          if (!user.emailVerified) {
-            throw new HttpError(
-              403,
-              "Confirm your email address before reserving gifts.",
-              "email-unverified",
-            );
-          }
           await ensureUser(q, user);
           // The item row is locked, so nobody can reserve it between this check and the insert.
           const { rows } = await q.query(
-            "select user_id from item_reservations where item_id = $1",
-            [itemId],
+            `select user_id from item_reservations
+             where item_id = $1 and reserved_at > now() - make_interval(days => $2)`,
+            [itemId, RESERVATION_DAYS],
           );
           if (rows[0] && rows[0].user_id !== user.uid) {
             throw new HttpError(409, "Someone has already reserved this item.");
@@ -367,8 +369,9 @@ export async function handleOp(
             const { rows: counted } = await q.query(
               `select count(*)::int as n from item_reservations r
                join wishlist_items i on i.id = r.item_id
-               where r.user_id = $1 and i.wishlist_id = $2`,
-              [user.uid, wishlistId],
+               where r.user_id = $1 and i.wishlist_id = $2
+                 and r.reserved_at > now() - make_interval(days => $3)`,
+              [user.uid, wishlistId, RESERVATION_DAYS],
             );
             if (Number(counted[0]?.n) >= MAX_RESERVATIONS_PER_WISHLIST) {
               throw new HttpError(
@@ -377,8 +380,10 @@ export async function handleOp(
                 "reservation-limit",
               );
             }
+            // A lapsed reservation, whoever made it, is taken over and starts a fresh period.
             await q.query(
-              "insert into item_reservations (item_id, user_id) values ($1, $2)",
+              `insert into item_reservations (item_id, user_id) values ($1, $2)
+               on conflict (item_id) do update set user_id = excluded.user_id, reserved_at = now()`,
               [itemId, user.uid],
             );
           }

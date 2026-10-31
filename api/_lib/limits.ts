@@ -9,3 +9,5 @@ export const MAX_URL_LENGTH = 4096;
 export const MAX_PRICE = 10_000_000;
 /** How many items one visitor may reserve on a single wishlist. */
 export const MAX_RESERVATIONS_PER_WISHLIST = 10;
+/** Days a reservation holds; after that the item is free for anyone (the reserver included) to reserve again. */
+export const RESERVATION_DAYS = 30;

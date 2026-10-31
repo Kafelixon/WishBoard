@@ -13,13 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Polish localization alongside English (react-i18next): browser language detection, a language switcher in Settings (and the header for signed-out visitors) saved in localStorage, `<html lang>` kept in sync, Polish plural forms, locale-aware price and date formatting, translated auth errors (#69).
 - ESLint rule rejecting hardcoded UI text in JSX, and Polish-locale Playwright smoke tests (#69).
-- Gift reservations: signed-in visitors can reserve an item so nobody else buys it, and other signed-in visitors see it as reserved. The owner and signed-out visitors never see reservations; the server leaves them out of the response. Needs the new `item_reservations` table from `db/schema.sql`; not available in the Firestore-only build (#70).
+- Gift reservations: signed-in visitors can reserve an item so nobody else buys it, and other signed-in visitors see it as reserved. A reservation holds for 30 days, and the reserver sees until when; after that anyone can reserve the item again. The owner and signed-out visitors never see reservations; the server leaves them out of the response. Needs the new `item_reservations` table from `db/schema.sql`; not available in the Firestore-only build (#70).
 
 ### Security
 
 - Product-detail fetching could be pointed at internal addresses written as IPv4-mapped IPv6 (`[::ffff:127.0.0.1]`) or reached through DNS rebinding; addresses are now checked with `net.BlockList` at connection time.
 - The API validates input: length limits on names and URLs, links and images must be http(s), and prices are capped.
-- Reserving gifts needs a verified email, and each visitor can reserve at most 10 items per wishlist.
+- Each visitor can reserve at most 10 items per wishlist.
 
 ### Fixed
 

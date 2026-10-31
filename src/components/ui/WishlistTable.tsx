@@ -163,7 +163,6 @@ export default function WishlistItemsTable({
   /** The API's code says why a reservation was refused; anything else is most likely someone else being first. */
   const reserveErrorMessage = (error: unknown) => {
     const code = (error as { code?: unknown } | null)?.code;
-    if (code === "email-unverified") return t("items.reserveNeedsVerifiedEmail");
     if (code === "reservation-limit") {
       return t("items.reserveLimit", { max: MAX_RESERVATIONS_PER_WISHLIST });
     }
@@ -310,6 +309,9 @@ const formatPrice = (price: number, currency = DEFAULT_CURRENCY) =>
     maximumFractionDigits: 2,
   });
 
+const formatDay = (timestamp: number) =>
+  new Date(timestamp).toLocaleDateString(currentLanguage(), { month: "short", day: "numeric" });
+
 const Stat: FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="flex items-baseline gap-1.5">
     <dd className="tabular order-first font-display text-2xl font-semibold">{value}</dd>
@@ -419,9 +421,16 @@ const CardsList: FC<{
             </span>
           )}
           {isMine && (
-            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-primary px-2 pb-px pt-[3px] text-xs font-medium text-primary-foreground shadow-sm">
-              <BookmarkCheck className="relative -top-px size-3" aria-hidden="true" />
-              {t("items.reservedByYou")}
+            <span className="absolute left-2.5 top-2.5 inline-flex flex-col rounded-md bg-primary px-2 pb-px pt-[3px] text-xs font-medium text-primary-foreground shadow-sm">
+              <span className="inline-flex items-center gap-1">
+                <BookmarkCheck className="relative -top-px size-3" aria-hidden="true" />
+                <span>{t("items.reservedByYou")}</span>
+              </span>
+              {item.reservedUntil !== undefined && (
+                <span className="font-normal">
+                  {t("items.reservedUntil", { date: formatDay(item.reservedUntil) })}
+                </span>
+              )}
             </span>
           )}
           {onToggleReservation && isMine && (

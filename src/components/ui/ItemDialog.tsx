@@ -32,7 +32,7 @@ interface ItemDialogProps {
   actionLabel: string;
 }
 
-type ItemSchema = Omit<WishlistItem, "id" | "reservation">;
+type ItemSchema = Omit<WishlistItem, "id" | "reservation" | "reservedUntil">;
 
 const schema: yup.ObjectSchema<ItemSchema> = yup.object({
   name: yup.string().required(() => i18n.t("validation.itemName")),

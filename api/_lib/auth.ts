@@ -3,8 +3,6 @@ import { jwtVerify, type JWTVerifyGetKey } from "jose";
 export interface Caller {
   uid: string;
   name: string | null;
-  /** Firebase's `email_verified` claim (Google accounts arrive verified). */
-  emailVerified: boolean;
 }
 
 export type TokenVerifier = (token: string) => Promise<Caller>;
@@ -27,6 +25,5 @@ export const createVerifier =
     return {
       uid: payload.sub,
       name: typeof payload.name === "string" ? payload.name : null,
-      emailVerified: payload.email_verified === true,
     };
   };
