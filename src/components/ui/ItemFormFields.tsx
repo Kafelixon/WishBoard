@@ -1,5 +1,7 @@
 import { FC, useState } from "react";
 import { useFormContext } from "react-hook-form";
+import { useTranslation } from "react-i18next";
+import type { TKey } from "@/i18n";
 import { WishlistItem } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,38 +17,45 @@ interface ItemFormFieldsProps {
   handleItemChange: (changes: Partial<WishlistItem>) => void;
 }
 
-const FIELDS = [
+const FIELDS: {
+  label: TKey;
+  id: string;
+  field: string;
+  type: string;
+  placeholder: TKey;
+  inputMode: "decimal" | "url" | undefined;
+}[] = [
   {
-    label: "Name",
+    label: "itemForm.name",
     id: "productName",
     field: "name",
     type: "text",
-    placeholder: "Linen throw blanket",
+    placeholder: "itemForm.namePlaceholder",
     inputMode: undefined,
   },
   {
-    label: "Average price",
+    label: "itemForm.price",
     id: "averagePrice",
     field: "price",
     type: "number",
-    placeholder: "Optional",
-    inputMode: "decimal" as const,
+    placeholder: "itemForm.optional",
+    inputMode: "decimal",
   },
   {
-    label: "Link",
+    label: "itemForm.link",
     id: "link",
     field: "link",
     type: "text",
-    placeholder: "Optional, where to buy it",
-    inputMode: "url" as const,
+    placeholder: "itemForm.linkPlaceholder",
+    inputMode: "url",
   },
   {
-    label: "Image URL",
+    label: "itemForm.image",
     id: "image",
     field: "image",
     type: "text",
-    placeholder: "Optional, https://…",
-    inputMode: "url" as const,
+    placeholder: "itemForm.imagePlaceholder",
+    inputMode: "url",
   },
 ];
 
@@ -54,6 +63,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
   currentItem,
   handleItemChange,
 }) => {
+  const { t } = useTranslation();
   const {
     register,
     formState: { errors },
@@ -71,7 +81,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
   const fetchDetails = async () => {
     const link = normalizeUrl(getValues("link") as string);
     if (!link || !isValidWebUrl(link)) {
-      setFetchMessage("Add a valid link first.");
+      setFetchMessage(t("itemForm.fetchNeedsLink"));
       setFetchFailed(true);
       return;
     }
@@ -99,11 +109,11 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
       setUndoValues(Object.keys(changes).length > 0 ? (previous) : null);
       setFetchMessage(
         Object.keys(changes).length > 0
-          ? "Filled in what we could find."
-          : "Nothing new found on that page.",
+          ? t("itemForm.fetchFilled")
+          : t("itemForm.fetchNothing"),
       );
     } catch (error) {
-      setFetchMessage(error instanceof Error ? error.message : "Couldn't fetch details.");
+      setFetchMessage(error instanceof Error ? error.message : t("itemForm.fetchFailed"));
       setFetchFailed(true);
     } finally {
       setFetching(false);
@@ -119,19 +129,19 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
     }
     handleItemChange(undoValues);
     setUndoValues(null);
-    setFetchMessage("Put your earlier values back.");
+    setFetchMessage(t("itemForm.undone"));
   };
 
   return (
     <>
       {FIELDS.map(({ label, id, field, type, placeholder, inputMode }) => (
         <div className="grid gap-2" key={id}>
-          <Label htmlFor={id}>{label}</Label>
+          <Label htmlFor={id}>{t(label)}</Label>
           <div className="relative">
             <Input
               id={id}
               type={type}
-              placeholder={placeholder}
+              placeholder={t(placeholder)}
               inputMode={inputMode}
               min={type === "number" ? 0 : undefined}
               step={type === "number" ? "any" : undefined}
@@ -143,7 +153,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
             />
             {type === "number" && (
               <select
-                aria-label="Currency"
+                aria-label={t("itemForm.currency")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-transparent py-1 pl-1 text-sm text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
                 {...register("currency")}
                 onChange={(e) => { handleItemChange({ currency: e.target.value }); }}
@@ -169,7 +179,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
                 onClick={() => void fetchDetails()}
               >
                 {fetching && <Loader2 className="animate-spin" aria-hidden="true" />}
-                Fetch details from link
+                {t("itemForm.fetch")}
               </Button>
               {fetchMessage && (
                 <p
@@ -181,7 +191,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
               )}
               {undoValues && (
                 <Button type="button" variant="ghost" size="sm" onClick={undoFetch}>
-                  Undo
+                  {t("itemForm.undo")}
                 </Button>
               )}
             </div>
@@ -190,9 +200,9 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
       ))}
       <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-secondary/50 px-4 py-3">
         <div className="space-y-0.5">
-          <Label htmlFor="itemPublic">Public</Label>
+          <Label htmlFor="itemPublic">{t("itemForm.public")}</Label>
           <p className="text-sm text-muted-foreground">
-            Anyone with the link can see it. Turn off to keep it just for you.
+            {t("itemForm.publicHint")}
           </p>
         </div>
         <Switch

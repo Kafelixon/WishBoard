@@ -1,0 +1,348 @@
+{
+  "app": {
+    "name": "WishBoard",
+    "skipToContent": "Przejdź do treści"
+  },
+  "common": {
+    "close": "Zamknij",
+    "dismiss": "Odrzuć",
+    "saving": "Zapisywanie",
+    "somethingWrong": "Coś poszło nie tak. Spróbuj ponownie."
+  },
+  "language": {
+    "label": "Język",
+    "description": "Język interfejsu.",
+    "en": "English",
+    "pl": "Polski"
+  },
+  "nav": {
+    "main": "Główna",
+    "wishlists": "Listy życzeń",
+    "following": "Obserwowane",
+    "getStarted": "Zaczynamy"
+  },
+  "account": {
+    "menu": "Menu konta",
+    "settings": "Ustawienia",
+    "logout": "Wyloguj się"
+  },
+  "notFound": {
+    "title": "Nie znaleziono strony",
+    "message": "Strona, której szukasz, nie istnieje.",
+    "back": "Wróć do swoich list życzeń"
+  },
+  "landing": {
+    "badge": "Listy życzeń w prostej formie",
+    "heroTitle": "Stwórz i udostępnij listę swoich marzeń — bez wysiłku",
+    "heroText": "Zbierz to, czego naprawdę pragniesz, kilka rzeczy zachowaj w tajemnicy i udostępnij całość jednym linkiem. Bez zbędnych formalności — do podglądu nie trzeba konta.",
+    "ctaOpen": "Otwórz swoje listy życzeń",
+    "ctaCreate": "Stwórz swoją listę życzeń",
+    "howItWorks": "Jak to działa",
+    "featuresTitle": "Twórz, udostępniaj i bądź na bieżąco",
+    "featuresText": "Wszystko, czego potrzeba na urodziny, wesela i zwykłe okazje bez okazji.",
+    "features": {
+      "create": {
+        "title": "Tworzenie bez wysiłku",
+        "text": "Dodawaj przedmioty ze zdjęciem, linkiem i orientacyjną ceną. Układanie listy marzeń nigdy nie było prostsze."
+      },
+      "privacy": {
+        "title": "Prywatność na Twoich zasadach",
+        "text": "Oznacz dowolny przedmiot jako prywatny, a zobaczysz go tylko Ty. To Ty decydujesz, co widzi świat."
+      },
+      "sharing": {
+        "title": "Udostępnianie bez zobowiązań",
+        "text": "Wyślij jeden link. Odbiorcy nie potrzebują konta, żeby zobaczyć, o czym marzysz."
+      },
+      "connected": {
+        "title": "Bądź w kontakcie",
+        "text": "Obserwuj przyjaciół i rodzinę i miej ich listy w jednym miejscu, żeby zawsze wiedzieć, co podarować."
+      }
+    },
+    "closingTitle": "Tu marzenia ożywają",
+    "closingText": "Stwórz swoją listę życzeń, podziel się marzeniami i spraw, by wybieranie prezentów było trochę bardziej przemyślane.",
+    "footer": "Pytania lub pomysły? Napisz na <linkedin>LinkedInie</linkedin>.",
+    "preview": {
+      "title": "Urodziny 2026",
+      "by": "autor: {{name}}",
+      "private": "Prywatne",
+      "linkCopied": "Skopiowano link",
+      "items": {
+        "throw": "Lniany pled",
+        "coffee": "Ceramiczny zestaw do kawy",
+        "notebook": "Notes podróżny"
+      }
+    }
+  },
+  "signIn": {
+    "titleSignIn": "Logowanie",
+    "titleSignUp": "Rejestracja",
+    "asideTitle": "Spokojniejszy sposób na dzielenie się marzeniami.",
+    "asideText": "Twórz listy na każdą okazję, część przedmiotów zachowaj dla siebie i wyślij jeden link ważnym dla Ciebie osobom.",
+    "welcomeBack": "Witaj ponownie",
+    "createAccount": "Załóż konto",
+    "subtitleSignIn": "Zaloguj się, aby zobaczyć swoje listy życzeń.",
+    "subtitleSignUp": "To zajmie minutę. Bez karty kredytowej, nigdy.",
+    "username": "Nazwa użytkownika",
+    "email": "E-mail",
+    "emailPlaceholder": "imie@example.com",
+    "password": "Hasło",
+    "signingIn": "Logowanie",
+    "submitSignIn": "Zaloguj się",
+    "submitSignUp": "Zarejestruj się",
+    "or": "lub",
+    "google": "Kontynuuj z Google",
+    "noAccount": "Nie masz konta?",
+    "haveAccount": "Masz już konto?"
+  },
+  "validation": {
+    "username": "Wybierz nazwę użytkownika.",
+    "emailRequired": "Podaj swój adres e-mail.",
+    "emailInvalid": "Ten adres e-mail wygląda nieprawidłowo.",
+    "passwordRequired": "Podaj hasło.",
+    "passwordShort": "Hasło musi mieć co najmniej 6 znaków.",
+    "webUrl": "Podaj prawidłowy adres internetowy",
+    "itemName": "Nadaj przedmiotowi nazwę",
+    "priceNumber": "Cena musi być liczbą",
+    "priceNegative": "Cena nie może być ujemna",
+    "wishlistName": "Nadaj swojej liście nazwę",
+    "hex": "Użyj kodu szesnastkowego, np. #2563eb."
+  },
+  "authErrors": {
+    "invalidCredential": "Nieprawidłowy e-mail lub hasło.",
+    "invalidEmail": "Ten adres e-mail wygląda nieprawidłowo.",
+    "emailInUse": "Konto z tym adresem e-mail już istnieje. Spróbuj się zalogować.",
+    "weakPassword": "Hasło musi mieć co najmniej 6 znaków.",
+    "tooManyRequests": "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie.",
+    "network": "Problem z siecią. Sprawdź połączenie i spróbuj ponownie.",
+    "differentCredential": "Ten adres e-mail jest już zarejestrowany z użyciem innej metody logowania.",
+    "generic": "Podczas logowania coś poszło nie tak. Spróbuj ponownie.",
+    "loginFailed": "Nieprawidłowy e-mail lub hasło. Spróbuj ponownie.",
+    "registerFailed": "Rejestracja nie powiodła się. Spróbuj ponownie.",
+    "userNotFound": "Nie znaleziono użytkownika. Zaloguj się ponownie.",
+    "usernameFailed": "Nie udało się zmienić nazwy użytkownika. Spróbuj ponownie.",
+    "googleFailed": "Logowanie przez Google nie powiodło się. Spróbuj ponownie."
+  },
+  "settings": {
+    "title": "Ustawienia",
+    "eyebrow": "Konto",
+    "description": "Zmień sposób, w jaki widzą Cię inni, i zadbaj o bezpieczeństwo konta.",
+    "language": {
+      "label": "Język",
+      "description": "Wybierz język interfejsu. Twój wybór jest zapamiętywany na tym urządzeniu."
+    },
+    "password": {
+      "label": "Hasło",
+      "description": "Wyślemy Ci e-mailem link do ustawienia nowego hasła.",
+      "button": "Wyślij e-mail do resetu",
+      "sent": "E-mail do resetu hasła został wysłany!",
+      "failed": "Nie udało się wysłać e-maila do resetu hasła."
+    },
+    "username": {
+      "label": "Nazwa użytkownika",
+      "description": "Wyświetlana na Twoich listach życzeń. Po zmianie zostaniesz poproszony o ponowne zalogowanie.",
+      "placeholder": "Nowa nazwa użytkownika",
+      "button": "Zmień nazwę użytkownika",
+      "updated": "Nazwa użytkownika została zmieniona!",
+      "updatedDescription": "Zaloguj się ponownie.",
+      "failed": "Nie udało się zmienić nazwy użytkownika."
+    },
+    "email": {
+      "label": "E-mail",
+      "description": "Zanim zmienimy adres, wyślemy link weryfikacyjny na nowy adres.",
+      "placeholder": "Nowy e-mail",
+      "button": "Zmień e-mail",
+      "invalid": "Podaj prawidłowy adres e-mail",
+      "sent": "E-mail weryfikacyjny został wysłany na adres {{email}}",
+      "failed": "Nie udało się zmienić adresu e-mail"
+    },
+    "reauth": {
+      "incorrectPassword": "Nieprawidłowe hasło",
+      "loading": "Twoje konto wciąż się wczytuje",
+      "loadingDescription": "Spróbuj ponownie za chwilę.",
+      "unavailable": "Niedostępne dla tego konta",
+      "unavailableDescription": "Konta logujące się przez Google nie mogą tego zrobić w Ustawieniach.",
+      "prompt": "Podaj hasło, aby kontynuować."
+    },
+    "export": {
+      "label": "Eksport danych",
+      "description": "Pobierz swoje listy życzeń, wraz z prywatnymi przedmiotami, oraz obserwowane listy jako plik JSON.",
+      "button": "Eksportuj moje dane",
+      "exporting": "Eksportowanie…",
+      "done": "Twoje dane zostały wyeksportowane",
+      "failed": "Nie udało się wyeksportować danych."
+    },
+    "delete": {
+      "label": "Usuń konto",
+      "description": "Trwale usuwa Twoje konto, listy życzeń i przedmioty. Tej operacji nie można cofnąć.",
+      "button": "Usuń moje konto",
+      "confirm": "Czy na pewno chcesz usunąć konto? Tej operacji nie można cofnąć.",
+      "done": "Konto zostało usunięte",
+      "failed": "Nie udało się usunąć konta"
+    }
+  },
+  "wishlists": {
+    "title": "Twoje listy życzeń",
+    "welcomeBack": "Witaj ponownie",
+    "welcomeBackName": "Witaj ponownie, {{name}}",
+    "description": "Trzymaj każdą okazję na osobnej liście, a gdy będziesz gotowy, udostępnij link.",
+    "newWishlist": "Nowa lista życzeń",
+    "startNew": "Zacznij nową listę",
+    "emptyTitle": "Zasadź swoją pierwszą listę życzeń",
+    "emptyDescription": "Stwórz listę na urodziny, nowy dom albo bez okazji. Przedmioty możesz dodawać, a listę udostępniać w dowolnej chwili.",
+    "dialogNew": "Nowa lista życzeń",
+    "dialogEdit": "Edytuj listę życzeń",
+    "loadFailed": "Nie udało się wczytać Twoich list życzeń",
+    "created": "Lista życzeń została utworzona",
+    "createFailed": "Nie udało się utworzyć listy życzeń",
+    "updated": "Lista życzeń została zaktualizowana",
+    "updateFailed": "Nie udało się zaktualizować listy życzeń",
+    "deleted": "Lista życzeń została usunięta",
+    "deleteFailed": "Nie udało się usunąć listy życzeń"
+  },
+  "following": {
+    "title": "Obserwowane",
+    "eyebrow": "Od przyjaciół i rodziny",
+    "description": "Listy życzeń, które obserwujesz — najnowsze zmiany na górze.",
+    "emptyTitle": "Nic jeszcze nie obserwujesz",
+    "emptyDescription": "Otwórz listę życzeń udostępnioną przez znajomego i wybierz Obserwuj. Pojawi się tutaj.",
+    "loadFailed": "Nie udało się wczytać obserwowanych list życzeń",
+    "renameFailed": "Nie udało się zmienić nazwy listy życzeń"
+  },
+  "rename": {
+    "title": "Zmień nazwę listy",
+    "description": "Tę nazwę widzisz tylko Ty. Zostaw puste, aby użyć oryginalnej.",
+    "descriptionWithName": "Tę nazwę widzisz tylko Ty. Zostaw puste, aby użyć oryginalnej („{{name}}”).",
+    "label": "Twoja nazwa",
+    "save": "Zapisz"
+  },
+  "wishlistEdit": {
+    "description": "Nadaj jej nazwę i wybierz ikonę. Oba elementy możesz później zmienić.",
+    "name": "Nazwa",
+    "namePlaceholder": "Urodziny 2026",
+    "preview": "Podgląd",
+    "icon": "Ikona",
+    "iconColor": "Kolor ikony",
+    "defaultColor": "Kolor domyślny",
+    "customHex": "Własny kod szesnastkowy",
+    "deleteConfirm": "Usunąć tę listę życzeń wraz ze wszystkimi przedmiotami? Tej operacji nie można cofnąć.",
+    "delete": "Usuń listę życzeń",
+    "create": "Utwórz listę życzeń",
+    "saveChanges": "Zapisz zmiany",
+    "icons": {
+      "shopping-cart": "Wózek na zakupy",
+      "gift": "Prezent",
+      "heart": "Serce",
+      "sparkles": "Iskierki",
+      "shopping-bag": "Torba na zakupy",
+      "gamepad": "Kontroler do gier",
+      "book-open": "Książka",
+      "shirt": "Koszula",
+      "laptop": "Laptop",
+      "plane": "Samolot",
+      "home": "Dom",
+      "cake": "Ciasto",
+      "baby": "Dziecko",
+      "bike": "Rower",
+      "car": "Samochód",
+      "music": "Muzyka",
+      "palette": "Paleta",
+      "utensils": "Sztućce",
+      "dumbbell": "Hantla",
+      "briefcase": "Teczka"
+    },
+    "colors": {
+      "Red": "Czerwony",
+      "Orange": "Pomarańczowy",
+      "Amber": "Bursztynowy",
+      "Green": "Zielony",
+      "Teal": "Morski",
+      "Blue": "Niebieski",
+      "Purple": "Fioletowy",
+      "Pink": "Różowy",
+      "Slate": "Łupkowy"
+    }
+  },
+  "card": {
+    "copied": "Skopiowano link",
+    "copiedDescription": "Każdy, kto go ma, zobaczy publiczne przedmioty.",
+    "copyFailed": "Nie udało się skopiować linku",
+    "copyFailedDescription": "Skopiuj adres z paska adresu przeglądarki.",
+    "actionsFor": "Akcje dla: {{name}}",
+    "edit": "Edytuj listę życzeń",
+    "rename": "Zmień nazwę",
+    "copyLink": "Kopiuj link",
+    "originally": "Oryginalnie „{{name}}”",
+    "updated": "Zaktualizowano {{date}}"
+  },
+  "wishlistPage": {
+    "fallbackTitle": "Lista życzeń",
+    "back": "Twoje listy życzeń",
+    "byAuthor": "Lista życzeń: {{author}}",
+    "copyLink": "Kopiuj link",
+    "follow": "Obserwuj",
+    "following": "Obserwujesz",
+    "nowFollowing": "Obserwujesz teraz tę listę życzeń",
+    "followFailed": "Nie udało się zaobserwować tej listy życzeń",
+    "noLongerFollowing": "Nie obserwujesz już tej listy życzeń",
+    "unfollowFailed": "Nie udało się przestać obserwować tej listy życzeń",
+    "missingTitle": "Nie znaleziono listy życzeń",
+    "missingMessage": "Ta lista życzeń nie istnieje lub została usunięta.",
+    "errorTitle": "Nie udało się wczytać listy życzeń",
+    "errorMessage": "Podczas wczytywania tej listy życzeń coś poszło nie tak. Spróbuj ponownie."
+  },
+  "items": {
+    "section": "Przedmioty",
+    "statItems_one": "przedmiot",
+    "statItems_few": "przedmioty",
+    "statItems_many": "przedmiotów",
+    "statItems_other": "przedmiotu",
+    "statPrivate_one": "prywatny",
+    "statPrivate_few": "prywatne",
+    "statPrivate_many": "prywatnych",
+    "statPrivate_other": "prywatnego",
+    "add": "Dodaj przedmiot",
+    "added": "Przedmiot został dodany.",
+    "addFailed": "Nie udało się dodać przedmiotu do listy.",
+    "updated": "Przedmiot został zaktualizowany.",
+    "updateFailed": "Nie udało się zaktualizować przedmiotu na liście.",
+    "deleted": "Przedmiot został usunięty.",
+    "deleteFailed": "Nie udało się usunąć przedmiotu.",
+    "addTitle": "Dodaj przedmiot",
+    "addDescription": "Wymagana jest tylko nazwa. Dodaj zdjęcie, cenę i link, jeśli je masz.",
+    "editTitle": "Edytuj przedmiot",
+    "editDescription": "Zmień ten przedmiot, a następnie zapisz zmiany.",
+    "saveChanges": "Zapisz zmiany",
+    "emptyOwnTitle": "Dodaj pierwsze życzenie",
+    "emptyOwnDescription": "Dodaj coś, co chciałbyś dostać, ze zdjęciem i linkiem do sklepu.",
+    "emptyTitle": "Na razie nic tu nie ma",
+    "emptyDescription": "Ta lista życzeń nie ma jeszcze publicznych przedmiotów.",
+    "priceNotSet": "Brak ceny",
+    "noImage": "Brak zdjęcia: {{name}}",
+    "private": "Prywatne",
+    "privateHint": ", widzisz to tylko Ty",
+    "edit": "Edytuj: {{name}}",
+    "viewOnline": "{{name}}, zobacz w sieci (otwiera się w nowej karcie)"
+  },
+  "itemForm": {
+    "name": "Nazwa",
+    "namePlaceholder": "Lniany pled",
+    "price": "Orientacyjna cena",
+    "optional": "Opcjonalnie",
+    "link": "Link",
+    "linkPlaceholder": "Opcjonalnie, gdzie to kupić",
+    "image": "Adres zdjęcia",
+    "imagePlaceholder": "Opcjonalnie, https://…",
+    "currency": "Waluta",
+    "fetch": "Pobierz szczegóły z linku",
+    "fetchNeedsLink": "Najpierw dodaj prawidłowy link.",
+    "fetchFilled": "Uzupełniono to, co udało się znaleźć.",
+    "fetchNothing": "Na tej stronie nie znaleziono nic nowego.",
+    "fetchFailed": "Nie udało się pobrać szczegółów.",
+    "undo": "Cofnij",
+    "undone": "Przywrócono poprzednie wartości.",
+    "public": "Publiczny",
+    "publicHint": "Każdy, kto ma link, go zobaczy. Wyłącz, aby zachować go tylko dla siebie.",
+    "delete": "Usuń przedmiot",
+    "deleteConfirm": "Usunąć ten przedmiot? Tej operacji nie można cofnąć."
+  }
+}

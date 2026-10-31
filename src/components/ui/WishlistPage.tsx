@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   FollowStateChanger,
   fetchWishlistView,
@@ -38,6 +39,7 @@ function FollowButton({
   setIsFollowing,
   toast,
 }: FollowButtonProps) {
+  const { t } = useTranslation();
   const handleFollowChange = (
     followAction: FollowStateChanger,
     nowFollowing: boolean,
@@ -59,8 +61,8 @@ function FollowButton({
     handleFollowChange(
       followWishlist,
       true,
-      "You are now following this wishlist",
-      "Failed to follow this wishlist",
+      t("wishlistPage.nowFollowing"),
+      t("wishlistPage.followFailed"),
     );
   };
 
@@ -68,8 +70,8 @@ function FollowButton({
     handleFollowChange(
       unfollowWishlist,
       false,
-      "You are no longer following this wishlist",
-      "Failed to unfollow this wishlist",
+      t("wishlistPage.noLongerFollowing"),
+      t("wishlistPage.unfollowFailed"),
     );
   };
 
@@ -83,7 +85,7 @@ function FollowButton({
       onClick={isFollowing ? handleUnfollow : handleFollow}
     >
       <Heart className={isFollowing ? "fill-current" : undefined} aria-hidden="true" />
-      {isFollowing ? "Following" : "Follow"}
+      {isFollowing ? t("wishlistPage.following") : t("wishlistPage.follow")}
     </Button>
   );
 }
@@ -95,17 +97,18 @@ function ShareButton({
   wishlistId: string;
   toast: ReturnType<typeof useToast>["toast"];
 }) {
+  const { t } = useTranslation();
   const handleShare = () => {
     const url = `${window.location.origin}/wishlist/${wishlistId}`;
     navigator.clipboard
       .writeText(url)
       .then(() => {
-        toast({ title: "Link copied", description: "Anyone with it can view the public items." });
+        toast({ title: t("card.copied"), description: t("card.copiedDescription") });
       })
       .catch(() => {
         toast({
-          title: "Could not copy the link",
-          description: "Copy the address from your browser's address bar instead.",
+          title: t("card.copyFailed"),
+          description: t("card.copyFailedDescription"),
           variant: "destructive",
         });
       });
@@ -114,7 +117,7 @@ function ShareButton({
   return (
     <Button variant="outline" onClick={handleShare}>
       <Link2 aria-hidden="true" />
-      Copy link
+      {t("wishlistPage.copyLink")}
     </Button>
   );
 }
@@ -146,6 +149,7 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
   const [isFollowing, setIsFollowing] = useState<boolean>(false);
   const [items, setItems] = useState<WishlistItem[]>([]);
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   useEffect(() => {
     let cancelled = false;
@@ -177,22 +181,25 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
   const wishlistInfo = state.status === "ready" ? state.view.info : null;
   const isWishlistOwner = state.status === "ready" && state.view.isOwner;
   const pageTitle =
-    wishlistInfo?.name ?? (state.status === "missing" ? "Wishlist not found" : "Wishlist");
+    wishlistInfo?.name ??
+    (state.status === "missing"
+      ? t("wishlistPage.missingTitle")
+      : t("wishlistPage.fallbackTitle"));
   usePageTitle(pageTitle);
 
   if (state.status === "missing") {
     return (
       <NotFound
-        title="Wishlist not found"
-        message="This wishlist does not exist or has been deleted."
+        title={t("wishlistPage.missingTitle")}
+        message={t("wishlistPage.missingMessage")}
       />
     );
   }
   if (state.status === "error") {
     return (
       <NotFound
-        title="Could not load wishlist"
-        message="Something went wrong while loading this wishlist. Please try again."
+        title={t("wishlistPage.errorTitle")}
+        message={t("wishlistPage.errorMessage")}
       />
     );
   }
@@ -206,7 +213,7 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
           className="-mt-4 mb-6 inline-flex items-center gap-1.5 rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Your wishlists
+          {t("wishlistPage.back")}
         </Link>
       )}
       {!wishlistInfo ? (
@@ -216,7 +223,11 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
         </div>
       ) : (
         <PageHeader
-          eyebrow={wishlistInfo.author ? `Wishlist by ${wishlistInfo.author}` : "Wishlist"}
+          eyebrow={
+            wishlistInfo.author
+              ? t("wishlistPage.byAuthor", { author: wishlistInfo.author })
+              : t("wishlistPage.fallbackTitle")
+          }
           title={wishlistInfo.name}
           icon={<WishlistIconBadge name={wishlistInfo.icon} color={wishlistInfo.iconColor} />}
           actions={

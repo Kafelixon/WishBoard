@@ -1,5 +1,6 @@
 import { Suspense, lazy, useEffect, type ComponentType } from "react";
 import { Route, Routes } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
 import { logout } from "@/lib/userStore";
@@ -58,6 +59,7 @@ const AuthSync = () => {
 };
 
 const App = () => {
+  const { t } = useTranslation();
   return (
     <>
           <AuthSync />
@@ -65,7 +67,7 @@ const App = () => {
             href="#main"
             className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-full focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
           >
-            Skip to content
+            {t("app.skipToContent")}
           </a>
           <TopMenu />
           <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 pb-24 pt-8 sm:px-5 sm:pt-10">

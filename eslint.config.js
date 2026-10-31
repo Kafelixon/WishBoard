@@ -78,6 +78,24 @@ export default ts.config(
     },
   },
   {
+    // User-facing text goes through react-i18next (src/locales/*.json), never JSX literals.
+    files: ["src/**/*.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXText[value=/[\\p{L}\\p{N}]/u]",
+          message: "Hardcoded UI text. Use t(\"…\") from react-i18next.",
+        },
+        {
+          selector:
+            "JSXAttribute[name.name=/^(aria-label|aria-description|alt|placeholder|title)$/] > Literal[value=/[\\p{L}]/u]",
+          message: "Hardcoded UI text in an attribute. Use t(\"…\") from react-i18next.",
+        },
+      ],
+    },
+  },
+  {
     // Node-side code: tests and one-off scripts are plain scripts, not UI.
     files: ["api/__tests__/**/*.ts", "scripts/**/*.ts"],
     rules: {

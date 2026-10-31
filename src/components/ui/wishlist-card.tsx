@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Link2, MoreHorizontal, Pencil } from "lucide-react";
 import { Wishlist } from "@/lib/types";
+import { currentLanguage } from "@/i18n";
 import { WishlistIconBadge } from "@/components/ui/icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
@@ -20,7 +22,7 @@ interface WishlistCardProps {
 }
 
 const formatUpdated = (timestamp: number) =>
-  new Date(timestamp).toLocaleDateString(undefined, {
+  new Date(timestamp).toLocaleDateString(currentLanguage(), {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -28,16 +30,17 @@ const formatUpdated = (timestamp: number) =>
 
 export function WishlistCard({ wishlist, onEdit, onRename }: WishlistCardProps) {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const copyLink = () => {
     const url = `${window.location.origin}/wishlist/${wishlist.id}`;
     navigator.clipboard
       .writeText(url)
       .then(() => {
-        toast({ title: "Link copied", description: "Anyone with it can view the public items." });
+        toast({ title: t("card.copied"), description: t("card.copiedDescription") });
       })
       .catch(() => {
-        toast({ title: "Could not copy the link", variant: "destructive" });
+        toast({ title: t("card.copyFailed"), variant: "destructive" });
       });
   };
 
@@ -50,7 +53,7 @@ export function WishlistCard({ wishlist, onEdit, onRename }: WishlistCardProps) 
         {(onEdit ?? onRename) && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              aria-label={`Actions for ${displayName}`}
+              aria-label={t("card.actionsFor", { name: displayName })}
               className="relative z-10 -mr-2 -mt-1 rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <MoreHorizontal className="size-5" aria-hidden="true" />
@@ -62,7 +65,7 @@ export function WishlistCard({ wishlist, onEdit, onRename }: WishlistCardProps) 
                     onEdit(wishlist);
                   }}
                 >
-                  <Pencil aria-hidden="true" /> Edit wishlist
+                  <Pencil aria-hidden="true" /> {t("card.edit")}
                 </DropdownMenuItem>
               )}
               {onRename && (
@@ -71,11 +74,11 @@ export function WishlistCard({ wishlist, onEdit, onRename }: WishlistCardProps) 
                     onRename(wishlist);
                   }}
                 >
-                  <Pencil aria-hidden="true" /> Rename
+                  <Pencil aria-hidden="true" /> {t("card.rename")}
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onSelect={copyLink}>
-                <Link2 aria-hidden="true" /> Copy link
+                <Link2 aria-hidden="true" /> {t("card.copyLink")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -92,12 +95,12 @@ export function WishlistCard({ wishlist, onEdit, onRename }: WishlistCardProps) 
         </h2>
         {wishlist.customName && (
           <p className="truncate text-sm text-muted-foreground" title={wishlist.name}>
-            Originally “{wishlist.name}”
+            {t("card.originally", { name: wishlist.name })}
           </p>
         )}
         <p className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
           <span className="truncate">{wishlist.author}</span>
-          <span className="tabular shrink-0">Updated {formatUpdated(wishlist.updateTimestamp)}</span>
+          <span className="tabular shrink-0">{t("card.updated", { date: formatUpdated(wishlist.updateTimestamp) })}</span>
         </p>
       </div>
     </div>

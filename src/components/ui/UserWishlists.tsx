@@ -1,5 +1,6 @@
 import React, { Suspense, lazy, useState, useEffect } from "react";
 import { Plus, Sprout } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
   createWishlist,
   deleteWishlist,
@@ -24,7 +25,8 @@ const WishlistEditDialog = lazy(async () => ({
 }));
 
 export const UserWishlists: React.FC = () => {
-  usePageTitle("Your wishlists");
+  const { t } = useTranslation();
+  usePageTitle(t("wishlists.title"));
   const userName = useUserName();
   const PLACEHOLDER_ITEM: Wishlist = {
     id: "",
@@ -64,12 +66,12 @@ export const UserWishlists: React.FC = () => {
       .then(setWishlists)
       .catch((error: unknown) => {
         console.error(error);
-        toast({ title: "Failed to load your wishlists", variant: "destructive" });
+        toast({ title: t("wishlists.loadFailed"), variant: "destructive" });
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, [userId, toast]);
+  }, [userId, toast, t]);
 
   const runWishlistWrite = async (
     write: () => Promise<void>,
@@ -99,24 +101,24 @@ export const UserWishlists: React.FC = () => {
     if (!wishlistToAdd.name) return;
     await runWishlistWrite(
       () => createWishlist(userId, wishlistToAdd),
-      "Wishlist created",
-      "Failed to create the wishlist",
+      t("wishlists.created"),
+      t("wishlists.createFailed"),
     );
   };
 
   const handleEditWishlist = async (wishlistToUpdate: Wishlist) => {
     await runWishlistWrite(
       () => updateWishlist(userId, wishlistToUpdate),
-      "Wishlist updated",
-      "Failed to update the wishlist",
+      t("wishlists.updated"),
+      t("wishlists.updateFailed"),
     );
   };
 
   const handleDelete = async () => {
     await runWishlistWrite(
       () => deleteWishlist(userId, currentItem.id),
-      "Wishlist deleted",
-      "Failed to delete the wishlist",
+      t("wishlists.deleted"),
+      t("wishlists.deleteFailed"),
     );
   };
 
@@ -137,12 +139,16 @@ export const UserWishlists: React.FC = () => {
   return (
     <>
       <PageHeader
-        eyebrow={firstName ? `Welcome back, ${firstName}` : "Welcome back"}
-        title="Your wishlists"
-        description="Keep every occasion in its own list, then share a link when you're ready."
+        eyebrow={
+          firstName
+            ? t("wishlists.welcomeBackName", { name: firstName })
+            : t("wishlists.welcomeBack")
+        }
+        title={t("wishlists.title")}
+        description={t("wishlists.description")}
         actions={
           <Button onClick={openAddDialog}>
-            <Plus aria-hidden="true" /> New wishlist
+            <Plus aria-hidden="true" /> {t("wishlists.newWishlist")}
           </Button>
         }
       />
@@ -152,7 +158,7 @@ export const UserWishlists: React.FC = () => {
         isOpen={dialogOpen}
         isSubmitting={isSubmitting}
         actionType={actionType}
-        dialogTitle={actionType === "Add" ? "New wishlist" : "Edit wishlist"}
+        dialogTitle={actionType === "Add" ? t("wishlists.dialogNew") : t("wishlists.dialogEdit")}
         handleAction={(wishlist) => {
           void (actionType === "Add"
             ? handleAddWishlist(wishlist)
@@ -189,18 +195,18 @@ export const UserWishlists: React.FC = () => {
               className="flex min-h-44 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-input text-muted-foreground transition-colors hover:border-primary hover:bg-card hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus className="size-6" aria-hidden="true" />
-              Start a new list
+              {t("wishlists.startNew")}
             </button>
           </li>
         </ul>
       ) : (
         <EmptyState
           icon={<Sprout aria-hidden="true" />}
-          title="Plant your first wishlist"
-          description="Create a list for a birthday, a new home, or just because. You can add items and share it any time."
+          title={t("wishlists.emptyTitle")}
+          description={t("wishlists.emptyDescription")}
           action={
             <Button onClick={openAddDialog}>
-              <Plus aria-hidden="true" /> New wishlist
+              <Plus aria-hidden="true" /> {t("wishlists.newWishlist")}
             </Button>
           }
         />

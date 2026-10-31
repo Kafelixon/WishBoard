@@ -2,6 +2,7 @@ import { FC } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
+import { useTranslation } from "react-i18next";
 import { WishlistItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +15,7 @@ import {
 import { Loader2 } from "lucide-react";
 import { ItemFormFields } from "./ItemFormFields";
 import { isValidWebUrl } from "@/lib/url";
+import i18n from "@/i18n";
 
 interface ItemDialogProps {
   dialogOpen: boolean;
@@ -31,22 +33,22 @@ interface ItemDialogProps {
 type ItemSchema = Omit<WishlistItem, "id">;
 
 const schema: yup.ObjectSchema<ItemSchema> = yup.object({
-  name: yup.string().required("Give the item a name"),
+  name: yup.string().required(() => i18n.t("validation.itemName")),
   image: yup
     .string()
     .defined()
-    .test("web-url", "Enter a valid web address", isValidWebUrl),
+    .test("web-url", () => i18n.t("validation.webUrl"), isValidWebUrl),
   price: yup
     .number()
     .transform((value, originalValue) => (originalValue === "" ? 0 : (value as number)))
-    .typeError("Price must be a number")
-    .min(0, "Price can't be negative")
+    .typeError(() => i18n.t("validation.priceNumber"))
+    .min(0, () => i18n.t("validation.priceNegative"))
     .required(),
   currency: yup.string(),
   link: yup
     .string()
     .defined()
-    .test("web-url", "Enter a valid web address", isValidWebUrl),
+    .test("web-url", () => i18n.t("validation.webUrl"), isValidWebUrl),
   public: yup.boolean(),
 });
 
@@ -62,6 +64,7 @@ export const ItemDialog: FC<ItemDialogProps> = ({
   dialogDescription,
   actionLabel,
 }) => {
+  const { t } = useTranslation();
   const methods = useForm<ItemSchema>({
     values: currentItem,
     resolver: yupResolver(schema),
@@ -100,17 +103,17 @@ export const ItemDialog: FC<ItemDialogProps> = ({
                   variant="ghost"
                   className="text-destructive hover:bg-destructive/10"
                   onClick={() => {
-                    if (window.confirm("Delete this item? This cannot be undone.")) {
+                    if (window.confirm(t("itemForm.deleteConfirm"))) {
                       handleDelete();
                     }
                   }}
                 >
-                  Delete item
+                  {t("itemForm.delete")}
                 </Button>
               )}
               <Button type="submit" disabled={isSubmitting}>
                 {isSubmitting ? (
-                  <Loader2 className="animate-spin" aria-label="Saving" />
+                  <Loader2 className="animate-spin" aria-label={t("common.saving")} />
                 ) : (
                   actionLabel
                 )}
