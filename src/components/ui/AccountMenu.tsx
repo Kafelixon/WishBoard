@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
 import { LogOut, Settings } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
-import { logout } from "@/redux/slices/userSlice";
+import { logout } from "@/lib/userStore";
 import type { User } from "@/lib/types";
 import {
   DropdownMenu,
@@ -18,7 +17,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 /** The signed-in user's avatar menu. Loaded on demand so signed-out visitors never download the dropdown code. */
 export default function AccountMenu({ user }: { user: User }) {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
 
   const initials =
     user.displayName
@@ -29,7 +27,7 @@ export default function AccountMenu({ user }: { user: User }) {
       .join("") ?? "?";
 
   const handleLogout = () => {
-    dispatch(logout());
+    logout();
     signOut(auth).catch((error: unknown) => {
       console.error("Sign out failed", error);
     });

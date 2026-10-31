@@ -28,7 +28,7 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
 
 - `@/` alias -> `src/` (set in both `vite.config.ts` and `tsconfig.json`).
 - **Routing** (`src/App.tsx`): `/`, `/login`, `/wishlists`, `/wishlist/:wishlistId`, `/settings`, under `BrowserRouter` (`main.tsx`).
-- **State**: a single Redux slice (`redux/slices/userSlice.ts`) holding only the signed-in `User | null`, persisted to localStorage via redux-persist (`redux/store.ts`). All wishlist data is *not* in Redux; components fetch from Firestore through the handlers and keep it in local state. Read the user with the hooks in `lib/common.ts` (`useUser`, `useUserId`, `useUserName`).
+- **State**: the signed-in `User | null` lives in a tiny external store (`lib/userStore.ts`, read with `useSyncExternalStore`) persisted to localStorage under the legacy `persist:root` key (shape kept so existing sign-ins carry over and `pgHandlers` can read it before React renders). There is no Redux. All wishlist data is *not* in that store; components fetch through the handlers and keep it in local state. Read the user with the hooks in `lib/common.ts` (`useUser`, `useUserId`, `useUserName`); sign in/out with `login`/`logout` from `lib/userStore.ts`.
 - **Auth** (`lib/authHandlers.ts`): email/password and Google popup sign-in; on success they dispatch `login` and navigate to the `from` route.
 - **Data layer** (`lib/wishlistHandlers.ts`): the only place that touches Firestore. Collections:
   - `wishlists` – doc fields `wishlistName`, `ownerId`, `author`, `iconName`, `updateTimestamp`, and an embedded `items: WishlistItem[]` array (items are not a subcollection; item add/edit/delete run in a Firestore transaction via `withOwnedWishlist` and return the new item list).

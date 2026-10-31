@@ -8,20 +8,18 @@ import {
   updateProfile,
 } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
-import { login } from "../redux/slices/userSlice";
-import { Action, Dispatch } from "@reduxjs/toolkit";
+import { login } from "@/lib/userStore";
 import { NavigateFunction } from "react-router-dom";
 
 export const loginUser = async (
   email: string,
   password: string,
-  dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
   from: string,
 ) => {
   try {
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    dispatchLogin(dispatch, userCredential, navigate, from);
+    completeLogin(userCredential, navigate, from);
   } catch (error) {
     console.error(error);
     throw Object.assign(new Error("Invalid email or password. Please try again."), {
@@ -34,7 +32,6 @@ export const registerUser = async (
   email: string,
   password: string,
   username: string,
-  dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
   from: string,
 ) => {
@@ -46,7 +43,7 @@ export const registerUser = async (
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await sendEmailVerification(userCredential.user);
     await changeUsername(username);
-    dispatchLogin(dispatch, userCredential, navigate, from);
+    completeLogin(userCredential, navigate, from);
   } catch (error) {
     console.error(error);
     throw Object.assign(new Error("Registration failed. Please try again."), {
@@ -73,7 +70,6 @@ export const changeUsername = async (newUsername: string) => {
 };
 
 export const loginWithGoogle = async (
-  dispatch: Dispatch<Action>,
   navigate: NavigateFunction,
   from: string,
 ) => {
@@ -81,7 +77,7 @@ export const loginWithGoogle = async (
 
   try {
     const userCredential = await signInWithPopup(auth, provider);
-    dispatchLogin(dispatch, userCredential, navigate, from);
+    completeLogin(userCredential, navigate, from);
   } catch (error) {
     console.error(error);
     throw Object.assign(new Error("Google login failed. Please try again."), {
@@ -90,13 +86,12 @@ export const loginWithGoogle = async (
   }
 };
 
-const dispatchLogin = (
-  dispatch: Dispatch<Action>,
+const completeLogin = (
   credential: UserCredential,
   navigate: NavigateFunction,
   from: string,
 ) => {
   const { uid, email, displayName, photoURL } = credential.user;
-  dispatch(login({ uid, displayName, email, photoURL }));
+  login({ uid, displayName, email, photoURL });
   void navigate(from, { replace: true });
 };

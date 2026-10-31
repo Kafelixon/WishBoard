@@ -1,24 +1,9 @@
 // common.ts TODO: rename
-import { UserState, User } from "@/lib/types";
-import { useSelector } from "react-redux";
+import type { User } from "@/lib/types";
+import { useStoredUser } from "@/lib/userStore";
 
-export const useUser = (): User | null => {
-  const userState: UserState = useSelector(
-    (state: { user: UserState }) => state.user,
-  );
-  return userState.user ?? null;
-};
+export const useUser = (): User | null => useStoredUser();
 
-export const useUserId = (): string => {
-  const userState: UserState = useSelector(
-    (state: { user: UserState }) => state.user,
-  );
-  return userState.user?.uid ?? "";
-};
+export const useUserId = (): string => useStoredUser()?.uid ?? "";
 
-export const useUserName = (): string => {
-  const userState: UserState = useSelector(
-    (state: { user: UserState }) => state.user,
-  );
-  return userState.user?.displayName ?? "";
-};
+export const useUserName = (): string => useStoredUser()?.displayName ?? "";

@@ -1,11 +1,8 @@
 import { Suspense, lazy, useEffect, type ComponentType } from "react";
 import { Route, Routes } from "react-router-dom";
-import { Provider, useDispatch } from "react-redux";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
-import { logout } from "@/redux/slices/userSlice";
-import { PersistGate } from "redux-persist/integration/react";
-import { store, persistor } from "@/redux/store";
+import { logout } from "@/lib/userStore";
 import { Toaster } from "@/components/ui/toaster";
 import { SpeedInsights } from "@vercel/speed-insights/react"
 import { Analytics } from "@vercel/analytics/react"
@@ -50,21 +47,19 @@ preloadInitialRoute(window.location.pathname);
 
 /** Drops the persisted user when Firebase reports there is no signed-in session. */
 const AuthSync = () => {
-  const dispatch = useDispatch();
   useEffect(
     () =>
       onAuthStateChanged(auth, (firebaseUser) => {
-        if (!firebaseUser) dispatch(logout());
+        if (!firebaseUser) logout();
       }),
-    [dispatch],
+    [],
   );
   return null;
 };
 
 const App = () => {
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
+    <>
           <AuthSync />
           <a
             href="#main"
@@ -91,8 +86,7 @@ const App = () => {
           <Toaster />
         <SpeedInsights />
         <Analytics />
-      </PersistGate>
-    </Provider>
+    </>
   );
 };
 

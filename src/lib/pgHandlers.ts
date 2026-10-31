@@ -13,7 +13,7 @@ import type {
 
 /**
  * Whether a user was signed in last time, read straight from the persisted
- * Redux state (synchronous, so it doesn't depend on rehydration having finished).
+ * user store (synchronous, so it doesn't depend on rehydration having finished).
  * Anything unreadable counts as signed in, so we only skip the auth wait when sure.
  */
 function wasSignedIn(): boolean {
