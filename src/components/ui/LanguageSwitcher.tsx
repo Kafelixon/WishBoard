@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Globe } from "lucide-react";
-import { SUPPORTED_LANGUAGES, currentLanguage } from "@/i18n";
+import { SUPPORTED_LANGUAGES, chooseLanguage, currentLanguage, type Language } from "@/i18n";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,7 +18,7 @@ interface LanguageSwitcherProps {
 
 /** Picks the UI language; the choice is saved to localStorage by the language detector. */
 export function LanguageSwitcher({ className, compact = false }: LanguageSwitcherProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const active = currentLanguage();
 
   return (
@@ -39,7 +39,7 @@ export function LanguageSwitcher({ className, compact = false }: LanguageSwitche
         <DropdownMenuRadioGroup
           value={active}
           onValueChange={(code) => {
-            void i18n.changeLanguage(code);
+            void chooseLanguage(code as Language);
           }}
         >
           {SUPPORTED_LANGUAGES.map((code) => (

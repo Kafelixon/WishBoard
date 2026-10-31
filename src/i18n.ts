@@ -7,7 +7,7 @@ import pl from "@/locales/pl.json";
 export const SUPPORTED_LANGUAGES = ["en", "pl"] as const;
 export type Language = (typeof SUPPORTED_LANGUAGES)[number];
 
-const STORAGE_KEY = "wishboard.language";
+export const LANGUAGE_STORAGE_KEY = "wishboard.language";
 
 export const resources = { en: { translation: en }, pl: { translation: pl } } as const;
 
@@ -30,13 +30,24 @@ void i18n
     detection: {
       // An explicit choice (saved by the switcher) wins over the browser's language.
       order: ["localStorage", "navigator"],
-      lookupLocalStorage: STORAGE_KEY,
-      caches: ["localStorage"],
+      lookupLocalStorage: LANGUAGE_STORAGE_KEY,
+      // Don't save the auto-detected language, so a changed browser language is picked up next visit.
+      caches: [],
     },
   });
 
 syncDocumentLanguage(i18n.resolvedLanguage ?? "en");
 i18n.on("languageChanged", syncDocumentLanguage);
+
+/** Switches the UI language and remembers it as the user's explicit choice. */
+export const chooseLanguage = async (language: Language) => {
+  try {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+  } catch {
+    // Private mode or full storage: the choice just lasts for this visit.
+  }
+  await i18n.changeLanguage(language);
+};
 
 /** The active UI language, narrowed to one we ship. */
 export const currentLanguage = (): Language => {

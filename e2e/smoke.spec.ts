@@ -38,6 +38,8 @@ test.describe("Polish locale", () => {
     await expect(page.locator("html")).toHaveAttribute("lang", "pl");
     await expect(page.getByRole("heading", { level: 1 })).toContainText("listę swoich marzeń");
     await expect(page.getByRole("link", { name: "Zaczynamy" })).toBeVisible();
+    // Auto-detection isn't saved; only an explicit choice is.
+    expect(await page.evaluate(() => localStorage.getItem("wishboard.language"))).toBeNull();
   });
 
   test("login form and not-found page are translated", async ({ page }) => {
