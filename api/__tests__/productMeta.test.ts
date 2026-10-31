@@ -34,6 +34,13 @@ test("cleans spacing entities out of titles", () => {
   assert.equal(parseProductMeta(html, page).name, "AirPods 5 &nbsp;White – 2025");
 });
 
+test("stays fast on pathological markup", () => {
+  const evil = '<script type="application/ld+json">'.repeat(30000) + "<meta ".repeat(100000) + "<title>".repeat(50000);
+  const start = performance.now();
+  parseProductMeta(evil, page);
+  assert.ok(performance.now() - start < 2000);
+});
+
 test("returns nulls when nothing is found", () => {
   assert.deepEqual(parseProductMeta("<p>hi</p>", page), { name: null, image: null, price: null, currency: null });
 });

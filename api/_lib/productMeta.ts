@@ -113,9 +113,44 @@ const decodeEntities = (s: string): string =>
     .replace(/\s+/g, " ")
     .trim();
 
+const MAX_TAG_LENGTH = 4000;
+const MAX_JSON_LD_BLOCKS = 20;
+
+/** The page and its lowercased copy, made once so repeated scans stay linear. */
+interface Doc {
+  html: string;
+  lower: string;
+}
+
+/**
+ * Opening tags named `name`, found with indexOf so a hostile page can't make the scan
+ * superlinear the way a lazy regex over the whole document can. Yields where the tag
+ * ends too, so callers can read what follows it.
+ */
+function* openTags({ html, lower }: Doc, name: string): Generator<{ tag: string; end: number }, void> {
+  const needle = `<${name}`;
+  let from = 0;
+  for (;;) {
+    const start = lower.indexOf(needle, from);
+    if (start === -1) return;
+    const end = html.indexOf(">", start);
+    if (end === -1) return;
+    from = end + 1;
+    const next = html.charAt(start + needle.length);
+    if (end - start > MAX_TAG_LENGTH || !(next === ">" || next === "/" || next.trim() === "")) continue;
+    yield { tag: html.slice(start, end + 1), end };
+  }
+}
+
+/** Text between the end of an opening tag and the next `</name`. */
+const innerText = ({ html, lower }: Doc, end: number, name: string): string => {
+  const close = lower.indexOf(`</${name}`, end + 1);
+  return close === -1 ? "" : html.slice(end + 1, close);
+};
+
 /** Value of the first <meta> whose property/name/itemprop equals one of `keys`. */
-const metaContent = (html: string, keys: string[]): string | null => {
-  for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
+const metaContent = (doc: Doc, keys: string[]): string | null => {
+  for (const { tag } of openTags(doc, "meta")) {
     const key = /\b(?:property|name|itemprop)\s*=\s*["']([^"']+)["']/i.exec(tag)?.[1]?.toLowerCase();
     if (!key || !keys.includes(key)) continue;
     const content = /\bcontent\s*=\s*"([^"]*)"|\bcontent\s*=\s*'([^']*)'/i.exec(tag);
@@ -154,13 +189,13 @@ const findProduct = (node: unknown): Record<string, unknown> | null => {
   return findProduct(obj["@graph"]);
 };
 
-const jsonLdProduct = (html: string): Record<string, unknown> | null => {
-  const scripts = html.matchAll(
-    /<script\b[^>]*type\s*=\s*["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
-  );
-  for (const [, body = ""] of scripts) {
+const jsonLdProduct = (doc: Doc): Record<string, unknown> | null => {
+  let blocks = 0;
+  for (const { tag, end } of openTags(doc, "script")) {
+    if (!/\btype\s*=\s*["']application\/ld\+json["']/i.test(tag)) continue;
+    if (++blocks > MAX_JSON_LD_BLOCKS) break;
     try {
-      const found = findProduct(JSON.parse(body.trim()));
+      const found = findProduct(JSON.parse(innerText(doc, end, "script").trim()));
       if (found) return found;
     } catch {
       // malformed JSON-LD is common; try the next block
@@ -169,7 +204,14 @@ const jsonLdProduct = (html: string): Record<string, unknown> | null => {
   return null;
 };
 
-const CURRENCY = /^[A-Za-z]{3}$/;
+const isCurrencyCode = (value: string): boolean => {
+  if (value.length !== 3) return false;
+  for (let i = 0; i < 3; i++) {
+    const c = value.charCodeAt(i) | 32; // fold case
+    if (c < 97 || c > 122) return false;
+  }
+  return true;
+};
 
 /** First usable price (and its currency) among a product's offers, or its variants' offers. */
 const offerPrice = (product: Record<string, unknown> | null): { price: number | null; currency: string | null } => {
@@ -183,24 +225,26 @@ const offerPrice = (product: Record<string, unknown> | null): { price: number | 
       const price = toPrice(o.price ?? o.lowPrice ?? spec?.price);
       if (price === null) continue;
       const code = o.priceCurrency ?? spec?.priceCurrency;
-      return { price, currency: typeof code === "string" && CURRENCY.test(code) ? code.toUpperCase() : null };
+      return { price, currency: typeof code === "string" && isCurrencyCode(code) ? code.toUpperCase() : null };
     }
   }
   return { price: null, currency: null };
 };
 
 export function parseProductMeta(html: string, pageUrl: URL): ProductMeta {
-  const product = jsonLdProduct(html);
-  const title = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1];
+  const doc: Doc = { html, lower: html.toLowerCase() };
+  const product = jsonLdProduct(doc);
+  const titleTag = openTags(doc, "title").next().value;
+  const title = titleTag ? innerText(doc, titleTag.end, "title") : undefined;
 
   const name =
     (typeof product?.name === "string" ? decodeEntities(product.name).trim() : null) ??
-    metaContent(html, ["og:title", "twitter:title"]) ??
+    metaContent(doc, ["og:title", "twitter:title"]) ??
     (title ? decodeEntities(title).trim() : null);
 
   const rawImage =
     firstString(product?.image) ??
-    metaContent(html, ["og:image", "og:image:secure_url", "twitter:image", "image"]);
+    metaContent(doc, ["og:image", "og:image:secure_url", "twitter:image", "image"]);
   let image: string | null = null;
   if (rawImage) {
     try {
@@ -211,7 +255,7 @@ export function parseProductMeta(html: string, pageUrl: URL): ProductMeta {
     }
   }
 
-  const metaPrice = metaContent(html, [
+  const metaPrice = metaContent(doc, [
     "product:price:amount",
     "og:price:amount",
     "product:sale_price:amount",
@@ -219,7 +263,7 @@ export function parseProductMeta(html: string, pageUrl: URL): ProductMeta {
   ]);
   const offer = offerPrice(product);
   const price = offer.price ?? (metaPrice ? toPrice(metaPrice) : null);
-  const metaCurrency = metaContent(html, [
+  const metaCurrency = metaContent(doc, [
     "product:price:currency",
     "og:price:currency",
     "product:sale_price:currency",
@@ -228,7 +272,7 @@ export function parseProductMeta(html: string, pageUrl: URL): ProductMeta {
   const currency =
     offer.price !== null
       ? offer.currency
-      : metaCurrency && CURRENCY.test(metaCurrency)
+      : metaCurrency && isCurrencyCode(metaCurrency)
         ? metaCurrency.toUpperCase()
         : null;
 
