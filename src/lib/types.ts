@@ -17,10 +17,6 @@ export interface Wishlist {
   updateTimestamp: number;
 }
 
-export interface UserState {
-  user: User | null;
-}
-
 export interface User {
   uid: string;
   displayName: string | null;

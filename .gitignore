@@ -74,3 +74,4 @@ lib-cov
 # Local files
 *.local
 .neon
+.vercel

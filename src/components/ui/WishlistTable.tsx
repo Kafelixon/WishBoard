@@ -1,4 +1,4 @@
-import { FC, useMemo, useRef, useState } from "react";
+import { FC, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, Gift, Lock, Pencil, Plus } from "lucide-react";
 import { WishlistItem } from "@/lib/types";
 import {
@@ -8,7 +8,10 @@ import {
   updateWishlistItem,
 } from "@/lib/wishlistHandlers";
 import { Button } from "@/components/ui/button";
-import { ItemDialog } from "@/components/ui/ItemDialog";
+
+const loadItemDialog = () => import("@/components/ui/ItemDialog");
+// Only owners can edit; the form's yup and react-hook-form code stays out of everyone else's load.
+const ItemDialog = lazy(async () => ({ default: (await loadItemDialog()).ItemDialog }));
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/page";
 import { useToast } from "@/components/ui/use-toast";
@@ -138,6 +141,17 @@ export default function WishlistItemsTable({
     setEditDialogOpen(false);
   };
 
+  useEffect(() => {
+    if (!canEditWishlist) return;
+    // Fetch the dialog code in the background so the first click doesn't wait for it.
+    const timer = setTimeout(() => {
+      void loadItemDialog();
+    }, 800);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [canEditWishlist]);
+
   const privateCount = items.filter((item) => item.public === false).length;
 
   return (
@@ -155,43 +169,47 @@ export default function WishlistItemsTable({
           )}
         </div>
       )}
-      <ItemDialog
-        dialogOpen={addDialogOpen}
-        setDialogOpen={setAddDialogOpen}
-        currentItem={currentItem}
-        handleItemChange={handleItemChange}
-        handleAction={() =>
-          { handleAddOrUpdateItem(
-            addItemToWishlist,
-            "Item added successfully.",
-            "Failed to add item to wishlist.",
-          ); }
-        }
-        isSubmitting={isSubmitting}
-        dialogTitle="Add an item"
-        dialogDescription="Only the name is required. Add an image, price and link if you have them."
-        actionLabel="Add item"
-      />
-
-      {editDialogOpen && (
+      {canEditWishlist && (
+        <Suspense fallback={null}>
         <ItemDialog
-          dialogOpen={editDialogOpen}
-          setDialogOpen={setEditDialogOpen}
+          dialogOpen={addDialogOpen}
+          setDialogOpen={setAddDialogOpen}
           currentItem={currentItem}
           handleItemChange={handleItemChange}
           handleAction={() =>
             { handleAddOrUpdateItem(
-              updateWishlistItem,
-              "Item updated successfully.",
-              "Failed to update item in wishlist.",
+              addItemToWishlist,
+              "Item added successfully.",
+              "Failed to add item to wishlist.",
             ); }
           }
-          handleDelete={handleDeleteItem}
           isSubmitting={isSubmitting}
-          dialogTitle="Edit item"
-          dialogDescription="Update this item, then save your changes."
-          actionLabel="Save changes"
+          dialogTitle="Add an item"
+          dialogDescription="Only the name is required. Add an image, price and link if you have them."
+          actionLabel="Add item"
         />
+
+        {editDialogOpen && (
+          <ItemDialog
+            dialogOpen={editDialogOpen}
+            setDialogOpen={setEditDialogOpen}
+            currentItem={currentItem}
+            handleItemChange={handleItemChange}
+            handleAction={() =>
+              { handleAddOrUpdateItem(
+                updateWishlistItem,
+                "Item updated successfully.",
+                "Failed to update item in wishlist.",
+              ); }
+            }
+            handleDelete={handleDeleteItem}
+            isSubmitting={isSubmitting}
+            dialogTitle="Edit item"
+            dialogDescription="Update this item, then save your changes."
+            actionLabel="Save changes"
+          />
+        )}
+        </Suspense>
       )}
       {isLoading ? (
         <CardsSkeletonLoader />
@@ -246,8 +264,21 @@ const CardsSkeletonLoader = () => (
   </ul>
 );
 
-const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
+// Cards in the first row or two are above the fold, so their photos must not wait for lazy loading.
+const EAGER_IMAGE_COUNT = 4;
+
+/** Widths allowed in vercel.json "images.sizes". */
+const IMAGE_WIDTHS = [256, 384, 640, 828];
+
+/** Item photos live on shops' own servers at full size; Vercel's image endpoint serves a resized, cached copy. */
+const optimizedUrl = (src: string, width: number) =>
+  `/_vercel/image?url=${encodeURIComponent(src)}&w=${String(width)}&q=75`;
+
+const ItemImage: FC<{ src: string; name: string; eager: boolean }> = ({ src, name, eager }) => {
   const [failed, setFailed] = useState(false);
+  // Falls back to the original photo when the resize endpoint is unavailable (local dev, quota exceeded).
+  const [useOriginal, setUseOriginal] = useState(false);
+  const optimize = import.meta.env.PROD && src.startsWith("https://") && !useOriginal;
 
   if (!src || failed) {
     return (
@@ -263,12 +294,21 @@ const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
 
   return (
     <img
-      src={src}
+      src={optimize ? optimizedUrl(src, 640) : src}
+      srcSet={
+        optimize
+          ? IMAGE_WIDTHS.map((width) => `${optimizedUrl(src, width)} ${String(width)}w`).join(", ")
+          : undefined
+      }
+      sizes="(min-width: 1280px) 280px, (min-width: 768px) 30vw, (min-width: 480px) 46vw, 92vw"
       alt={name}
-      loading="lazy"
+      loading={eager ? "eager" : "lazy"}
+      fetchPriority={eager ? "high" : "auto"}
       onError={() => {
-        setFailed(true);
+        if (optimize) setUseOriginal(true);
+        else setFailed(true);
       }}
+      decoding="async"
       className="absolute inset-0 size-full object-contain p-3 pb-[4.75rem] mix-blend-multiply"
     />
   );
@@ -281,7 +321,7 @@ const CardsList: FC<{
   setEditDialogOpen: (open: boolean) => void;
 }> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen }) => (
   <ul className={GRID_CLASS}>
-    {items.map((item) => {
+    {items.map((item, index) => {
       const isPrivate = item.public === false;
       const title = <span className="line-clamp-2">{item.name}</span>;
       return (
@@ -289,7 +329,7 @@ const CardsList: FC<{
           key={item.id}
           className="group relative aspect-[4/5] animate-rise overflow-hidden rounded-xl border border-border bg-[hsl(41_36%_88%)] shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
         >
-          <ItemImage src={item.image} name={item.name} />
+          <ItemImage src={item.image} name={item.name} eager={index < EAGER_IMAGE_COUNT} />
           {isPrivate && (
             <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-card/95 px-2 py-0.5 text-xs font-medium text-destructive shadow-sm">
               <Lock className="size-3" aria-hidden="true" />

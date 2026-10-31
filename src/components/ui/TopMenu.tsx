@@ -1,20 +1,9 @@
-import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
-import { LogOut, Settings } from "lucide-react";
-import { signOut } from "firebase/auth";
-import { auth } from "@/firebaseSetup";
-import { logout } from "@/redux/slices/userSlice";
+import { Suspense, lazy } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useUser } from "@/lib/common";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "./dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
+
+const AccountMenu = lazy(() => import("./AccountMenu"));
 
 const navLinkClass =
   "rounded-md px-2.5 py-1.5 text-sm text-muted-foreground sm:px-3.5 sm:text-[0.95rem] transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring aria-[current=page]:bg-secondary aria-[current=page]:text-foreground";
@@ -37,26 +26,8 @@ function LogoMark() {
 }
 
 export function TopMenu() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const dispatch = useDispatch();
   const user = useUser();
-
-  const initials =
-    user?.displayName
-      ?.split(" ")
-      .filter(Boolean)
-      .map((n) => n[0])
-      .slice(0, 2)
-      .join("") ?? "?";
-
-  const handleLogout = () => {
-    dispatch(logout());
-    signOut(auth).catch((error: unknown) => {
-      console.error("Sign out failed", error);
-    });
-    void navigate("/");
-  };
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/70 bg-background/80 backdrop-blur-md">
@@ -81,31 +52,9 @@ export function TopMenu() {
           )}
         </nav>
         {user ? (
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              aria-label="Account menu"
-              className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <Avatar>
-                <AvatarImage src={user.photoURL ?? undefined} alt="" />
-                <AvatarFallback>{initials}</AvatarFallback>
-              </Avatar>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>{user.displayName ?? user.email}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => {
-                  void navigate("/settings");
-                }}
-              >
-                <Settings aria-hidden="true" /> Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={handleLogout}>
-                <LogOut aria-hidden="true" /> Log out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Suspense fallback={<div className="size-9 shrink-0 rounded-full bg-secondary" aria-hidden="true" />}>
+            <AccountMenu user={user} />
+          </Suspense>
         ) : (
           location.pathname !== "/login" && (
             <Button asChild size="sm">

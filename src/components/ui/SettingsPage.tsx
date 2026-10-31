@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   EmailAuthProvider,
@@ -10,7 +9,7 @@ import {
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
-import { logout } from "@/redux/slices/userSlice";
+import { logout } from "@/lib/userStore";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -98,7 +97,6 @@ const ResetPassword: React.FC = () => {
 
 const ChangeUsername: React.FC = () => {
   const { toast } = useToast();
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const userId = useUserId();
   const [username, setUsername] = useState("");
@@ -116,7 +114,7 @@ const ChangeUsername: React.FC = () => {
         title: "Username updated successfully!",
         description: "Please log in again.",
       });
-      dispatch(logout());
+      logout();
       void navigate("/");
     } catch (error) {
       console.error("Error updating username:", error);
@@ -252,7 +250,6 @@ async function reauthenticateWithPassword(toast: Toast): Promise<User | null> {
 
 const RemoveAccount: React.FC = () => {
   const { toast } = useToast();
-  const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const removeAccount = async () => {
@@ -269,7 +266,7 @@ const RemoveAccount: React.FC = () => {
       await deleteUser(user);
       toast({ title: "Account deleted" });
 
-      dispatch(logout());
+      logout();
       void navigate("/");
     } catch (error) {
       console.error("Error deleting user:", error);

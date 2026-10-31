@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useDispatch } from "react-redux";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +22,6 @@ export const SignInForm = () => {
   const [formError, setFormError] = useState<string | null>(null);
   usePageTitle(registered ? "Sign in" : "Sign up");
 
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as LocationState | null)?.from ?? "/";
@@ -38,9 +36,9 @@ export const SignInForm = () => {
     try {
       setIsSubmitting(true);
       if (registered) {
-        await loginUser(email, password, dispatch, navigate, from);
+        await loginUser(email, password, navigate, from);
       } else {
-        await registerUser(email, password, username, dispatch, navigate, from);
+        await registerUser(email, password, username, navigate, from);
       }
     } catch (error) {
       handleLoginError(error, toast);
@@ -52,7 +50,7 @@ export const SignInForm = () => {
   const handleGoogleLogin = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     try {
-      await loginWithGoogle(dispatch, navigate, from);
+      await loginWithGoogle(navigate, from);
     } catch (error) {
       handleLoginError(error, toast);
     }

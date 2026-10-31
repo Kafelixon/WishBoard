@@ -28,7 +28,7 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
 
 - `@/` alias -> `src/` (set in both `vite.config.ts` and `tsconfig.json`).
 - **Routing** (`src/App.tsx`): `/`, `/login`, `/wishlists`, `/wishlist/:wishlistId`, `/settings`, under `BrowserRouter` (`main.tsx`).
-- **State**: a single Redux slice (`redux/slices/userSlice.ts`) holding only the signed-in `User | null`, persisted to localStorage via redux-persist (`redux/store.ts`). All wishlist data is *not* in Redux; components fetch from Firestore through the handlers and keep it in local state. Read the user with the hooks in `lib/common.ts` (`useUser`, `useUserId`, `useUserName`).
+- **State**: the signed-in `User | null` lives in a tiny external store (`lib/userStore.ts`, read with `useSyncExternalStore`) persisted to localStorage under the legacy `persist:root` key (shape kept so existing sign-ins carry over and `pgHandlers` can read it before React renders). There is no Redux. All wishlist data is *not* in that store; components fetch through the handlers and keep it in local state. Read the user with the hooks in `lib/common.ts` (`useUser`, `useUserId`, `useUserName`); sign in/out with `login`/`logout` from `lib/userStore.ts`.
 - **Auth** (`lib/authHandlers.ts`): email/password and Google popup sign-in; on success they dispatch `login` and navigate to the `from` route.
 - **Data layer** (`lib/wishlistHandlers.ts`): the only place that touches Firestore. Collections:
   - `wishlists` – doc fields `wishlistName`, `ownerId`, `author`, `iconName`, `updateTimestamp`, and an embedded `items: WishlistItem[]` array (items are not a subcollection; item add/edit/delete run in a Firestore transaction via `withOwnedWishlist` and return the new item list).
@@ -37,14 +37,14 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
   - Ownership is checked client-side inside those transactions. `fetchWishlistView` (one read for the whole wishlist page) returns only items with `public: true` unless the caller is the owner, so item privacy is also a client-side filter — Firestore security rules are the real enforcement and are not in this repo.
 - **Components** live in `src/components/ui/`, mixing generic shadcn primitives (`button`, `dialog`, `form`, …; config in `components.json`) with app-level screens/dialogs (`WishlistPage`, `UserWishlistsOverview`, `ItemDialog`, `WishlistEditDialog`, …). Forms use react-hook-form with zod/yup resolvers. Wishlist icons are a fixed set in `lib/wishlistIcons.ts` (`WishlistIconName`).
 
-## Postgres backend (Neon, opt-in)
+## Postgres backend (Neon, default)
 
-`VITE_BACKEND=postgres` switches `lib/wishlistHandlers.ts` from `firestoreHandlers.ts` to `pgHandlers.ts`, which calls one RPC endpoint, `api/wishlists.ts` (Vercel function, `{op, ...}` JSON body). Auth stays Firebase: the function verifies the ID token (`api/_lib/auth.ts`) and takes the user from it. Logic lives in `api/_lib/ops.ts`; schema in `db/schema.sql`; `api/keepalive.ts` is a daily cron.
+`lib/wishlistHandlers.ts` re-exports `lib/backend.ts`, which is `pgHandlers.ts` by default; with `VITE_BACKEND=firestore`, `vite.config.ts` aliases `@/lib/backend` to `firestoreHandlers.ts`, so a build bundles only one backend (the Firestore SDK is ~390 kB). `pgHandlers.ts` calls one RPC endpoint, `api/wishlists.ts` (Vercel function, `{op, ...}` JSON body). Auth stays Firebase: the function verifies the ID token (`api/_lib/auth.ts`) and takes the user from it. Logic lives in `api/_lib/ops.ts`; schema in `db/schema.sql`; `api/keepalive.ts` is a daily cron.
 
 - `DATABASE_URL` (server only, never `VITE_`-prefixed) comes from `neon env pull` into `.env.local`; local dev uses the Neon `test` branch.
 - `npm test` runs integration tests against that DB (`node --test` via tsx). `npm run dev:api` serves the function on :3001 and Vite proxies `/api` to it.
 - `scripts/migrate-firestore.ts` copies Firestore into Postgres (needs a service-account key; `--dry-run` first).
-- Firestore stays the default until `VITE_BACKEND=postgres` is set in Production.
+- Postgres is the default, so any deployment needs the `/api` function (Vercel) and `DATABASE_URL`; the Firebase Hosting deploy serves static files only and has no `/api`. Set `VITE_BACKEND=firestore` for a Firestore-only build.
 
 ## Known rough edges
 

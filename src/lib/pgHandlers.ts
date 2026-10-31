@@ -1,4 +1,6 @@
 import { auth } from "@/firebaseSetup";
+import { readCachedIdToken } from "@/lib/cachedToken";
+import { getStoredUser } from "@/lib/userStore";
 import { WishlistItem, Wishlist } from "@/lib/types";
 import { toWishlistIconName } from "@/lib/wishlistIcons";
 import type {
@@ -10,13 +12,28 @@ import type {
 
 /** Postgres-backed handlers: same contract as firestoreHandlers, over /api/wishlists. */
 
-async function call<T>(
+/**
+ * Whether a user was signed in last time, read synchronously from the saved user
+ * so it doesn't depend on React or Firebase having started.
+ */
+const wasSignedIn = (): boolean => getStoredUser() !== null;
+
+async function send<T>(
   op: string,
   params: Record<string, unknown> = {},
 ): Promise<T> {
-  await auth.authStateReady();
   const headers: Record<string, string> = { "content-type": "application/json" };
-  if (auth.currentUser) {
+  // Signed-out visitors have no token to wait for. Returning visitors send the
+  // saved token right away instead of waiting for Firebase to re-validate them.
+  if (wasSignedIn()) {
+    const cachedToken = await readCachedIdToken();
+    if (cachedToken) {
+      headers.authorization = `Bearer ${cachedToken}`;
+    } else {
+      await auth.authStateReady();
+    }
+  }
+  if (!headers.authorization && auth.currentUser) {
     headers.authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
   }
   const response = await fetch("/api/wishlists", {
@@ -33,6 +50,53 @@ async function call<T>(
   }
   return payload.data as T;
 }
+
+/**
+ * Read requests started at page load, before the page's code has even been
+ * downloaded. The page's own call with the same op and params takes the pending
+ * promise over (once, within a few seconds) instead of sending a second request.
+ */
+const earlyRequests = new Map<string, Promise<unknown>>();
+const EARLY_REQUEST_TTL_MS = 15_000;
+const requestKey = (op: string, params: Record<string, unknown>) => op + JSON.stringify(params);
+
+function call<T>(op: string, params: Record<string, unknown> = {}): Promise<T> {
+  const key = requestKey(op, params);
+  const early = earlyRequests.get(key);
+  if (early) {
+    earlyRequests.delete(key);
+    return early as Promise<T>;
+  }
+  return send<T>(op, params);
+}
+
+function startEarly(op: string, params: Record<string, unknown> = {}) {
+  const key = requestKey(op, params);
+  const request = send(op, params);
+  request.catch(() => undefined); // an unused failure must not become an unhandled rejection
+  earlyRequests.set(key, request);
+  setTimeout(() => {
+    earlyRequests.delete(key);
+  }, EARLY_REQUEST_TTL_MS);
+}
+
+/** Starts the data request for the page being opened; the route's component picks it up when it mounts. */
+export function startEarlyRequests(pathname: string): void {
+  const wishlistId = /^\/wishlist\/([^/]+)$/.exec(pathname)?.[1];
+  if (wishlistId) startEarly("view", { wishlistId: decodeURIComponent(wishlistId) });
+  else if (wasSignedIn() && pathname === "/wishlists") startEarly("listMine");
+  else if (wasSignedIn() && pathname === "/following") startEarly("followed");
+  else if (pathname === "/" || pathname === "/login") warmUp();
+}
+
+/** Fire-and-forget request that wakes the suspended database before the first real query needs it. */
+export const warmUp = (): void => {
+  fetch("/api/wishlists", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ op: "ping" }),
+  }).catch(() => undefined);
+};
 
 const toWishlist = (raw: Wishlist): Wishlist => ({
   ...raw,
