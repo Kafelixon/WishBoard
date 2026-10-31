@@ -2,7 +2,7 @@ import { auth } from "@/firebaseSetup";
 import { readCachedIdToken } from "@/lib/cachedToken";
 import { getStoredUser } from "@/lib/userStore";
 import { WishlistItem, Wishlist, ProductMeta } from "@/lib/types";
-import { toWishlistIconName } from "@/lib/wishlistIcons";
+import { toWishlistIconColor, toWishlistIconName } from "@/lib/wishlistIcons";
 import type {
   FollowStateChanger,
   WishlistChanger,
@@ -106,6 +106,7 @@ export const warmUp = (): void => {
 const toWishlist = (raw: Wishlist): Wishlist => ({
   ...raw,
   icon: toWishlistIconName(raw.icon),
+  iconColor: toWishlistIconColor(raw.iconColor),
 });
 
 export const createWishlist: WishlistChanger = async (userId, wishlist) => {
@@ -115,6 +116,7 @@ export const createWishlist: WishlistChanger = async (userId, wishlist) => {
     name: wishlist.name,
     author: wishlist.author,
     icon: wishlist.icon,
+    iconColor: toWishlistIconColor(wishlist.iconColor) ?? null,
   });
 };
 
@@ -124,6 +126,7 @@ export const updateWishlist: WishlistChanger = async (_userId, wishlist) => {
     name: wishlist.name,
     author: wishlist.author,
     icon: wishlist.icon,
+    iconColor: toWishlistIconColor(wishlist.iconColor) ?? null,
   });
 };
 
@@ -163,6 +166,14 @@ export const followWishlist: FollowStateChanger = async (_u, wishlistId) => {
 
 export const unfollowWishlist: FollowStateChanger = async (_u, wishlistId) => {
   await call("unfollow", { wishlistId });
+};
+
+export const renameFollowedWishlist = async (
+  _userId: string,
+  wishlistId: string,
+  customName: string,
+) => {
+  await call("renameFollow", { wishlistId, customName });
 };
 
 export const fetchFollowedWishlists = async (

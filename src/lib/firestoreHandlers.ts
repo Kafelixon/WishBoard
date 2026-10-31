@@ -1,4 +1,5 @@
 import {
+  deleteField,
   addDoc,
   arrayRemove,
   arrayUnion,
@@ -16,7 +17,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreDb } from "@/firestoreSetup";
 import { WishlistItem, Wishlist, ProductMeta } from "@/lib/types";
-import { toWishlistIconName } from "@/lib/wishlistIcons";
+import { toWishlistIconColor, toWishlistIconName } from "@/lib/wishlistIcons";
 import { v4 as uuid } from "uuid";
 
 const WISHLISTS_COLLECTION = "wishlists";
@@ -38,6 +39,7 @@ export const createWishlist: WishlistChanger = async (
     ownerId: userId,
     author: wishlist.author,
     iconName: wishlist.icon,
+    iconColor: toWishlistIconColor(wishlist.iconColor) ?? null,
     items: [],
     updateTimestamp: new Date().getTime(),
   });
@@ -83,6 +85,7 @@ export const updateWishlist: WishlistChanger = async (
       wishlistName: wishlist.name,
       author: wishlist.author,
       iconName: wishlist.icon,
+      iconColor: toWishlistIconColor(wishlist.iconColor) ?? deleteField(),
       updateTimestamp: new Date().getTime(),
     });
   });
@@ -155,6 +158,7 @@ export const findWishlistsByOwner = async (userId: string) => {
       name: String(docSnap.data().wishlistName),
       author: String(docSnap.data().author),
       icon: toWishlistIconName(String(docSnap.data().iconName)),
+      iconColor: toWishlistIconColor(docSnap.data().iconColor),
       updateTimestamp: docSnap.data().updateTimestamp as number,
     };
   });
@@ -230,6 +234,22 @@ export const unfollowWishlist: FollowStateChanger = async (
   );
 };
 
+/** Sets the viewer's own name for a followed wishlist; an empty name goes back to the original. */
+export const renameFollowedWishlist = async (
+  userId: string,
+  wishlistId: string,
+  customName: string,
+) => {
+  validateUserIdAndWishlistId(userId, wishlistId);
+
+  const name = customName.trim();
+  await setDoc(
+    doc(getFirestoreDb(), "user_follows", userId),
+    { names: { [wishlistId]: name || deleteField() } },
+    { merge: true },
+  );
+};
+
 /**
  * Validates user ID and wishlist ID.
  * @param userId - The ID of the user.
@@ -256,8 +276,12 @@ export const fetchFollowedWishlists = async (
   const userFollowsData = await getDoc(userFollowsDocument);
 
   if (userFollowsData.exists()) {
-    const followedWishlistIds = userFollowsData.data().follows as string[];
-    return await fetchWishlistsByIds(followedWishlistIds);
+    const data = userFollowsData.data();
+    const names = (data.names ?? {}) as Record<string, string>;
+    const wishlists = await fetchWishlistsByIds(data.follows as string[]);
+    return wishlists.map((wishlist) =>
+      names[wishlist.id] ? { ...wishlist, customName: names[wishlist.id] } : wishlist,
+    );
   }
 
   return [];
@@ -304,6 +328,7 @@ interface WishlistData {
   wishlistName: string;
   author: string;
   iconName: string;
+  iconColor?: string | null;
   wishlist: number;
   updateTimestamp: number;
 }
@@ -326,6 +351,7 @@ const toWishlist = (wishlistId: string, data: WishlistData): Wishlist => ({
   name: data.wishlistName,
   author: data.author,
   icon: toWishlistIconName(data.iconName),
+  iconColor: toWishlistIconColor(data.iconColor),
   updateTimestamp: data.updateTimestamp,
 });
 

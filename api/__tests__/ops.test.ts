@@ -36,6 +36,20 @@ describe("wishlist operations", () => {
     assert.deepEqual(mine.map((w) => w.id), [wishlistId]);
   });
 
+  it("stores, changes and clears the icon color", async () => {
+    const view = async () =>
+      ((await op(alice, { op: "view", wishlistId })) as { info: { iconColor?: string } }).info
+        .iconColor;
+    assert.equal(await view(), undefined);
+    const update = (iconColor?: string) =>
+      op(alice, { op: "updateWishlist", id: wishlistId, name: "Birthday", author: "Alice", icon: "gift", iconColor });
+    await update("#2563eb");
+    assert.equal(await view(), "#2563eb");
+    await rejects(update("blue"), 400);
+    await update();
+    assert.equal(await view(), undefined);
+  });
+
   it("requires sign-in for writes", async () => {
     await rejects(op(null, { op: "listMine" }), 401);
   });
@@ -113,6 +127,13 @@ describe("wishlist operations", () => {
     assert.deepEqual(await op(bob, { op: "isFollowing", wishlistId }), { following: true });
     const followed = (await op(bob, { op: "followed" })) as { id: string }[];
     assert.deepEqual(followed.map((w) => w.id), [wishlistId]);
+    await op(bob, { op: "renameFollow", wishlistId, customName: "  Mum's list " });
+    const renamed = (await op(bob, { op: "followed" })) as { customName?: string }[];
+    assert.equal(renamed[0]?.customName, "Mum's list");
+    await op(bob, { op: "renameFollow", wishlistId, customName: "" });
+    const cleared = (await op(bob, { op: "followed" })) as { customName?: string }[];
+    assert.equal(cleared[0]?.customName, undefined);
+    await rejects(op(alice, { op: "renameFollow", wishlistId, customName: "x" }), 404);
     await op(bob, { op: "unfollow", wishlistId });
     assert.deepEqual(await op(bob, { op: "isFollowing", wishlistId }), { following: false });
     await rejects(op(bob, { op: "follow", wishlistId: "nope" }), 404);
