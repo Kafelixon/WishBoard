@@ -249,8 +249,18 @@ const CardsSkeletonLoader = () => (
 // Cards in the first row or two are above the fold, so their photos must not wait for lazy loading.
 const EAGER_IMAGE_COUNT = 4;
 
+/** Widths allowed in vercel.json "images.sizes". */
+const IMAGE_WIDTHS = [256, 384, 640, 828];
+
+/** Item photos live on shops' own servers at full size; Vercel's image endpoint serves a resized, cached copy. */
+const optimizedUrl = (src: string, width: number) =>
+  `/_vercel/image?url=${encodeURIComponent(src)}&w=${String(width)}&q=75`;
+
 const ItemImage: FC<{ src: string; name: string; eager: boolean }> = ({ src, name, eager }) => {
   const [failed, setFailed] = useState(false);
+  // Falls back to the original photo when the resize endpoint is unavailable (local dev, quota exceeded).
+  const [useOriginal, setUseOriginal] = useState(false);
+  const optimize = import.meta.env.PROD && src.startsWith("https://") && !useOriginal;
 
   if (!src || failed) {
     return (
@@ -266,12 +276,19 @@ const ItemImage: FC<{ src: string; name: string; eager: boolean }> = ({ src, nam
 
   return (
     <img
-      src={src}
+      src={optimize ? optimizedUrl(src, 640) : src}
+      srcSet={
+        optimize
+          ? IMAGE_WIDTHS.map((width) => `${optimizedUrl(src, width)} ${String(width)}w`).join(", ")
+          : undefined
+      }
+      sizes="(min-width: 1280px) 280px, (min-width: 768px) 30vw, (min-width: 480px) 46vw, 92vw"
       alt={name}
       loading={eager ? "eager" : "lazy"}
       fetchPriority={eager ? "high" : "auto"}
       onError={() => {
-        setFailed(true);
+        if (optimize) setUseOriginal(true);
+        else setFailed(true);
       }}
       decoding="async"
       className="absolute inset-0 size-full object-contain p-3 pb-[4.75rem] mix-blend-multiply"

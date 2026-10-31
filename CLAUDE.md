@@ -39,7 +39,7 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
 
 ## Postgres backend (Neon, default)
 
-`lib/wishlistHandlers.ts` uses `pgHandlers.ts` by default; `VITE_BACKEND=firestore` switches it to `firestoreHandlers.ts`. `pgHandlers.ts` calls one RPC endpoint, `api/wishlists.ts` (Vercel function, `{op, ...}` JSON body). Auth stays Firebase: the function verifies the ID token (`api/_lib/auth.ts`) and takes the user from it. Logic lives in `api/_lib/ops.ts`; schema in `db/schema.sql`; `api/keepalive.ts` is a daily cron.
+`lib/wishlistHandlers.ts` re-exports `lib/backend.ts`, which is `pgHandlers.ts` by default; with `VITE_BACKEND=firestore`, `vite.config.ts` aliases `@/lib/backend` to `firestoreHandlers.ts`, so a build bundles only one backend (the Firestore SDK is ~390 kB). `pgHandlers.ts` calls one RPC endpoint, `api/wishlists.ts` (Vercel function, `{op, ...}` JSON body). Auth stays Firebase: the function verifies the ID token (`api/_lib/auth.ts`) and takes the user from it. Logic lives in `api/_lib/ops.ts`; schema in `db/schema.sql`; `api/keepalive.ts` is a daily cron.
 
 - `DATABASE_URL` (server only, never `VITE_`-prefixed) comes from `neon env pull` into `.env.local`; local dev uses the Neon `test` branch.
 - `npm test` runs integration tests against that DB (`node --test` via tsx). `npm run dev:api` serves the function on :3001 and Vite proxies `/api` to it.

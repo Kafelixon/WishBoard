@@ -1,5 +1,12 @@
 {
   "regions": ["fra1"],
+  "images": {
+    "sizes": [256, 384, 640, 828],
+    "qualities": [75],
+    "formats": ["image/webp"],
+    "minimumCacheTTL": 2678400,
+    "remotePatterns": [{ "protocol": "https", "hostname": "**" }]
+  },
   "crons": [{ "path": "/api/keepalive", "schedule": "0 6 * * *" }],
   "rewrites": [
     {
