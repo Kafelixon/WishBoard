@@ -1,4 +1,4 @@
-import { createHash, createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { Page, Route } from "@playwright/test";
 
 /**
@@ -73,8 +73,11 @@ const base64Url = (value: unknown) => Buffer.from(JSON.stringify(value)).toStrin
 const TOKEN_SECRET = randomUUID();
 
 /** Constant-time string comparison, so the fake handles passwords the way real code should. */
-const sameSecret = (a: string, b: string) =>
-  timingSafeEqual(createHash("sha256").update(a).digest(), createHash("sha256").update(b).digest());
+const sameSecret = (a: string, b: string) => {
+  const left = Buffer.from(a);
+  const right = Buffer.from(b);
+  return left.length === right.length && timingSafeEqual(left, right);
+};
 
 /** A throwaway-signed token in the shape Firebase's client parses (and our fake API reads `sub` from). */
 const makeIdToken = (user: TestUser) => {
