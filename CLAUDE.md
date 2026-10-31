@@ -55,6 +55,10 @@ UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/local
 
 Item form has a "Fetch details from link" button. No free API gives reliable prices/images across shops, so `api/product-meta.ts` (Vercel function, Firebase-token required) fetches the product page server-side and `api/_lib/productMeta.ts` reads JSON-LD `Product` data, then Open Graph / `product:price:amount` meta tags, for name, image and price. It only fills empty fields. SSRF-guarded (public IPs only, re-checked per redirect, 1 MB / 6 s caps). Limits: JS-rendered shops and sites that block bots (Amazon, many marketplaces) return nothing; price is a listed price, not an average; unavailable in the Firestore-only build. Possible next step: a paid product API (e.g. a price-comparison service) behind the same endpoint.
 
+## Sharing and link previews
+
+The wishlist page has "Copy link" plus a "Share" button that appears only where `navigator.share` exists (phones, some desktop browsers). Link previews: `vercel.json` rewrites `/wishlist/:id` to `api/wishlist-preview.ts` only for link-preview crawler user agents (WhatsApp, Messenger/iMessage, Slack, Discord, Telegram, ...); people still get the static SPA, so there's no added latency. The function (`api/_lib/preview.ts`) renders a small HTML page with `og:*`/`twitter:*` tags from public data only: name, author, public item count, first public item photo. Search engines are deliberately not in the list. Edit the crawler regex in `vercel.json`; `api/__tests__/preview.test.ts` checks it against sample user agents. Not available in the Firestore-only build.
+
 ## Known rough edges
 
 - Several handlers still `console.error` instead of surfacing failures to the UI (see `ISSUES.md` for the full list of open problems).

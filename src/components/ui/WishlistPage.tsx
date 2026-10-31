@@ -16,7 +16,7 @@ import { WishlistItem } from "@/lib/types";
 import { Button } from "./button";
 import { useToast } from "@/components/ui/use-toast";
 import { Skeleton } from "./skeleton";
-import { ArrowLeft, Heart, Link2 } from "lucide-react";
+import { ArrowLeft, Heart, Link2, Share } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { PageHeader } from "@/components/ui/page";
@@ -90,16 +90,21 @@ function FollowButton({
   );
 }
 
-function ShareButton({
+function ShareButtons({
   wishlistId,
+  title,
   toast,
 }: {
   wishlistId: string;
+  title: string;
   toast: ReturnType<typeof useToast>["toast"];
 }) {
   const { t } = useTranslation();
-  const handleShare = () => {
-    const url = `${window.location.origin}/wishlist/${wishlistId}`;
+  const url = `${window.location.origin}/wishlist/${wishlistId}`;
+  // Phones (and some desktop browsers) have a native share sheet.
+  const canShare = "share" in navigator;
+
+  const copyLink = () => {
     navigator.clipboard
       .writeText(url)
       .then(() => {
@@ -114,11 +119,27 @@ function ShareButton({
       });
   };
 
+  const share = () => {
+    navigator.share({ title, url }).catch((error: unknown) => {
+      // Closing the share sheet is not an error; anything else falls back to copying.
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      copyLink();
+    });
+  };
+
   return (
-    <Button variant="outline" onClick={handleShare}>
-      <Link2 aria-hidden="true" />
-      {t("wishlistPage.copyLink")}
-    </Button>
+    <>
+      {canShare && (
+        <Button variant="outline" onClick={share}>
+          <Share aria-hidden="true" />
+          {t("wishlistPage.share")}
+        </Button>
+      )}
+      <Button variant="outline" onClick={copyLink}>
+        <Link2 aria-hidden="true" />
+        {t("wishlistPage.copyLink")}
+      </Button>
+    </>
   );
 }
 
@@ -232,7 +253,7 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
           icon={<WishlistIconBadge name={wishlistInfo.icon} color={wishlistInfo.iconColor} />}
           actions={
             <>
-              <ShareButton wishlistId={wishlistId} toast={toast} />
+              <ShareButtons wishlistId={wishlistId} title={wishlistInfo.name} toast={toast} />
               <FollowButton
                 isWishlistOwner={isWishlistOwner || state.status !== "ready"}
                 isFollowing={isFollowing}
