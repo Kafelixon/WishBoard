@@ -37,6 +37,10 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
   - Ownership is checked client-side inside those transactions. `fetchWishlistView` (one read for the whole wishlist page) returns only items with `public: true` unless the caller is the owner, so item privacy is also a client-side filter — Firestore security rules are the real enforcement and are not in this repo.
 - **Components** live in `src/components/ui/`, mixing generic shadcn primitives (`button`, `dialog`, `form`, …; config in `components.json`) with app-level screens/dialogs (`WishlistPage`, `UserWishlistsOverview`, `ItemDialog`, `WishlistEditDialog`, …). Forms use react-hook-form with zod/yup resolvers. Wishlist icons are a fixed set in `lib/wishlistIcons.ts` (`WishlistIconName`).
 
+## Localization
+
+UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/locales/{en,pl}.json`, keys type-checked against `en.json` via `src/i18next.d.ts`). Language comes from localStorage (`wishboard.language`, set by `LanguageSwitcher`), then the browser; `<html lang>` follows it. Use `t("…")` in components and `i18n.t` in plain modules (e.g. `authHandlers.ts`, yup messages as `() => i18n.t(…)`). Plurals use `_one/_few/_many/_other` suffixes. ESLint (`no-restricted-syntax`) rejects literal text in JSX and in `aria-label`/`placeholder`/`title`/`alt`. Not translated: server error messages from `api/`, `console.error` logs, `index.html` meta description.
+
 ## Postgres backend (Neon, default)
 
 `lib/wishlistHandlers.ts` re-exports `lib/backend.ts`, which is `pgHandlers.ts` by default; with `VITE_BACKEND=firestore`, `vite.config.ts` aliases `@/lib/backend` to `firestoreHandlers.ts`, so a build bundles only one backend (the Firestore SDK is ~390 kB). `pgHandlers.ts` calls one RPC endpoint, `api/wishlists.ts` (Vercel function, `{op, ...}` JSON body). Auth stays Firebase: the function verifies the ID token (`api/_lib/auth.ts`) and takes the user from it. Logic lives in `api/_lib/ops.ts`; schema in `db/schema.sql`; `api/keepalive.ts` is a daily cron.

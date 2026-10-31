@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import {
@@ -23,6 +24,7 @@ import {
   type WishlistIconName,
 } from "@/lib/wishlistIcons";
 import { cn } from "@/lib/utils";
+import i18n from "@/i18n";
 
 interface WishlistDialogProps {
   wishlist: Wishlist;
@@ -41,8 +43,10 @@ interface WishlistForm {
 }
 
 const wishlistSchema = yup.object().shape({
-  name: yup.string().required("Give your wishlist a name"),
+  name: yup.string().required(() => i18n.t("validation.wishlistName")),
 });
+
+const HEX_PLACEHOLDER = "#2563eb";
 
 const iconNames = Object.keys(wishlistIcons) as WishlistIconName[];
 
@@ -57,6 +61,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
   handleDelete,
   handleItemChange,
 }) => {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -77,7 +82,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>
-            Name it and pick an icon. You can change both later.
+            {t("wishlistEdit.description")}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -89,14 +94,14 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
           })}
         >
           <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
+            <Label htmlFor="name">{t("wishlistEdit.name")}</Label>
             <Input
               id="name"
               {...register("name")}
               onChange={(e) => {
                 handleItemChange({ name: e.target.value });
               }}
-              placeholder="Birthday 2026"
+              placeholder={t("wishlistEdit.namePlaceholder")}
               aria-invalid={errors.name ? true : undefined}
               aria-describedby={errors.name ? "name-error" : undefined}
             />
@@ -109,17 +114,17 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
           <div className="flex items-center gap-3" aria-hidden="true">
             <WishlistIconBadge name={wishlist.icon} color={wishlist.iconColor} />
             <span className="truncate font-display text-lg font-semibold">
-              {wishlist.name || "Preview"}
+              {wishlist.name || t("wishlistEdit.preview")}
             </span>
           </div>
           <fieldset className="grid gap-2">
-            <legend className="mb-2 text-sm font-medium">Icon</legend>
+            <legend className="mb-2 text-sm font-medium">{t("wishlistEdit.icon")}</legend>
             <div className="grid grid-cols-5 gap-2 sm:grid-cols-7">
               {iconNames.map((name) => (
                 <button
                   key={name}
                   type="button"
-                  aria-label={name.replace("-", " ")}
+                  aria-label={t(`wishlistEdit.icons.${name}`)}
                   aria-pressed={wishlist.icon === name}
                   onClick={() => {
                     handleItemChange({ icon: name });
@@ -137,11 +142,11 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
             </div>
           </fieldset>
           <fieldset className="grid gap-3">
-            <legend className="mb-2 text-sm font-medium">Icon color</legend>
+            <legend className="mb-2 text-sm font-medium">{t("wishlistEdit.iconColor")}</legend>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                aria-label="Default color"
+                aria-label={t("wishlistEdit.defaultColor")}
                 aria-pressed={!wishlist.iconColor}
                 onClick={() => {
                   setHexDraft(null);
@@ -156,7 +161,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
                 <button
                   key={value}
                   type="button"
-                  aria-label={name}
+                  aria-label={t(`wishlistEdit.colors.${name}`)}
                   aria-pressed={wishlist.iconColor === value}
                   onClick={() => {
                     setHexDraft(null);
@@ -171,11 +176,11 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
               ))}
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor="icon-color">Custom hex code</Label>
+              <Label htmlFor="icon-color">{t("wishlistEdit.customHex")}</Label>
               <Input
                 id="icon-color"
                 value={hexValue}
-                placeholder="#2563eb"
+                placeholder={HEX_PLACEHOLDER}
                 maxLength={7}
                 autoComplete="off"
                 spellCheck={false}
@@ -195,7 +200,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
               />
               {hexInvalid && (
                 <p id="icon-color-error" role="alert" className="text-sm text-destructive">
-                  Use a hex code like #2563eb.
+                  {t("validation.hex")}
                 </p>
               )}
             </div>
@@ -212,25 +217,23 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
                 className="text-destructive hover:bg-destructive/10"
                 onClick={() => {
                   if (
-                    window.confirm(
-                      "Delete this wishlist and all of its items? This cannot be undone.",
-                    )
+                    window.confirm(t("wishlistEdit.deleteConfirm"))
                   ) {
                     handleDelete();
                     setDialogOpen(false);
                   }
                 }}
               >
-                Delete wishlist
+                {t("wishlistEdit.delete")}
               </Button>
             )}
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
-                <Loader2 className="animate-spin" aria-label="Saving" />
+                <Loader2 className="animate-spin" aria-label={t("common.saving")} />
               ) : actionType === "Add" ? (
-                "Create wishlist"
+                t("wishlistEdit.create")
               ) : (
-                "Save changes"
+                t("wishlistEdit.saveChanges")
               )}
             </Button>
           </div>

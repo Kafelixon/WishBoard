@@ -2,6 +2,7 @@ import type * as React from "react";
 import * as ToastPrimitives from "@radix-ui/react-toast";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const ToastProvider = ToastPrimitives.Provider;
@@ -70,13 +71,14 @@ function ToastClose({
   className,
   ...props
 }: React.ComponentProps<typeof ToastPrimitives.Close>) {
+  const { t } = useTranslation();
   return (
     <ToastPrimitives.Close
       className={cn(
         "absolute right-2 top-2 rounded-md p-1.5 opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         className,
       )}
-      aria-label="Dismiss"
+      aria-label={t("common.dismiss")}
       {...props}
     >
       <X className="size-4" aria-hidden="true" />

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   EmailAuthProvider,
   type User,
@@ -14,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/ui/page";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { useToast } from "./use-toast";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { changeUsername } from "@/lib/authHandlers";
@@ -27,15 +30,17 @@ import {
 import { useUserId } from "@/lib/common";
 
 export const SettingsPage = () => {
-  usePageTitle("Settings");
+  const { t } = useTranslation();
+  usePageTitle(t("settings.title"));
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader
-        eyebrow="Account"
-        title="Settings"
-        description="Update how you appear to others and keep your account secure."
+        eyebrow={t("settings.eyebrow")}
+        title={t("settings.title")}
+        description={t("settings.description")}
       />
       <Card className="divide-y divide-border">
+        <ChooseLanguage />
         <ChangeUsername />
         <ResetPassword />
         <ChangeEmail />
@@ -68,32 +73,48 @@ const CommonSettingsForm: React.FC<CommonSettingsFormProps> = ({
   );
 };
 
+const ChooseLanguage: React.FC = () => {
+  const { t } = useTranslation();
+  return (
+    <CommonSettingsForm
+      label={t("settings.language.label")}
+      description={t("settings.language.description")}
+    >
+      <LanguageSwitcher compact className="self-start" />
+    </CommonSettingsForm>
+  );
+};
+
 const ResetPassword: React.FC = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
 
   const resetPassword = async () => {
     if (!auth.currentUser?.email) {
       console.error("No user or email found.");
-      toast({ title: "Something went wrong. Please try again." });
+      toast({ title: t("common.somethingWrong") });
       return;
     }
 
     try {
       await sendPasswordResetEmail(auth, auth.currentUser.email);
-      toast({ title: "Password reset email sent successfully!" });
+      toast({ title: t("settings.password.sent") });
     } catch (error) {
       console.error("Error sending reset email:", error);
       toast({
-        title: "Failed to send password reset email.",
+        title: t("settings.password.failed"),
         variant: "destructive",
       });
     }
   };
 
   return (
-    <CommonSettingsForm label="Password" description="We'll email you a link to choose a new one.">
+    <CommonSettingsForm
+      label={t("settings.password.label")}
+      description={t("settings.password.description")}
+    >
       <Button variant="outline" className="self-start" onClick={() => void resetPassword()}>
-        Send reset email
+        {t("settings.password.button")}
       </Button>
     </CommonSettingsForm>
   );
@@ -102,35 +123,40 @@ const ResetPassword: React.FC = () => {
 const ChangeUsername: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const userId = useUserId();
   const [username, setUsername] = useState("");
 
   const submitNewUsername = async () => {
     if (!auth.currentUser) {
       console.error("No user found.");
-      toast({ title: "Something went wrong. Please try again." });
+      toast({ title: t("common.somethingWrong") });
       return;
     }
     try {
       await changeUsername(username);
       await updateExistingWishlistsAuthor(userId, username);
       toast({
-        title: "Username updated successfully!",
-        description: "Please log in again.",
+        title: t("settings.username.updated"),
+        description: t("settings.username.updatedDescription"),
       });
       logout();
       void navigate("/");
     } catch (error) {
       console.error("Error updating username:", error);
-      toast({ title: "Failed to update username.", variant: "destructive" });
+      toast({ title: t("settings.username.failed"), variant: "destructive" });
     }
   };
 
   return (
-    <CommonSettingsForm label="Username" description="Shown on your wishlists. You'll be asked to sign in again after changing it.">
+    <CommonSettingsForm
+      label={t("settings.username.label")}
+      description={t("settings.username.description")}
+    >
       <Input
         type="text"
-        placeholder="New username" aria-label="New username"
+        placeholder={t("settings.username.placeholder")}
+        aria-label={t("settings.username.placeholder")}
         value={username}
         onChange={(e) => { setUsername(e.target.value); }}
       />
@@ -140,7 +166,7 @@ const ChangeUsername: React.FC = () => {
         disabled={!username}
         onClick={() => { void submitNewUsername(); }}
       >
-        Update username
+        {t("settings.username.button")}
       </Button>
     </CommonSettingsForm>
   );
@@ -148,6 +174,7 @@ const ChangeUsername: React.FC = () => {
 
 const ChangeEmail: React.FC = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [isValid, setIsValid] = useState(true);
 
@@ -166,31 +193,34 @@ const ChangeEmail: React.FC = () => {
 
   const changeEmail = async () => {
     if (!isValid) {
-      toast({ title: "Please enter a valid email", variant: "destructive" });
+      toast({ title: t("settings.email.invalid"), variant: "destructive" });
       return;
     }
 
     try {
-      const user = await reauthenticateWithPassword(toast);
+      const user = await reauthenticateWithPassword(t, toast);
       if (!user) return;
 
       await verifyBeforeUpdateEmail(user, email);
-      toast({ title: "Verification email sent successfully to " + email });
+      toast({ title: t("settings.email.sent", { email }) });
     } catch (error) {
       console.error("Error changing email:", error);
       toast({
-        title: authErrorTitle(error, "Failed to change email"),
+        title: authErrorTitle(t, error, t("settings.email.failed")),
         variant: "destructive",
       });
     }
   };
 
   return (
-    <CommonSettingsForm label="Email" description="We'll send a verification link to the new address before switching.">
+    <CommonSettingsForm
+      label={t("settings.email.label")}
+      description={t("settings.email.description")}
+    >
       <Input
         type="email"
-        placeholder="New email"
-        aria-label="New email"
+        placeholder={t("settings.email.placeholder")}
+        aria-label={t("settings.email.placeholder")}
         aria-invalid={isValid ? undefined : true}
         value={email}
         onChange={handleInputChange}
@@ -202,7 +232,7 @@ const ChangeEmail: React.FC = () => {
         disabled={!email || !isValid}
         onClick={() => void changeEmail()}
       >
-        Update email
+        {t("settings.email.button")}
       </Button>
     </CommonSettingsForm>
   );
@@ -210,10 +240,10 @@ const ChangeEmail: React.FC = () => {
 
 type Toast = ReturnType<typeof useToast>["toast"];
 
-const authErrorTitle = (error: unknown, fallback: string): string => {
+const authErrorTitle = (t: TFunction, error: unknown, fallback: string): string => {
   const code = (error as { code?: unknown } | null)?.code;
   return code === "auth/wrong-password" || code === "auth/invalid-credential"
-    ? "Incorrect password"
+    ? t("settings.reauth.incorrectPassword")
     : fallback;
 };
 
@@ -223,26 +253,26 @@ const authErrorTitle = (error: unknown, fallback: string): string => {
  * stop quietly (session not ready, Google-only account, prompt cancelled).
  * Rejects when Firebase rejects the password.
  */
-async function reauthenticateWithPassword(toast: Toast): Promise<User | null> {
+async function reauthenticateWithPassword(t: TFunction, toast: Toast): Promise<User | null> {
   const user = auth.currentUser;
   if (!user?.email) {
     toast({
-      title: "Your account is still loading",
-      description: "Please try again in a moment.",
+      title: t("settings.reauth.loading"),
+      description: t("settings.reauth.loadingDescription"),
       variant: "destructive",
     });
     return null;
   }
   if (!user.providerData.some((p) => p.providerId === "password")) {
     toast({
-      title: "Not available for this account yet",
-      description: "Accounts that sign in with Google can't do this from Settings.",
+      title: t("settings.reauth.unavailable"),
+      description: t("settings.reauth.unavailableDescription"),
       variant: "destructive",
     });
     return null;
   }
 
-  const password = window.prompt("Please enter your password to continue.");
+  const password = window.prompt(t("settings.reauth.prompt"));
   if (!password) return null;
 
   await reauthenticateWithCredential(
@@ -254,6 +284,7 @@ async function reauthenticateWithPassword(toast: Toast): Promise<User | null> {
 
 const ExportData: React.FC = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const userId = useUserId();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -285,24 +316,27 @@ const ExportData: React.FC = () => {
       link.download = "wishboard-export.json";
       link.click();
       URL.revokeObjectURL(url);
-      toast({ title: "Your data was exported" });
+      toast({ title: t("settings.export.done") });
     } catch (error) {
       console.error("Error exporting data:", error);
-      toast({ title: "Failed to export your data.", variant: "destructive" });
+      toast({ title: t("settings.export.failed"), variant: "destructive" });
     } finally {
       setIsExporting(false);
     }
   };
 
   return (
-    <CommonSettingsForm label="Export data" description="Download your wishlists, including private items, and the wishlists you follow as a JSON file.">
+    <CommonSettingsForm
+      label={t("settings.export.label")}
+      description={t("settings.export.description")}
+    >
       <Button
         variant="outline"
         className="self-start"
         disabled={isExporting}
         onClick={() => void exportData()}
       >
-        {isExporting ? "Exporting…" : "Export my data"}
+        {isExporting ? t("settings.export.exporting") : t("settings.export.button")}
       </Button>
     </CommonSettingsForm>
   );
@@ -310,41 +344,43 @@ const ExportData: React.FC = () => {
 
 const RemoveAccount: React.FC = () => {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const removeAccount = async () => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete your account? This cannot be undone.",
-    );
+    const confirmDelete = window.confirm(t("settings.delete.confirm"));
     if (!confirmDelete) return;
 
     try {
-      const user = await reauthenticateWithPassword(toast);
+      const user = await reauthenticateWithPassword(t, toast);
       if (!user) return;
 
       await deleteUserData(user.uid);
       await deleteUser(user);
-      toast({ title: "Account deleted" });
+      toast({ title: t("settings.delete.done") });
 
       logout();
       void navigate("/");
     } catch (error) {
       console.error("Error deleting user:", error);
       toast({
-        title: authErrorTitle(error, "Failed to delete account"),
+        title: authErrorTitle(t, error, t("settings.delete.failed")),
         variant: "destructive",
       });
     }
   };
 
   return (
-    <CommonSettingsForm label="Delete account" description="Permanently removes your account, wishlists and items. This cannot be undone.">
+    <CommonSettingsForm
+      label={t("settings.delete.label")}
+      description={t("settings.delete.description")}
+    >
       <Button
         variant="outline"
         className="self-start border-destructive/40 text-destructive hover:bg-destructive/10"
         onClick={() => void removeAccount()}
       >
-        Delete my account
+        {t("settings.delete.button")}
       </Button>
     </CommonSettingsForm>
   );

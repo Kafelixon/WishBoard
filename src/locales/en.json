@@ -1,0 +1,344 @@
+{
+  "app": {
+    "name": "WishBoard",
+    "skipToContent": "Skip to content"
+  },
+  "common": {
+    "close": "Close",
+    "dismiss": "Dismiss",
+    "saving": "Saving",
+    "somethingWrong": "Something went wrong. Please try again."
+  },
+  "language": {
+    "label": "Language",
+    "description": "The language of the interface.",
+    "en": "English",
+    "pl": "Polski"
+  },
+  "nav": {
+    "main": "Main",
+    "wishlists": "Wishlists",
+    "following": "Following",
+    "getStarted": "Get started"
+  },
+  "account": {
+    "menu": "Account menu",
+    "settings": "Settings",
+    "logout": "Log out"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "message": "The page you are looking for does not exist.",
+    "back": "Back to your wishlists"
+  },
+  "landing": {
+    "badge": "Wishlists, kept simple",
+    "heroTitle": "Effortlessly craft and share your dream wishlist",
+    "heroText": "Curate a list that reflects what you actually want, keep a few things private, and share it with a single link. No hassle, no account needed to view.",
+    "ctaOpen": "Open your wishlists",
+    "ctaCreate": "Create your wishlist",
+    "howItWorks": "How it works",
+    "featuresTitle": "Create, share, and stay up to date",
+    "featuresText": "Everything you need for birthdays, weddings and just-because moments.",
+    "features": {
+      "create": {
+        "title": "Effortless creation",
+        "text": "Add items with a photo, a link and an average price. Crafting your dream list has never been easier."
+      },
+      "privacy": {
+        "title": "Privacy on your terms",
+        "text": "Mark any item as private and it stays just between you and your list. You decide what the world sees."
+      },
+      "sharing": {
+        "title": "Sharing without strings",
+        "text": "Send a single link. Viewers don't need an account to see what you're hoping for."
+      },
+      "connected": {
+        "title": "Stay connected",
+        "text": "Follow friends and family and keep their lists in one place, so you always know what to give."
+      }
+    },
+    "closingTitle": "Where wishes come alive",
+    "closingText": "Create your wishlist, share your dreams, and make gift-giving a little more thoughtful.",
+    "footer": "Questions or ideas? Reach out on <link>LinkedIn</link>.",
+    "preview": {
+      "title": "Birthday 2026",
+      "by": "by {{name}}",
+      "private": "Private",
+      "linkCopied": "Link copied",
+      "items": {
+        "throw": "Linen throw",
+        "coffee": "Ceramic coffee set",
+        "notebook": "Field notebook"
+      }
+    }
+  },
+  "signIn": {
+    "titleSignIn": "Sign in",
+    "titleSignUp": "Sign up",
+    "asideTitle": "A quieter way to share what you wish for.",
+    "asideText": "Create lists for every occasion, keep some items private, and send one link to the people who matter.",
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create your account",
+    "subtitleSignIn": "Sign in to see your wishlists.",
+    "subtitleSignUp": "It takes a minute. No credit card, ever.",
+    "username": "Username",
+    "email": "Email",
+    "emailPlaceholder": "name@example.com",
+    "password": "Password",
+    "signingIn": "Signing in",
+    "submitSignIn": "Sign in",
+    "submitSignUp": "Sign up",
+    "or": "or",
+    "google": "Continue with Google",
+    "noAccount": "Don't have an account?",
+    "haveAccount": "Already have an account?"
+  },
+  "validation": {
+    "username": "Please choose a username.",
+    "emailRequired": "Please enter your email address.",
+    "emailInvalid": "That email address doesn't look right.",
+    "passwordRequired": "Please enter your password.",
+    "passwordShort": "Password must be at least 6 characters.",
+    "webUrl": "Enter a valid web address",
+    "itemName": "Give the item a name",
+    "priceNumber": "Price must be a number",
+    "priceNegative": "Price can't be negative",
+    "wishlistName": "Give your wishlist a name",
+    "hex": "Use a hex code like #2563eb."
+  },
+  "authErrors": {
+    "invalidCredential": "Invalid email or password.",
+    "invalidEmail": "That email address doesn't look right.",
+    "emailInUse": "An account with this email already exists. Try signing in.",
+    "weakPassword": "Password must be at least 6 characters.",
+    "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
+    "network": "Network problem. Check your connection and try again.",
+    "differentCredential": "This email is already registered with a different sign-in method.",
+    "generic": "Something went wrong while signing in. Please try again.",
+    "loginFailed": "Invalid email or password. Please try again.",
+    "registerFailed": "Registration failed. Please try again.",
+    "userNotFound": "User not found. Please log in again.",
+    "usernameFailed": "Failed to update username. Please try again.",
+    "googleFailed": "Google login failed. Please try again."
+  },
+  "settings": {
+    "title": "Settings",
+    "eyebrow": "Account",
+    "description": "Update how you appear to others and keep your account secure.",
+    "language": {
+      "label": "Language",
+      "description": "Choose the language of the interface. Your choice is remembered on this device."
+    },
+    "password": {
+      "label": "Password",
+      "description": "We'll email you a link to choose a new one.",
+      "button": "Send reset email",
+      "sent": "Password reset email sent successfully!",
+      "failed": "Failed to send password reset email."
+    },
+    "username": {
+      "label": "Username",
+      "description": "Shown on your wishlists. You'll be asked to sign in again after changing it.",
+      "placeholder": "New username",
+      "button": "Update username",
+      "updated": "Username updated successfully!",
+      "updatedDescription": "Please log in again.",
+      "failed": "Failed to update username."
+    },
+    "email": {
+      "label": "Email",
+      "description": "We'll send a verification link to the new address before switching.",
+      "placeholder": "New email",
+      "button": "Update email",
+      "invalid": "Please enter a valid email",
+      "sent": "Verification email sent successfully to {{email}}",
+      "failed": "Failed to change email"
+    },
+    "reauth": {
+      "incorrectPassword": "Incorrect password",
+      "loading": "Your account is still loading",
+      "loadingDescription": "Please try again in a moment.",
+      "unavailable": "Not available for this account yet",
+      "unavailableDescription": "Accounts that sign in with Google can't do this from Settings.",
+      "prompt": "Please enter your password to continue."
+    },
+    "export": {
+      "label": "Export data",
+      "description": "Download your wishlists, including private items, and the wishlists you follow as a JSON file.",
+      "button": "Export my data",
+      "exporting": "Exporting…",
+      "done": "Your data was exported",
+      "failed": "Failed to export your data."
+    },
+    "delete": {
+      "label": "Delete account",
+      "description": "Permanently removes your account, wishlists and items. This cannot be undone.",
+      "button": "Delete my account",
+      "confirm": "Are you sure you want to delete your account? This cannot be undone.",
+      "done": "Account deleted",
+      "failed": "Failed to delete account"
+    }
+  },
+  "wishlists": {
+    "title": "Your wishlists",
+    "welcomeBack": "Welcome back",
+    "welcomeBackName": "Welcome back, {{name}}",
+    "description": "Keep every occasion in its own list, then share a link when you're ready.",
+    "newWishlist": "New wishlist",
+    "startNew": "Start a new list",
+    "emptyTitle": "Plant your first wishlist",
+    "emptyDescription": "Create a list for a birthday, a new home, or just because. You can add items and share it any time.",
+    "dialogNew": "New wishlist",
+    "dialogEdit": "Edit wishlist",
+    "loadFailed": "Failed to load your wishlists",
+    "created": "Wishlist created",
+    "createFailed": "Failed to create the wishlist",
+    "updated": "Wishlist updated",
+    "updateFailed": "Failed to update the wishlist",
+    "deleted": "Wishlist deleted",
+    "deleteFailed": "Failed to delete the wishlist"
+  },
+  "following": {
+    "title": "Following",
+    "eyebrow": "From friends and family",
+    "description": "Wishlists you follow, newest changes first.",
+    "emptyTitle": "Nothing followed yet",
+    "emptyDescription": "Open a wishlist a friend shared with you and choose Follow. It will show up here.",
+    "loadFailed": "Failed to load followed wishlists",
+    "renameFailed": "Failed to rename the wishlist"
+  },
+  "rename": {
+    "title": "Rename wishlist",
+    "description": "Only you see this name. Leave it empty to use the original.",
+    "descriptionWithName": "Only you see this name. Leave it empty to use the original (“{{name}}”).",
+    "label": "Your name for it",
+    "save": "Save"
+  },
+  "wishlistEdit": {
+    "description": "Name it and pick an icon. You can change both later.",
+    "name": "Name",
+    "namePlaceholder": "Birthday 2026",
+    "preview": "Preview",
+    "icon": "Icon",
+    "iconColor": "Icon color",
+    "defaultColor": "Default color",
+    "customHex": "Custom hex code",
+    "deleteConfirm": "Delete this wishlist and all of its items? This cannot be undone.",
+    "delete": "Delete wishlist",
+    "create": "Create wishlist",
+    "saveChanges": "Save changes",
+    "icons": {
+      "shopping-cart": "Shopping cart",
+      "gift": "Gift",
+      "heart": "Heart",
+      "sparkles": "Sparkles",
+      "shopping-bag": "Shopping bag",
+      "gamepad": "Gamepad",
+      "book-open": "Book",
+      "shirt": "Shirt",
+      "laptop": "Laptop",
+      "plane": "Plane",
+      "home": "Home",
+      "cake": "Cake",
+      "baby": "Baby",
+      "bike": "Bike",
+      "car": "Car",
+      "music": "Music",
+      "palette": "Palette",
+      "utensils": "Utensils",
+      "dumbbell": "Dumbbell",
+      "briefcase": "Briefcase"
+    },
+    "colors": {
+      "Red": "Red",
+      "Orange": "Orange",
+      "Amber": "Amber",
+      "Green": "Green",
+      "Teal": "Teal",
+      "Blue": "Blue",
+      "Purple": "Purple",
+      "Pink": "Pink",
+      "Slate": "Slate"
+    }
+  },
+  "card": {
+    "copied": "Link copied",
+    "copiedDescription": "Anyone with it can view the public items.",
+    "copyFailed": "Could not copy the link",
+    "copyFailedDescription": "Copy the address from your browser's address bar instead.",
+    "actionsFor": "Actions for {{name}}",
+    "edit": "Edit wishlist",
+    "rename": "Rename",
+    "copyLink": "Copy link",
+    "originally": "Originally “{{name}}”",
+    "updated": "Updated {{date}}"
+  },
+  "wishlistPage": {
+    "fallbackTitle": "Wishlist",
+    "back": "Your wishlists",
+    "byAuthor": "Wishlist by {{author}}",
+    "copyLink": "Copy link",
+    "follow": "Follow",
+    "following": "Following",
+    "nowFollowing": "You are now following this wishlist",
+    "followFailed": "Failed to follow this wishlist",
+    "noLongerFollowing": "You are no longer following this wishlist",
+    "unfollowFailed": "Failed to unfollow this wishlist",
+    "missingTitle": "Wishlist not found",
+    "missingMessage": "This wishlist does not exist or has been deleted.",
+    "errorTitle": "Could not load wishlist",
+    "errorMessage": "Something went wrong while loading this wishlist. Please try again."
+  },
+  "items": {
+    "section": "Items",
+    "statItems_one": "item",
+    "statItems_other": "items",
+    "statPrivate_one": "private",
+    "statPrivate_other": "private",
+    "add": "Add item",
+    "added": "Item added successfully.",
+    "addFailed": "Failed to add item to wishlist.",
+    "updated": "Item updated successfully.",
+    "updateFailed": "Failed to update item in wishlist.",
+    "deleted": "Item deleted successfully.",
+    "deleteFailed": "Failed to delete the item.",
+    "addTitle": "Add an item",
+    "addDescription": "Only the name is required. Add an image, price and link if you have them.",
+    "editTitle": "Edit item",
+    "editDescription": "Update this item, then save your changes.",
+    "saveChanges": "Save changes",
+    "emptyOwnTitle": "Add your first wish",
+    "emptyOwnDescription": "Add something you'd love to receive, with a photo and a link to where to buy it.",
+    "emptyTitle": "Nothing here yet",
+    "emptyDescription": "This wishlist has no public items yet.",
+    "priceNotSet": "Price not set",
+    "noImage": "No image for {{name}}",
+    "private": "Private",
+    "privateHint": ", only you can see this",
+    "edit": "Edit {{name}}",
+    "viewOnline": "{{name}}, view online (opens in a new tab)"
+  },
+  "itemForm": {
+    "name": "Name",
+    "namePlaceholder": "Linen throw blanket",
+    "price": "Average price",
+    "optional": "Optional",
+    "link": "Link",
+    "linkPlaceholder": "Optional, where to buy it",
+    "image": "Image URL",
+    "imagePlaceholder": "Optional, https://…",
+    "currency": "Currency",
+    "fetch": "Fetch details from link",
+    "fetchNeedsLink": "Add a valid link first.",
+    "fetchFilled": "Filled in what we could find.",
+    "fetchNothing": "Nothing new found on that page.",
+    "fetchFailed": "Couldn't fetch details.",
+    "undo": "Undo",
+    "undone": "Put your earlier values back.",
+    "public": "Public",
+    "publicHint": "Anyone with the link can see it. Turn off to keep it just for you.",
+    "delete": "Delete item",
+    "deleteConfirm": "Delete this item? This cannot be undone."
+  }
+}

@@ -29,3 +29,32 @@ test("unknown routes render the not-found page", async ({ page }) => {
   await page.goto("/definitely-not-a-page");
   await expect(page.getByText("Page not found")).toBeVisible();
 });
+
+test.describe("Polish locale", () => {
+  test.use({ locale: "pl-PL" });
+
+  test("follows the browser language and sets <html lang>", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("lang", "pl");
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("listę swoich marzeń");
+    await expect(page.getByRole("link", { name: "Zaczynamy" })).toBeVisible();
+  });
+
+  test("login form and not-found page are translated", async ({ page }) => {
+    await page.goto("/login");
+    await expect(page.getByLabel("Hasło")).toBeVisible();
+    await page.goto("/definitely-not-a-page");
+    await expect(page.getByText("Nie znaleziono strony")).toBeVisible();
+  });
+
+  test("the language switcher changes and remembers the language", async ({ page }) => {
+    await page.goto("/");
+    await page.getByLabel("Język").selectOption("en");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
+
+    await page.reload();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.getByRole("link", { name: "Get started" })).toBeVisible();
+  });
+});

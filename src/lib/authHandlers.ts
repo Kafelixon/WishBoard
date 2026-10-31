@@ -7,9 +7,47 @@ import {
   sendEmailVerification,
   updateProfile,
 } from "firebase/auth";
+import type { TKey } from "@/i18n";
 import { auth } from "@/firebaseSetup";
+import i18n from "@/i18n";
 import { login } from "@/lib/userStore";
 import { NavigateFunction } from "react-router-dom";
+
+const AUTH_ERROR_KEYS: Partial<Record<string, TKey>> = {
+  "auth/invalid-credential": "authErrors.invalidCredential",
+  "auth/wrong-password": "authErrors.invalidCredential",
+  "auth/user-not-found": "authErrors.invalidCredential",
+  "auth/invalid-email": "authErrors.invalidEmail",
+  "auth/email-already-in-use": "authErrors.emailInUse",
+  "auth/weak-password": "authErrors.weakPassword",
+  "auth/too-many-requests": "authErrors.tooManyRequests",
+  "auth/network-request-failed": "authErrors.network",
+  "auth/account-exists-with-different-credential": "authErrors.differentCredential",
+};
+
+// The user closing the Google popup is not an error worth a toast.
+const SILENT_AUTH_CODES = new Set(["auth/popup-closed-by-user", "auth/cancelled-popup-request"]);
+
+/** The Firebase error code on an error thrown by these handlers, or on a raw Firebase error. */
+export const getAuthErrorCode = (error: unknown): string | undefined => {
+  const cause = (error as { cause?: unknown } | null)?.cause;
+  const code = ((cause ?? error) as { code?: unknown } | null)?.code;
+  return typeof code === "string" ? code : undefined;
+};
+
+export const isSilentAuthError = (error: unknown): boolean => {
+  const code = getAuthErrorCode(error);
+  return code !== undefined && SILENT_AUTH_CODES.has(code);
+};
+
+/** Translated message for a Firebase auth error, or the given fallback key's text for unknown codes. */
+export const authErrorMessage = (
+  error: unknown,
+  fallback: TKey = "authErrors.generic",
+): string => {
+  const code = getAuthErrorCode(error);
+  return i18n.t((code ? AUTH_ERROR_KEYS[code] : undefined) ?? fallback);
+};
 
 export const loginUser = async (
   email: string,
@@ -22,7 +60,7 @@ export const loginUser = async (
     completeLogin(userCredential, navigate, from);
   } catch (error) {
     console.error(error);
-    throw Object.assign(new Error("Invalid email or password. Please try again."), {
+    throw Object.assign(new Error(i18n.t("authErrors.loginFailed")), {
       cause: error,
     });
   }
@@ -36,7 +74,7 @@ export const registerUser = async (
   from: string,
 ) => {
   if (password.length < 6) {
-    throw new Error("Password must be at least 6 characters");
+    throw new Error(i18n.t("validation.passwordShort"));
   }
 
   try {
@@ -46,7 +84,7 @@ export const registerUser = async (
     completeLogin(userCredential, navigate, from);
   } catch (error) {
     console.error(error);
-    throw Object.assign(new Error("Registration failed. Please try again."), {
+    throw Object.assign(new Error(i18n.t("authErrors.registerFailed")), {
       cause: error,
     });
   }
@@ -54,7 +92,7 @@ export const registerUser = async (
 
 export const changeUsername = async (newUsername: string) => {
   if (!auth.currentUser) {
-    throw new Error("User not found. Please log in again.");
+    throw new Error(i18n.t("authErrors.userNotFound"));
   }
 
   try {
@@ -63,7 +101,7 @@ export const changeUsername = async (newUsername: string) => {
     });
   } catch (error) {
     console.error(error);
-    throw Object.assign(new Error("Failed to update username. Please try again."), {
+    throw Object.assign(new Error(i18n.t("authErrors.usernameFailed")), {
       cause: error,
     });
   }
@@ -80,7 +118,7 @@ export const loginWithGoogle = async (
     completeLogin(userCredential, navigate, from);
   } catch (error) {
     console.error(error);
-    throw Object.assign(new Error("Google login failed. Please try again."), {
+    throw Object.assign(new Error(i18n.t("authErrors.googleFailed")), {
       cause: error,
     });
   }

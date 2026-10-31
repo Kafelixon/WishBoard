@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { LogOut, Settings } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
@@ -17,6 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./avatar";
 /** The signed-in user's avatar menu. Loaded on demand so signed-out visitors never download the dropdown code. */
 export default function AccountMenu({ user }: { user: User }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const initials =
     user.displayName
@@ -37,7 +39,7 @@ export default function AccountMenu({ user }: { user: User }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Account menu"
+        aria-label={t("account.menu")}
         className="rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <Avatar>
@@ -53,10 +55,10 @@ export default function AccountMenu({ user }: { user: User }) {
             void navigate("/settings");
           }}
         >
-          <Settings aria-hidden="true" /> Settings
+          <Settings aria-hidden="true" /> {t("account.settings")}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={handleLogout}>
-          <LogOut aria-hidden="true" /> Log out
+          <LogOut aria-hidden="true" /> {t("account.logout")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
