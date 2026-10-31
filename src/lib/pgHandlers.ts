@@ -1,4 +1,5 @@
 import { auth } from "@/firebaseSetup";
+import { readCachedIdToken } from "@/lib/cachedToken";
 import { WishlistItem, Wishlist } from "@/lib/types";
 import { toWishlistIconName } from "@/lib/wishlistIcons";
 import type {
@@ -30,10 +31,18 @@ async function call<T>(
   op: string,
   params: Record<string, unknown> = {},
 ): Promise<T> {
-  // Signed-out visitors have no token to wait for, so don't hold the request for Firebase to initialise.
-  if (wasSignedIn()) await auth.authStateReady();
   const headers: Record<string, string> = { "content-type": "application/json" };
-  if (auth.currentUser) {
+  // Signed-out visitors have no token to wait for. Returning visitors send the
+  // saved token right away instead of waiting for Firebase to re-validate them.
+  if (wasSignedIn()) {
+    const cachedToken = await readCachedIdToken();
+    if (cachedToken) {
+      headers.authorization = `Bearer ${cachedToken}`;
+    } else {
+      await auth.authStateReady();
+    }
+  }
+  if (!headers.authorization && auth.currentUser) {
     headers.authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
   }
   const response = await fetch("/api/wishlists", {
