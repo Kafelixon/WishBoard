@@ -27,7 +27,7 @@ function wasSignedIn(): boolean {
   }
 }
 
-async function call<T>(
+async function send<T>(
   op: string,
   params: Record<string, unknown> = {},
 ): Promise<T> {
@@ -58,6 +58,44 @@ async function call<T>(
     throw new Error(payload?.error ?? `Request failed (${String(response.status)})`);
   }
   return payload.data as T;
+}
+
+/**
+ * Read requests started at page load, before the page's code has even been
+ * downloaded. The page's own call with the same op and params takes the pending
+ * promise over (once, within a few seconds) instead of sending a second request.
+ */
+const earlyRequests = new Map<string, Promise<unknown>>();
+const EARLY_REQUEST_TTL_MS = 15_000;
+const requestKey = (op: string, params: Record<string, unknown>) => op + JSON.stringify(params);
+
+function call<T>(op: string, params: Record<string, unknown> = {}): Promise<T> {
+  const key = requestKey(op, params);
+  const early = earlyRequests.get(key);
+  if (early) {
+    earlyRequests.delete(key);
+    return early as Promise<T>;
+  }
+  return send<T>(op, params);
+}
+
+function startEarly(op: string, params: Record<string, unknown> = {}) {
+  const key = requestKey(op, params);
+  const request = send(op, params);
+  request.catch(() => undefined); // an unused failure must not become an unhandled rejection
+  earlyRequests.set(key, request);
+  setTimeout(() => {
+    earlyRequests.delete(key);
+  }, EARLY_REQUEST_TTL_MS);
+}
+
+/** Starts the data request for the page being opened; the route's component picks it up when it mounts. */
+export function startEarlyRequests(pathname: string): void {
+  const wishlistId = /^\/wishlist\/([^/]+)$/.exec(pathname)?.[1];
+  if (wishlistId) startEarly("view", { wishlistId: decodeURIComponent(wishlistId) });
+  else if (wasSignedIn() && pathname === "/wishlists") startEarly("listMine");
+  else if (wasSignedIn() && pathname === "/following") startEarly("followed");
+  else if (pathname === "/" || pathname === "/login") warmUp();
 }
 
 /** Fire-and-forget request that wakes the suspended database before the first real query needs it. */

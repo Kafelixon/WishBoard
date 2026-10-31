@@ -14,7 +14,7 @@ import { TopMenu } from "@/components/ui/TopMenu";
 import { LandingPage } from "@/components/ui/LandingPage";
 import { NotFound } from "@/components/ui/NotFound";
 import { RequireAuth } from "@/components/ui/RequireAuth";
-import { warmUp } from "@/lib/wishlistHandlers";
+import { startEarlyRequests } from "@/lib/pgHandlers";
 
 const loaders = {
   SignInForm: () => import("@/components/ui/SignInForm"),
@@ -43,8 +43,8 @@ const preloadInitialRoute = (pathname: string) => {
   else if (pathname === "/following") void loaders.FollowedWishlists();
   else if (pathname === "/settings") void loaders.SettingsPage();
   else if (pathname === "/login") void loaders.SignInForm();
-  // Pages that fetch nothing yet: wake the database while the visitor reads.
-  if (pathname === "/" || pathname === "/login") warmUp();
+  // Postgres backend only: start the page's data request (or wake the database) before any page code loads.
+  if (import.meta.env.VITE_BACKEND !== "firestore") startEarlyRequests(pathname);
 };
 preloadInitialRoute(window.location.pathname);
 

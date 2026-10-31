@@ -360,6 +360,3 @@ export const updateExistingWishlistsAuthor = async (
 /** Firestore data is not cleaned up on account deletion (existing behaviour). */
 export const deleteUserData = (_userId: string): Promise<void> =>
   Promise.resolve();
-
-/** Firestore has no cold start to hide. */
-export const warmUp = (): void => undefined;

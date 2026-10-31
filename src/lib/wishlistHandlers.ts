@@ -28,5 +28,4 @@ export const {
   updateExistingWishlistsAuthor,
   updateWishlist,
   updateWishlistItem,
-  warmUp,
 } = backend;
