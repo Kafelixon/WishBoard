@@ -25,6 +25,7 @@ import {
   type WishlistIconName,
 } from "@/lib/wishlistIcons";
 import { cn } from "@/lib/utils";
+import { MAX_NAME_LENGTH } from "@/lib/limits";
 import i18n from "@/i18n";
 
 interface WishlistDialogProps {
@@ -100,6 +101,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
             <Label htmlFor="name">{t("wishlistEdit.name")}</Label>
             <Input
               id="name"
+              maxLength={MAX_NAME_LENGTH}
               {...register("name")}
               onChange={(e) => {
                 handleItemChange({ name: e.target.value });

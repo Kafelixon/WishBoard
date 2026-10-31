@@ -36,6 +36,17 @@ async function authHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
+/** A failed API call. `code` is set for refusals the UI explains in its own words. */
+class ApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(message);
+  }
+}
+
 async function send<T>(
   op: string,
   params: Record<string, unknown> = {},
@@ -49,9 +60,14 @@ async function send<T>(
   const payload = (await response.json().catch(() => null)) as {
     data?: T;
     error?: string;
+    code?: string;
   } | null;
   if (!response.ok || !payload || !("data" in payload)) {
-    throw new Error(payload?.error ?? `Request failed (${String(response.status)})`);
+    throw new ApiError(
+      payload?.error ?? `Request failed (${String(response.status)})`,
+      response.status,
+      payload?.code,
+    );
   }
   return payload.data as T;
 }

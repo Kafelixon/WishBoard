@@ -1,4 +1,5 @@
 import { DEFAULT_CURRENCY } from "@/lib/currency";
+import { MAX_RESERVATIONS_PER_WISHLIST } from "@/lib/limits";
 import { FC, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { BookmarkCheck, BookmarkPlus, BookmarkX, ExternalLink, Gift, Lock, Pencil, Plus } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
@@ -81,7 +82,7 @@ export default function WishlistItemsTable({
   const enqueueWrite = (
     write: () => Promise<WishlistItem[]>,
     successMessage: string,
-    errorMessage: string,
+    errorMessage: string | ((error: unknown) => string),
   ) => {
     setPendingWrites((count) => count + 1);
     writeQueueRef.current = writeQueueRef.current
@@ -92,7 +93,10 @@ export default function WishlistItemsTable({
       })
       .catch((error: unknown) => {
         console.error(error);
-        toast({ title: errorMessage, variant: "destructive" });
+        toast({
+          title: typeof errorMessage === "string" ? errorMessage : errorMessage(error),
+          variant: "destructive",
+        });
       })
       .finally(() => {
         setPendingWrites((count) => count - 1);
@@ -156,6 +160,16 @@ export default function WishlistItemsTable({
 
   const canReserve = RESERVATIONS_AVAILABLE && !canEditWishlist && !!userId;
 
+  /** The API's code says why a reservation was refused; anything else is most likely someone else being first. */
+  const reserveErrorMessage = (error: unknown) => {
+    const code = (error as { code?: unknown } | null)?.code;
+    if (code === "email-unverified") return t("items.reserveNeedsVerifiedEmail");
+    if (code === "reservation-limit") {
+      return t("items.reserveLimit", { max: MAX_RESERVATIONS_PER_WISHLIST });
+    }
+    return t("items.reserveFailed");
+  };
+
   const handleToggleReservation = (item: WishlistItem) => {
     if (!userId) return;
     const reserve = item.reservation !== "mine";
@@ -169,7 +183,7 @@ export default function WishlistItemsTable({
           throw error;
         }),
       reserve ? t("items.reservedToast") : t("items.unreservedToast"),
-      reserve ? t("items.reserveFailed") : t("items.unreserveFailed"),
+      reserve ? reserveErrorMessage : t("items.unreserveFailed"),
     );
   };
 

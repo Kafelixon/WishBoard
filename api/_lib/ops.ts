@@ -1,11 +1,20 @@
 import { randomUUID } from "node:crypto";
 import type { Caller } from "./auth.js";
 import type { Db, Queryable, Row } from "./db.js";
+import {
+  MAX_AUTHOR_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_PRICE,
+  MAX_RESERVATIONS_PER_WISHLIST,
+  MAX_URL_LENGTH,
+} from "./limits.js";
 
 export class HttpError extends Error {
   constructor(
     readonly status: number,
     message: string,
+    /** Machine-readable reason, for errors the client explains in its own words. */
+    readonly code?: string,
   ) {
     super(message);
   }
@@ -63,11 +72,40 @@ const color = (value: unknown): string | null => {
   return value;
 };
 
-const str = (value: unknown, field: string, allowEmpty = false): string => {
+const MAX_ID_LENGTH = 100;
+
+const str = (
+  value: unknown,
+  field: string,
+  allowEmpty = false,
+  maxLength = MAX_ID_LENGTH,
+): string => {
   if (typeof value !== "string" || (!allowEmpty && !value.trim())) {
     throw new HttpError(400, `${field} is required.`);
   }
+  if (value.length > maxLength) {
+    throw new HttpError(400, `${field} must be at most ${String(maxLength)} characters.`);
+  }
   return value;
+};
+
+const name = (value: unknown, field: string) => str(value, field, false, MAX_NAME_LENGTH);
+const author = (value: unknown) => str(value, "author", true, MAX_AUTHOR_LENGTH);
+
+/** An optional http(s) address; anything else (javascript:, data:, junk) is refused. */
+const webUrl = (value: unknown, field: string): string => {
+  if (value === undefined || value === null || value === "") return "";
+  const text = str(value, field, true, MAX_URL_LENGTH);
+  let protocol = "";
+  try {
+    protocol = new URL(text).protocol;
+  } catch {
+    // not a URL at all
+  }
+  if (protocol !== "http:" && protocol !== "https:") {
+    throw new HttpError(400, `${field} must be an http(s) address.`);
+  }
+  return text;
 };
 
 /** ISO 4217 code; anything else falls back to zloty. */
@@ -78,6 +116,9 @@ const toCents = (price: unknown): number => {
   const value = price === undefined || price === null ? 0 : Number(price);
   if (!Number.isFinite(value) || value < 0) {
     throw new HttpError(400, "price must be a non-negative number.");
+  }
+  if (value > MAX_PRICE) {
+    throw new HttpError(400, `price must be at most ${String(MAX_PRICE)}.`);
   }
   return Math.round(value * 100);
 };
@@ -199,8 +240,8 @@ export async function handleOp(
           [
             id,
             user.uid,
-            str(body.name, "name"),
-            str(body.author, "author", true),
+            name(body.name, "name"),
+            author(body.author),
             str(body.icon, "icon"),
             color(body.iconColor),
           ],
@@ -219,8 +260,8 @@ export async function handleOp(
            icon_color = $5, updated_at = now() where id = $1`,
           [
             id,
-            str(body.name, "name"),
-            str(body.author, "author", true),
+            name(body.name, "name"),
+            author(body.author),
             str(body.icon, "icon"),
             color(body.iconColor),
           ],
@@ -250,10 +291,10 @@ export async function handleOp(
           [
             randomUUID(),
             id,
-            str(item.name, "item name"),
+            name(item.name, "item name"),
             toCents(item.price),
-            typeof item.link === "string" ? item.link : "",
-            typeof item.image === "string" ? item.image : "",
+            webUrl(item.link, "link"),
+            webUrl(item.image, "image"),
             item.public === true,
             toCurrency(item.currency),
           ],
@@ -272,10 +313,10 @@ export async function handleOp(
           [
             itemId,
             id,
-            str(item.name, "item name"),
+            name(item.name, "item name"),
             toCents(item.price),
-            typeof item.link === "string" ? item.link : "",
-            typeof item.image === "string" ? item.image : "",
+            webUrl(item.link, "link"),
+            webUrl(item.image, "image"),
             item.public === true,
             toCurrency(item.currency),
           ],
@@ -303,18 +344,43 @@ export async function handleOp(
       return db.transaction(async (q) => {
         await lockReservable(q, user, wishlistId, itemId);
         if (reserve) {
+          // Throwaway accounts could otherwise reserve a whole wishlist to spoil it.
+          if (!user.emailVerified) {
+            throw new HttpError(
+              403,
+              "Confirm your email address before reserving gifts.",
+              "email-unverified",
+            );
+          }
           await ensureUser(q, user);
-          await q.query(
-            `insert into item_reservations (item_id, user_id) values ($1, $2)
-             on conflict (item_id) do nothing`,
-            [itemId, user.uid],
-          );
+          // The item row is locked, so nobody can reserve it between this check and the insert.
           const { rows } = await q.query(
             "select user_id from item_reservations where item_id = $1",
             [itemId],
           );
-          if (rows[0]?.user_id !== user.uid) {
+          if (rows[0] && rows[0].user_id !== user.uid) {
             throw new HttpError(409, "Someone has already reserved this item.");
+          }
+          if (!rows[0]) {
+            // Locking the visitor's row serializes their reservations, so parallel requests can't pass the cap together.
+            await q.query("select 1 from users where id = $1 for update", [user.uid]);
+            const { rows: counted } = await q.query(
+              `select count(*)::int as n from item_reservations r
+               join wishlist_items i on i.id = r.item_id
+               where r.user_id = $1 and i.wishlist_id = $2`,
+              [user.uid, wishlistId],
+            );
+            if (Number(counted[0]?.n) >= MAX_RESERVATIONS_PER_WISHLIST) {
+              throw new HttpError(
+                429,
+                `You can reserve at most ${String(MAX_RESERVATIONS_PER_WISHLIST)} items on one wishlist.`,
+                "reservation-limit",
+              );
+            }
+            await q.query(
+              "insert into item_reservations (item_id, user_id) values ($1, $2)",
+              [itemId, user.uid],
+            );
           }
         } else {
           // Only the visitor's own reservation can be released.
@@ -410,7 +476,7 @@ export async function handleOp(
       const customName =
         body.customName === null || body.customName === undefined
           ? ""
-          : str(body.customName, "customName", true).trim();
+          : str(body.customName, "customName", true, MAX_NAME_LENGTH).trim();
       const { rows } = await db.query(
         `update user_follows set custom_name = $3
          where user_id = $1 and wishlist_id = $2 returning 1`,
@@ -424,7 +490,7 @@ export async function handleOp(
       const user = requireCaller(caller);
       await db.query(
         "update wishlists set author = $2, updated_at = now() where owner_id = $1",
-        [user.uid, str(body.author, "author")],
+        [user.uid, str(body.author, "author", false, MAX_AUTHOR_LENGTH)],
       );
       return {};
     }

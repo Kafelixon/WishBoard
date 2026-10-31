@@ -1,5 +1,10 @@
 import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
+import { request as httpRequest, type IncomingMessage } from "node:http";
+import { request as httpsRequest } from "node:https";
+import { BlockList, isIP, type LookupFunction } from "node:net";
+import { pipeline, type Readable } from "node:stream";
+import { createBrotliDecompress, createGunzip, createInflate } from "node:zlib";
+import { MAX_NAME_LENGTH, MAX_PRICE, MAX_URL_LENGTH } from "./limits.js";
 import { HttpError } from "./ops.js";
 
 export interface ProductMeta {
@@ -12,52 +17,143 @@ export interface ProductMeta {
 
 const BLOCKED_MESSAGE =
   "Couldn't read that page. The shop may block automated lookups, so fill in the details by hand.";
+const UNREACHABLE_MESSAGE = "That link can't be reached.";
 const MAX_BYTES = 1_000_000;
 const MAX_REDIRECTS = 3;
 const TIMEOUT_MS = 6000;
 
-const isPrivateAddress = (address: string): boolean => {
-  if (isIP(address) === 4) {
-    const [a = 0, b = 0] = address.split(".").map(Number);
-    return (
-      a === 0 || a === 10 || a === 127 || (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) ||
-      (a === 100 && b >= 64 && b <= 127) || a >= 224
-    );
-  }
-  const lower = address.toLowerCase();
-  if (lower.startsWith("::ffff:")) return isPrivateAddress(lower.slice(7));
-  return lower === "::" || lower === "::1" || /^f[cd]/.test(lower) || /^fe[89ab]/.test(lower);
+/** Loopback, private, link-local, shared, documentation, multicast and reserved ranges, plus IPv6 forms that embed IPv4. */
+const NON_PUBLIC = new BlockList();
+for (const [network, prefix] of [
+  ["0.0.0.0", 8], ["10.0.0.0", 8], ["100.64.0.0", 10], ["127.0.0.0", 8], ["169.254.0.0", 16],
+  ["172.16.0.0", 12], ["192.0.0.0", 24], ["192.0.2.0", 24], ["192.168.0.0", 16], ["198.18.0.0", 15],
+  ["198.51.100.0", 24], ["203.0.113.0", 24], ["224.0.0.0", 3],
+] as const) {
+  NON_PUBLIC.addSubnet(network, prefix, "ipv4");
+}
+for (const [network, prefix] of [
+  // ::/96 holds ::, ::1 and IPv4-compatible addresses. IPv4-mapped ones (::ffff:a.b.c.d) are checked against the IPv4 ranges.
+  ["::", 96], ["64:ff9b::", 96], ["64:ff9b:1::", 48], ["100::", 64], ["2001::", 32],
+  ["2001:db8::", 32], ["2002::", 16], ["fc00::", 7], ["fe80::", 10], ["ff00::", 8],
+] as const) {
+  NON_PUBLIC.addSubnet(network, prefix, "ipv6");
+}
+
+export const isPrivateAddress = (address: string): boolean => {
+  const family = isIP(address);
+  if (family === 0) return true;
+  return NON_PUBLIC.check(address, family === 4 ? "ipv4" : "ipv6");
 };
 
-/** Rejects non-web schemes and hosts that resolve to private/internal addresses. */
-const assertPublicUrl = async (url: URL): Promise<void> => {
+/**
+ * DNS lookup for outgoing connections that refuses hosts with any non-public address.
+ * The socket connects to what this returns, so a host can't pass a separate check and
+ * then resolve somewhere internal (DNS rebinding).
+ */
+const publicLookup = ((hostname: string, options: { all?: boolean }, callback: (...args: unknown[]) => void) => {
+  lookup(hostname, { all: true }).then(
+    (addresses) => {
+      if (addresses.length === 0 || addresses.some((a) => isPrivateAddress(a.address))) {
+        callback(new HttpError(400, UNREACHABLE_MESSAGE));
+      } else if (options.all) {
+        callback(null, addresses);
+      } else {
+        callback(null, addresses[0]?.address, addresses[0]?.family);
+      }
+    },
+    () => {
+      callback(new HttpError(400, UNREACHABLE_MESSAGE));
+    },
+  );
+}) as LookupFunction;
+
+/** Rejects non-web schemes and literal internal IPs; host names are checked by `publicLookup` as they connect. */
+const assertPublicUrl = (url: URL): void => {
   if (url.protocol !== "http:" && url.protocol !== "https:") {
     throw new HttpError(400, "Only web links are supported.");
   }
   const host = url.hostname.replace(/^\[|\]$/g, "");
-  const addresses = isIP(host)
-    ? [host]
-    : (await lookup(host, { all: true }).catch(() => [])).map((a) => a.address);
-  if (addresses.length === 0 || addresses.some(isPrivateAddress)) {
-    throw new HttpError(400, "That link can't be reached.");
+  if (isIP(host) && isPrivateAddress(host)) {
+    throw new HttpError(400, UNREACHABLE_MESSAGE);
   }
 };
 
-const readCapped = async (response: Response): Promise<string> => {
-  if (!response.body) return "";
-  const reader = response.body.getReader();
+const open = (url: URL, signal: AbortSignal): Promise<IncomingMessage> =>
+  new Promise((resolve, reject) => {
+    const send = url.protocol === "https:" ? httpsRequest : httpRequest;
+    send(
+      url,
+      {
+        lookup: publicLookup,
+        signal,
+        headers: {
+          "user-agent": "Mozilla/5.0 (compatible; WishBoardBot/1.0)",
+          accept: "text/html,application/xhtml+xml",
+          "accept-encoding": "gzip, deflate, br",
+        },
+      },
+      resolve,
+    )
+      .on("error", reject)
+      .end();
+  });
+
+const decoded = (response: IncomingMessage): Readable => {
+  const ignoreError = () => undefined; // errors still reach the reader through the returned stream
+  switch (response.headers["content-encoding"]) {
+    case "gzip":
+    case "x-gzip":
+      return pipeline(response, createGunzip(), ignoreError);
+    case "deflate":
+      return pipeline(response, createInflate(), ignoreError);
+    case "br":
+      return pipeline(response, createBrotliDecompress(), ignoreError);
+    default:
+      return response;
+  }
+};
+
+/** Reads at most MAX_BYTES of the (decompressed) body. */
+const readCapped = async (body: Readable): Promise<string> => {
   const decoder = new TextDecoder();
   let text = "";
   let bytes = 0;
-  while (bytes < MAX_BYTES) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    bytes += value.length;
-    text += decoder.decode(value, { stream: true });
+  for await (const chunk of body) {
+    const data = chunk as Uint8Array;
+    bytes += data.length;
+    text += decoder.decode(data, { stream: true });
+    if (bytes >= MAX_BYTES) break; // leaving the loop destroys the stream
   }
-  await reader.cancel().catch(() => undefined);
-  return text;
+  return text + decoder.decode();
+};
+
+const followRedirects = async (start: URL, signal: AbortSignal): Promise<{ html: string; url: URL }> => {
+  let url = start;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    assertPublicUrl(url);
+    const response = await open(url, signal);
+    const status = response.statusCode ?? 0;
+    const location = response.headers.location;
+    if (/captcha|challenge/i.test(location ?? "") || [401, 403, 429, 503].includes(status)) {
+      response.destroy();
+      throw new HttpError(422, BLOCKED_MESSAGE);
+    }
+    if (status >= 300 && status < 400 && location) {
+      response.destroy();
+      url = new URL(location, url);
+      continue;
+    }
+    if (status < 200 || status >= 300) {
+      response.destroy();
+      throw new HttpError(502, "Couldn't open that link.");
+    }
+    if (!(response.headers["content-type"] ?? "").includes("html")) {
+      response.destroy();
+      throw new HttpError(422, "That link isn't a web page.");
+    }
+    return { html: await readCapped(decoded(response)), url };
+  }
+  throw new HttpError(502, "Too many redirects.");
 };
 
 export async function fetchPage(rawUrl: string): Promise<{ html: string; url: URL }> {
@@ -67,33 +163,13 @@ export async function fetchPage(rawUrl: string): Promise<{ html: string; url: UR
   } catch {
     throw new HttpError(400, "Enter a valid web address.");
   }
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    await assertPublicUrl(url);
-    const response = await fetch(url, {
-      redirect: "manual",
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      headers: {
-        "user-agent": "Mozilla/5.0 (compatible; WishBoardBot/1.0)",
-        accept: "text/html,application/xhtml+xml",
-      },
-    }).catch(() => {
-      throw new HttpError(502, BLOCKED_MESSAGE);
-    });
-    const location = response.headers.get("location");
-    if (/captcha|challenge/i.test(location ?? "") || [401, 403, 429, 503].includes(response.status)) {
-      throw new HttpError(422, BLOCKED_MESSAGE);
-    }
-    if (response.status >= 300 && response.status < 400 && location) {
-      url = new URL(location, url);
-      continue;
-    }
-    if (!response.ok) throw new HttpError(502, "Couldn't open that link.");
-    if (!(response.headers.get("content-type") ?? "").includes("html")) {
-      throw new HttpError(422, "That link isn't a web page.");
-    }
-    return { html: await readCapped(response), url };
+  try {
+    return await followRedirects(url, AbortSignal.timeout(TIMEOUT_MS));
+  } catch (error) {
+    // Network failures, timeouts and bad redirect targets all mean the page can't be read.
+    if (error instanceof HttpError) throw error;
+    throw new HttpError(502, BLOCKED_MESSAGE);
   }
-  throw new HttpError(502, "Too many redirects.");
 }
 
 const NAMED_ENTITIES: Record<string, string> = {
@@ -276,5 +352,12 @@ export function parseProductMeta(html: string, pageUrl: URL): ProductMeta {
         ? metaCurrency.toUpperCase()
         : null;
 
-  return { name: name === "" ? null : name, image, price, currency };
+  // Kept within the API's limits, so whatever is filled in can be saved.
+  const usablePrice = price !== null && price <= MAX_PRICE;
+  return {
+    name: name ? name.slice(0, MAX_NAME_LENGTH).trim() : null,
+    image: image && image.length <= MAX_URL_LENGTH ? image : null,
+    price: usablePrice ? price : null,
+    currency: usablePrice ? currency : null,
+  };
 }

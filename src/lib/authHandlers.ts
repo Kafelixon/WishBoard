@@ -164,9 +164,12 @@ export const resendVerificationEmail = async () => {
 
 /** Re-reads the account from Firebase (the SDK otherwise only refreshes emailVerified on sign-in and at startup). */
 export const refreshEmailVerified = async (): Promise<boolean> => {
-  if (!auth.currentUser) {
+  const user = auth.currentUser;
+  if (!user) {
     throw new Error(i18n.t("authErrors.userNotFound"));
   }
-  await auth.currentUser.reload();
-  return auth.currentUser.emailVerified;
+  await user.reload();
+  // The API reads `email_verified` from the ID token, which keeps the old value until it is refreshed.
+  if (user.emailVerified) await user.getIdToken(true);
+  return user.emailVerified;
 };
