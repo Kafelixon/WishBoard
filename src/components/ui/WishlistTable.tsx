@@ -1,3 +1,4 @@
+import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { FC, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, Gift, Lock, Pencil, Plus } from "lucide-react";
 import { WishlistItem } from "@/lib/types";
@@ -31,6 +32,7 @@ const PLACEHOLDER_ITEM: WishlistItem = {
   image: "",
   name: "",
   price: 0,
+  currency: DEFAULT_CURRENCY,
   link: "",
   public: true,
 };
@@ -242,8 +244,14 @@ export default function WishlistItemsTable({
   );
 }
 
-const formatPrice = (price: number) =>
-  `${price.toLocaleString(undefined, { maximumFractionDigits: 2 })} zł`;
+const formatPrice = (price: number, currency = DEFAULT_CURRENCY) =>
+  price.toLocaleString("pl-PL", {
+    style: "currency",
+    currency,
+    currencyDisplay: "narrowSymbol",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
 
 const Stat: FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="flex items-baseline gap-1.5">
@@ -369,7 +377,7 @@ const CardsList: FC<{
                 )}
               </h2>
               <p className="tabular text-sm text-muted-foreground">
-                {item.price > 0 ? formatPrice(item.price) : "Price not set"}
+                {item.price > 0 ? formatPrice(item.price, item.currency) : "Price not set"}
               </p>
             </div>
             {item.link && (

@@ -20,11 +20,14 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
   wishlist_id  text NOT NULL REFERENCES wishlists(id) ON DELETE CASCADE,
   name         text NOT NULL,
   price_cents  integer NOT NULL DEFAULT 0 CHECK (price_cents >= 0),
+  currency     text NOT NULL DEFAULT 'PLN',
   link         text,
   image        text,
   is_public    boolean NOT NULL DEFAULT true,
   sort_order   integer NOT NULL DEFAULT 0
 );
+-- Existing databases: older rows are all zloty prices, which the default fills in.
+ALTER TABLE wishlist_items ADD COLUMN IF NOT EXISTS currency text NOT NULL DEFAULT 'PLN';
 CREATE INDEX IF NOT EXISTS wishlist_items_wishlist_idx ON wishlist_items(wishlist_id);
 
 CREATE TABLE IF NOT EXISTS user_follows (

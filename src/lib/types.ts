@@ -5,6 +5,8 @@ export interface WishlistItem {
   image: string;
   name: string;
   price: number;
+  /** ISO 4217 code the price is in. Missing on items saved before currencies existed (zloty). */
+  currency?: string;
   link: string;
   public?: boolean;
 }
@@ -22,4 +24,11 @@ export interface User {
   displayName: string | null;
   photoURL: string | null;
   email: string | null;
+}
+
+export interface ProductMeta {
+  name: string | null;
+  image: string | null;
+  price: number | null;
+  currency: string | null;
 }

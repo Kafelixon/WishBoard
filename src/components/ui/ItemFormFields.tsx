@@ -1,9 +1,14 @@
-import { FC } from "react";
+import { FC, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { WishlistItem } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Switch } from "./switch";
+import { Loader2 } from "lucide-react";
+import { fetchProductMeta } from "@/lib/wishlistHandlers";
+import { isValidWebUrl, normalizeUrl } from "@/lib/url";
+import { DEFAULT_CURRENCY, currencyOptions } from "@/lib/currency";
 
 interface ItemFormFieldsProps {
   currentItem: WishlistItem;
@@ -53,7 +58,48 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
     register,
     formState: { errors },
     watch,
+    setValue,
+    getValues,
   } = useFormContext();
+  const [fetching, setFetching] = useState(false);
+  const [fetchMessage, setFetchMessage] = useState<string | null>(null);
+
+  /** Fills name, image and price from the product link, without overwriting what's already typed. */
+  const fetchDetails = async () => {
+    const link = normalizeUrl(getValues("link") as string);
+    if (!link || !isValidWebUrl(link)) {
+      setFetchMessage("Add a valid link first.");
+      return;
+    }
+    setFetching(true);
+    setFetchMessage(null);
+    try {
+      const meta = await fetchProductMeta(link);
+      const changes: Partial<WishlistItem> = {};
+      if (meta.name && !(getValues("name") as string)) changes.name = meta.name;
+      if (meta.image && !(getValues("image") as string)) changes.image = meta.image;
+      const price = Number(getValues("price"));
+      if (meta.price !== null && !price) {
+        changes.price = meta.price;
+        // The price is only meaningful in the currency the shop quoted it in.
+        if (meta.currency) changes.currency = meta.currency;
+      }
+      for (const [key, value] of Object.entries(changes)) {
+        setValue(key, value, { shouldDirty: true, shouldValidate: true });
+      }
+      handleItemChange(changes);
+      setFetchMessage(
+        Object.keys(changes).length > 0
+          ? "Filled in what we could find."
+          : "Nothing new found on that page.",
+      );
+    } catch (error) {
+      setFetchMessage(error instanceof Error ? error.message : "Couldn't fetch details.");
+    } finally {
+      setFetching(false);
+    }
+  };
+  const currency = (watch("currency", currentItem.currency) as string | undefined) ?? DEFAULT_CURRENCY;
   const publicField = watch("public", currentItem.public) as boolean;
 
   return (
@@ -73,21 +119,44 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
               aria-describedby={errors[field] ? `${id}-error` : undefined}
               {...register(field)}
               onChange={(e) => { handleItemChange({ [field]: e.target.value }); }}
-              className={type === "number" ? "pr-10" : undefined}
+              className={type === "number" ? "pr-20" : undefined}
             />
             {type === "number" && (
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+              <select
+                aria-label="Currency"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-transparent py-1 pl-1 text-sm text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                {...register("currency")}
+                onChange={(e) => { handleItemChange({ currency: e.target.value }); }}
               >
-                zł
-              </span>
+                {currencyOptions(currency).map((code) => (
+                  <option key={code} value={code}>{code}</option>
+                ))}
+              </select>
             )}
           </div>
           {errors[field] && (
             <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
               {errors[field].message as string}
             </p>
+          )}
+          {field === "link" && (
+            <div className="flex items-center gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={fetching}
+                onClick={() => void fetchDetails()}
+              >
+                {fetching && <Loader2 className="animate-spin" aria-hidden="true" />}
+                Fetch details from link
+              </Button>
+              {fetchMessage && (
+                <p role="status" className="text-sm text-muted-foreground">
+                  {fetchMessage}
+                </p>
+              )}
+            </div>
           )}
         </div>
       ))}
