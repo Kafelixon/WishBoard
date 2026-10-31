@@ -91,7 +91,7 @@ test.describe("own wishlists", () => {
     await page.getByLabel("Average price").fill("129.5");
     await page.getByRole("button", { name: "Add item" }).last().click();
     await expect(page.getByRole("heading", { name: "Linen throw" })).toBeVisible();
-    await expect(page.getByText("Item added successfully.")).toBeVisible();
+    await expect(page.getByText("Item added successfully.", { exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: "Edit Linen throw" }).click();
     await page.getByLabel("Name").fill("Wool throw");
@@ -150,14 +150,14 @@ test.describe("following", () => {
     await expect(page.getByRole("heading", { name: "Tea set" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Secret gift" })).toBeHidden();
     await page.getByRole("button", { name: "Follow", exact: true }).click();
-    await expect(page.getByText("You are now following this wishlist")).toBeVisible();
+    await expect(page.getByText("You are now following this wishlist", { exact: true })).toBeVisible();
 
     await page.goto("/following");
     await expect(page.getByRole("link", { name: "Wedding" })).toBeVisible();
 
     await page.getByRole("link", { name: "Wedding" }).click();
     await page.getByRole("button", { name: "Following", exact: true }).click();
-    await expect(page.getByText("You are no longer following this wishlist")).toBeVisible();
+    await expect(page.getByText("You are no longer following this wishlist", { exact: true })).toBeVisible();
 
     await page.goto("/following");
     await expect(page.getByText("Nothing followed yet")).toBeVisible();
