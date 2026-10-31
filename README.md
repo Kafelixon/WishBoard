@@ -10,31 +10,52 @@ WishBoard is a web application designed to help users effortlessly create, manag
 - **Stay Connected**: Follow your friends and loved ones' wishlists to stay updated on their wishes.
 
 ## Tech Stack
-- **React with TypeScript**
-- **Tailwind CSS and Shadcn**
-- **Firebase Firestore and Authentication**
+
+- **React 19 with TypeScript**, built with Vite
+- **Tailwind CSS v4 and shadcn/Radix**
+- **Firebase Authentication** for sign-in (email/password and Google)
+- **Postgres on Neon** for wishlist data, served through Vercel functions in `api/`
+- **Firestore** as an optional, Firestore-only backend (`VITE_BACKEND=firestore`)
+- **Vercel** for hosting and the `/api` functions
 
 ## Installation
 
-To run WishBoard locally, follow these steps:
+The project uses [pnpm](https://pnpm.io/) (the version is pinned in `package.json`).
 
 1. Clone the repository:
    ```bash
-    git clone https://github.com/Kafelixon/WishBoard.git
-    cd wishboard
+   git clone https://github.com/Kafelixon/WishBoard.git
+   cd WishBoard
    ```
 
 2. Install dependencies:
    ```bash
-   npm install
+   pnpm install
    ```
 
-3. Start the development server:
+3. Configure environment variables:
+   - `VITE_APP_FIREBASE_*`: Firebase web config (see `src/firebaseSetup.ts`).
+   - `DATABASE_URL`: Neon connection string, server only (for example via `neon env pull` into `.env.local`). Not needed with `VITE_BACKEND=firestore`.
+
+4. Start the API and the dev server (in separate terminals):
    ```bash
-   npm run dev
+   pnpm dev:api
+   pnpm dev
    ```
+   Vite proxies `/api` to the function on port 3001. With `VITE_BACKEND=firestore`, only `pnpm dev` is needed.
 
-4. Open your browser and navigate to `http://localhost:5173` to view the application.
+5. Open `http://localhost:5173` in your browser.
+
+## Scripts
+
+| Command          | Description                                   |
+| ---------------- | --------------------------------------------- |
+| `pnpm dev`       | Vite dev server                               |
+| `pnpm dev:api`   | Serve the `/api` function on port 3001        |
+| `pnpm build`     | Type-check and build to `dist/`               |
+| `pnpm lint`      | ESLint (warnings fail)                        |
+| `pnpm test`      | API integration tests against the Neon DB     |
+| `pnpm test:e2e`  | Playwright smoke tests                        |
 
 ## Contributing
 
