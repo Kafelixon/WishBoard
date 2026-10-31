@@ -15,6 +15,8 @@ export interface Wishlist {
   author: string;
   icon: WishlistIconName;
   updateTimestamp: number;
+  /** The viewer's own name for a wishlist they follow; shown instead of `name`. */
+  customName?: string;
 }
 
 export interface User {
