@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { fetchFollowedWishlists, renameFollowedWishlist } from "@/lib/wishlistHandlers";
 import { useUserId } from "@/lib/common";
 import { usePageTitle } from "@/lib/usePageTitle";
@@ -13,7 +14,8 @@ import {
 } from "@/components/ui/wishlist-card";
 
 export const FollowedWishlists: React.FC = () => {
-  usePageTitle("Following");
+  const { t } = useTranslation();
+  usePageTitle(t("following.title"));
   const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [renaming, setRenaming] = useState<Wishlist | null>(null);
@@ -29,14 +31,14 @@ export const FollowedWishlists: React.FC = () => {
       .catch((error: unknown) => {
         console.error(error);
         toast({
-          title: "Failed to load followed wishlists",
+          title: t("following.loadFailed"),
           variant: "destructive",
         });
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, [userId, toast]);
+  }, [userId, toast, t]);
 
   const saveName = (wishlist: Wishlist, customName: string) => {
     if (!userId) return;
@@ -55,7 +57,7 @@ export const FollowedWishlists: React.FC = () => {
       })
       .catch((error: unknown) => {
         console.error(error);
-        toast({ title: "Failed to rename the wishlist", variant: "destructive" });
+        toast({ title: t("following.renameFailed"), variant: "destructive" });
       })
       .finally(() => {
         setIsSaving(false);
@@ -65,9 +67,9 @@ export const FollowedWishlists: React.FC = () => {
   return (
     <>
       <PageHeader
-        eyebrow="From friends and family"
-        title="Following"
-        description="Wishlists you follow, newest changes first."
+        eyebrow={t("following.eyebrow")}
+        title={t("following.title")}
+        description={t("following.description")}
       />
       {isLoading ? (
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
@@ -88,8 +90,8 @@ export const FollowedWishlists: React.FC = () => {
       ) : (
         <EmptyState
           icon={<Heart aria-hidden="true" />}
-          title="Nothing followed yet"
-          description="Open a wishlist a friend shared with you and choose Follow. It will show up here."
+          title={t("following.emptyTitle")}
+          description={t("following.emptyDescription")}
         />
       )}
       <RenameFollowDialog

@@ -1,5 +1,6 @@
 import { FC } from "react";
 import { useForm } from "react-hook-form";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +30,7 @@ export const RenameFollowDialog: FC<RenameFollowDialogProps> = ({
   onSave,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const { register, handleSubmit } = useForm<RenameForm>({
     values: { customName: wishlist?.customName ?? wishlist?.name ?? "" },
   });
@@ -42,10 +44,11 @@ export const RenameFollowDialog: FC<RenameFollowDialogProps> = ({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Rename wishlist</DialogTitle>
+          <DialogTitle>{t("rename.title")}</DialogTitle>
           <DialogDescription>
-            Only you see this name. Leave it empty to use the original
-            {wishlist ? ` (“${wishlist.name}”)` : ""}.
+            {wishlist
+              ? t("rename.descriptionWithName", { name: wishlist.name })
+              : t("rename.description")}
           </DialogDescription>
         </DialogHeader>
         <form
@@ -57,7 +60,7 @@ export const RenameFollowDialog: FC<RenameFollowDialogProps> = ({
           }}
         >
           <div className="grid gap-2">
-            <Label htmlFor="customName">Your name for it</Label>
+            <Label htmlFor="customName">{t("rename.label")}</Label>
             <Input
               id="customName"
               {...register("customName")}
@@ -66,7 +69,7 @@ export const RenameFollowDialog: FC<RenameFollowDialogProps> = ({
             />
           </div>
           <Button type="submit" disabled={isSubmitting}>
-            Save
+            {t("rename.save")}
           </Button>
         </form>
       </DialogContent>

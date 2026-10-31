@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 <!-- markdownlint-disable MD024 -->
 
+## [Unreleased]
+
+### Added
+
+- Polish localization alongside English (react-i18next): browser language detection, a language switcher in Settings (and the header for signed-out visitors) saved in localStorage, `<html lang>` kept in sync, Polish plural forms, locale-aware price and date formatting, translated auth errors (#69).
+- ESLint rule rejecting hardcoded UI text in JSX, and Polish-locale Playwright smoke tests (#69).
+
 ## [1.1.0] - 2026-10-31
 
 ### Added

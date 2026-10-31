@@ -1,6 +1,7 @@
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { FC, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, Gift, Lock, Pencil, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { WishlistItem } from "@/lib/types";
 import {
   WishlistItemChanger,
@@ -17,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/page";
 import { useToast } from "@/components/ui/use-toast";
 import { normalizeUrl } from "@/lib/url";
+import { currentLanguage } from "@/i18n";
 
 interface WishlistItemsTableProps {
   canEditWishlist: boolean;
@@ -46,6 +48,7 @@ export default function WishlistItemsTable({
   userId,
 }: WishlistItemsTableProps) {
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [pendingWrites, setPendingWrites] = useState(0);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -137,8 +140,8 @@ export default function WishlistItemsTable({
     const itemId = currentItem.id;
     enqueueWrite(
       () => deleteWishlistItem(userId, wishlistId, itemId),
-      "Item deleted successfully.",
-      "Failed to delete the item.",
+      t("items.deleted"),
+      t("items.deleteFailed"),
     );
     setEditDialogOpen(false);
   };
@@ -157,16 +160,16 @@ export default function WishlistItemsTable({
   const privateCount = items.filter((item) => item.public === false).length;
 
   return (
-    <section aria-label="Items" className="flex flex-col gap-8">
+    <section aria-label={t("items.section")} className="flex flex-col gap-8">
       {!isLoading && items.length > 0 && canEditWishlist && (
         <div className="flex flex-wrap items-end justify-between gap-4 border-y border-border py-4">
           <dl className="flex flex-wrap gap-x-10 gap-y-3">
-            <Stat label={items.length === 1 ? "item" : "items"} value={String(items.length)} />
-            {privateCount > 0 && <Stat label="private" value={String(privateCount)} />}
+            <Stat label={t("items.statItems", { count: items.length })} value={String(items.length)} />
+            {privateCount > 0 && <Stat label={t("items.statPrivate", { count: privateCount })} value={String(privateCount)} />}
           </dl>
           {userId && (
             <Button onClick={openAddDialog}>
-              <Plus aria-hidden="true" /> Add item
+              <Plus aria-hidden="true" /> {t("items.add")}
             </Button>
           )}
         </div>
@@ -181,14 +184,14 @@ export default function WishlistItemsTable({
           handleAction={() =>
             { handleAddOrUpdateItem(
               addItemToWishlist,
-              "Item added successfully.",
-              "Failed to add item to wishlist.",
+              t("items.added"),
+              t("items.addFailed"),
             ); }
           }
           isSubmitting={isSubmitting}
-          dialogTitle="Add an item"
-          dialogDescription="Only the name is required. Add an image, price and link if you have them."
-          actionLabel="Add item"
+          dialogTitle={t("items.addTitle")}
+          dialogDescription={t("items.addDescription")}
+          actionLabel={t("items.add")}
         />
 
         {editDialogOpen && (
@@ -200,15 +203,15 @@ export default function WishlistItemsTable({
             handleAction={() =>
               { handleAddOrUpdateItem(
                 updateWishlistItem,
-                "Item updated successfully.",
-                "Failed to update item in wishlist.",
+                t("items.updated"),
+                t("items.updateFailed"),
               ); }
             }
             handleDelete={handleDeleteItem}
             isSubmitting={isSubmitting}
-            dialogTitle="Edit item"
-            dialogDescription="Update this item, then save your changes."
-            actionLabel="Save changes"
+            dialogTitle={t("items.editTitle")}
+            dialogDescription={t("items.editDescription")}
+            actionLabel={t("items.saveChanges")}
           />
         )}
         </Suspense>
@@ -218,16 +221,16 @@ export default function WishlistItemsTable({
       ) : sortedItems.length === 0 ? (
         <EmptyState
           icon={<Gift aria-hidden="true" />}
-          title={canEditWishlist ? "Add your first wish" : "Nothing here yet"}
+          title={canEditWishlist ? t("items.emptyOwnTitle") : t("items.emptyTitle")}
           description={
             canEditWishlist
-              ? "Add something you'd love to receive, with a photo and a link to where to buy it."
-              : "This wishlist has no public items yet."
+              ? t("items.emptyOwnDescription")
+              : t("items.emptyDescription")
           }
           action={
             canEditWishlist && userId ? (
               <Button onClick={openAddDialog}>
-                <Plus aria-hidden="true" /> Add item
+                <Plus aria-hidden="true" /> {t("items.add")}
               </Button>
             ) : undefined
           }
@@ -245,7 +248,7 @@ export default function WishlistItemsTable({
 }
 
 const formatPrice = (price: number, currency = DEFAULT_CURRENCY) =>
-  price.toLocaleString("pl-PL", {
+  price.toLocaleString(currentLanguage(), {
     style: "currency",
     currency,
     currencyDisplay: "narrowSymbol",
@@ -283,6 +286,7 @@ const optimizedUrl = (src: string, width: number) =>
   `/_vercel/image?url=${encodeURIComponent(src)}&w=${String(width)}&q=75`;
 
 const ItemImage: FC<{ src: string; name: string; eager: boolean }> = ({ src, name, eager }) => {
+  const { t } = useTranslation();
   const [failed, setFailed] = useState(false);
   // Falls back to the original photo when the resize endpoint is unavailable (local dev, quota exceeded).
   const [useOriginal, setUseOriginal] = useState(false);
@@ -292,7 +296,7 @@ const ItemImage: FC<{ src: string; name: string; eager: boolean }> = ({ src, nam
     return (
       <div
         role="img"
-        aria-label={`No image for ${name}`}
+        aria-label={t("items.noImage", { name })}
         className="absolute inset-0 flex items-center justify-center pb-16 text-muted-foreground/60"
       >
         <Gift className="size-10" aria-hidden="true" />
@@ -327,7 +331,9 @@ const CardsList: FC<{
   canEditWishlist: boolean;
   setCurrentItem: (item: WishlistItem) => void;
   setEditDialogOpen: (open: boolean) => void;
-}> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen }) => (
+}> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen }) => {
+  const { t } = useTranslation();
+  return (
   <ul className={GRID_CLASS}>
     {items.map((item, index) => {
       const isPrivate = item.public === false;
@@ -341,8 +347,8 @@ const CardsList: FC<{
           {isPrivate && (
             <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-card/95 px-2 py-0.5 text-xs font-medium text-destructive shadow-sm">
               <Lock className="size-3" aria-hidden="true" />
-              Private
-              <span className="sr-only">, only you can see this</span>
+              {t("items.private")}
+              <span className="sr-only">{t("items.privateHint")}</span>
             </span>
           )}
           {canEditWishlist && (
@@ -350,7 +356,7 @@ const CardsList: FC<{
               variant="secondary"
               size="icon"
               className="absolute right-2.5 top-2.5 z-10 size-8 rounded-lg text-primary shadow-sm"
-              aria-label={`Edit ${item.name}`}
+              aria-label={t("items.edit", { name: item.name })}
               onClick={() => {
                 setCurrentItem(item);
                 setEditDialogOpen(true);
@@ -368,7 +374,7 @@ const CardsList: FC<{
                     target="_blank"
                     rel="noopener noreferrer"
                     className="rounded-sm after:absolute after:inset-0 focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
-                    aria-label={`${item.name}, view online (opens in a new tab)`}
+                    aria-label={t("items.viewOnline", { name: item.name })}
                   >
                     {title}
                   </a>
@@ -377,7 +383,7 @@ const CardsList: FC<{
                 )}
               </h2>
               <p className="tabular text-sm text-muted-foreground">
-                {item.price > 0 ? formatPrice(item.price, item.currency) : "Price not set"}
+                {item.price > 0 ? formatPrice(item.price, item.currency) : t("items.priceNotSet")}
               </p>
             </div>
             {item.link && (
@@ -392,5 +398,5 @@ const CardsList: FC<{
         </li>
       );
     })}
-  </ul>
-);
+  </ul>  );
+};
