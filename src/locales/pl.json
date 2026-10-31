@@ -107,6 +107,17 @@
     "wishlistName": "Nadaj swojej liście nazwę",
     "hex": "Użyj kodu szesnastkowego, np. #2563eb."
   },
+  "verifyEmail": {
+    "message": "Potwierdź swój adres e-mail. Link potwierdzający wysłaliśmy po rejestracji.",
+    "resend": "Wyślij ponownie",
+    "resendIn_one": "Wyślij ponownie za {{count}} sekundę",
+    "resendIn_few": "Wyślij ponownie za {{count}} sekundy",
+    "resendIn_many": "Wyślij ponownie za {{count}} sekund",
+    "resendIn_other": "Wyślij ponownie za {{count}} sekundy",
+    "check": "Już potwierdzone",
+    "sent": "Wysłaliśmy e-mail weryfikacyjny. Sprawdź skrzynkę.",
+    "stillUnverified": "Adres e-mail nie jest jeszcze potwierdzony."
+  },
   "authErrors": {
     "invalidCredential": "Nieprawidłowy e-mail lub hasło.",
     "invalidEmail": "Ten adres e-mail wygląda nieprawidłowo.",
