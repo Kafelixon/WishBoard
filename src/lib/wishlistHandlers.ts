@@ -8,9 +8,9 @@ export type {
   WishlistView,
 } from "@/lib/firestoreHandlers";
 
-/** VITE_BACKEND=postgres switches the data layer from Firestore to /api/wishlists. */
+/** The data layer talks to /api/wishlists (Neon Postgres); VITE_BACKEND=firestore switches back to Firestore. */
 const backend =
-  import.meta.env.VITE_BACKEND === "postgres" ? postgres : firestore;
+  import.meta.env.VITE_BACKEND === "firestore" ? firestore : postgres;
 
 export const {
   addItemToWishlist,
@@ -28,4 +28,5 @@ export const {
   updateExistingWishlistsAuthor,
   updateWishlist,
   updateWishlistItem,
+  warmUp,
 } = backend;

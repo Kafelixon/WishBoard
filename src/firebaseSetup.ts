@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { initializeFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_APP_FIREBASE_API_KEY as string,
@@ -14,10 +13,3 @@ const firebaseConfig = {
 
 export const firebase = initializeApp(firebaseConfig);
 export const auth = getAuth(firebase);
-// Long polling avoids the streaming transport that browsers drop after sleep, VPN or network
-// changes ("Fetch API cannot load ... due to access control checks"), at a small speed cost.
-export const firestore = initializeFirestore(firebase, {
-  experimentalForceLongPolling: true,
-});
-
-// const analytics = getAnalytics(firebase);

@@ -10,11 +10,28 @@ import type {
 
 /** Postgres-backed handlers: same contract as firestoreHandlers, over /api/wishlists. */
 
+/**
+ * Whether a user was signed in last time, read straight from the persisted
+ * Redux state (synchronous, so it doesn't depend on rehydration having finished).
+ * Anything unreadable counts as signed in, so we only skip the auth wait when sure.
+ */
+function wasSignedIn(): boolean {
+  try {
+    const raw = localStorage.getItem("persist:root");
+    if (raw === null) return false;
+    const slice = (JSON.parse(raw) as { user?: string }).user;
+    return slice === undefined || (JSON.parse(slice) as { user: unknown }).user !== null;
+  } catch {
+    return true;
+  }
+}
+
 async function call<T>(
   op: string,
   params: Record<string, unknown> = {},
 ): Promise<T> {
-  await auth.authStateReady();
+  // Signed-out visitors have no token to wait for, so don't hold the request for Firebase to initialise.
+  if (wasSignedIn()) await auth.authStateReady();
   const headers: Record<string, string> = { "content-type": "application/json" };
   if (auth.currentUser) {
     headers.authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
@@ -33,6 +50,15 @@ async function call<T>(
   }
   return payload.data as T;
 }
+
+/** Fire-and-forget request that wakes the suspended database before the first real query needs it. */
+export const warmUp = (): void => {
+  fetch("/api/wishlists", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ op: "ping" }),
+  }).catch(() => undefined);
+};
 
 const toWishlist = (raw: Wishlist): Wishlist => ({
   ...raw,

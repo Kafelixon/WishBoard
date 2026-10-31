@@ -246,7 +246,10 @@ const CardsSkeletonLoader = () => (
   </ul>
 );
 
-const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
+// Cards in the first row or two are above the fold, so their photos must not wait for lazy loading.
+const EAGER_IMAGE_COUNT = 4;
+
+const ItemImage: FC<{ src: string; name: string; eager: boolean }> = ({ src, name, eager }) => {
   const [failed, setFailed] = useState(false);
 
   if (!src || failed) {
@@ -265,10 +268,12 @@ const ItemImage: FC<{ src: string; name: string }> = ({ src, name }) => {
     <img
       src={src}
       alt={name}
-      loading="lazy"
+      loading={eager ? "eager" : "lazy"}
+      fetchPriority={eager ? "high" : "auto"}
       onError={() => {
         setFailed(true);
       }}
+      decoding="async"
       className="absolute inset-0 size-full object-contain p-3 pb-[4.75rem] mix-blend-multiply"
     />
   );
@@ -281,7 +286,7 @@ const CardsList: FC<{
   setEditDialogOpen: (open: boolean) => void;
 }> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen }) => (
   <ul className={GRID_CLASS}>
-    {items.map((item) => {
+    {items.map((item, index) => {
       const isPrivate = item.public === false;
       const title = <span className="line-clamp-2">{item.name}</span>;
       return (
@@ -289,7 +294,7 @@ const CardsList: FC<{
           key={item.id}
           className="group relative aspect-[4/5] animate-rise overflow-hidden rounded-xl border border-border bg-[hsl(41_36%_88%)] shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
         >
-          <ItemImage src={item.image} name={item.name} />
+          <ItemImage src={item.image} name={item.name} eager={index < EAGER_IMAGE_COUNT} />
           {isPrivate && (
             <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-card/95 px-2 py-0.5 text-xs font-medium text-destructive shadow-sm">
               <Lock className="size-3" aria-hidden="true" />

@@ -4,7 +4,7 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  // `pnpm dev:api` serves /api/wishlists locally when VITE_BACKEND=postgres.
+  // `pnpm dev:api` serves /api/wishlists locally (the default backend).
   server: { proxy: { "/api": "http://localhost:3001" } },
   resolve: {
     alias: {

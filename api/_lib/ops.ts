@@ -233,6 +233,12 @@ export async function handleOp(
       });
     }
 
+    case "ping": {
+      // Wakes a suspended database; the client sends it while a visitor is still on a page that needs no data.
+      await db.query("select 1");
+      return { ok: true };
+    }
+
     case "listMine": {
       const user = requireCaller(caller);
       const { rows } = await db.query(
