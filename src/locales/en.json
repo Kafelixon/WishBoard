@@ -7,7 +7,9 @@
     "close": "Close",
     "dismiss": "Dismiss",
     "saving": "Saving",
-    "somethingWrong": "Something went wrong. Please try again."
+    "somethingWrong": "Something went wrong. Please try again.",
+    "cancel": "Cancel",
+    "continue": "Continue"
   },
   "language": {
     "label": "Language",
@@ -161,7 +163,9 @@
       "loadingDescription": "Please try again in a moment.",
       "unavailable": "Not available for this account yet",
       "unavailableDescription": "Accounts that sign in with Google can't do this from Settings.",
-      "prompt": "Please enter your password to continue."
+      "prompt": "Please enter your password to continue.",
+      "title": "Confirm your password",
+      "passwordLabel": "Password"
     },
     "export": {
       "label": "Export data",

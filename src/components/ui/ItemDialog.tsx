@@ -1,4 +1,4 @@
-import { FC } from "react";
+import { FC, useState } from "react";
 import { useForm, FormProvider } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2 } from "lucide-react";
+import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemFormFields } from "./ItemFormFields";
 import { isValidWebUrl } from "@/lib/url";
 import i18n from "@/i18n";
@@ -65,6 +66,7 @@ export const ItemDialog: FC<ItemDialogProps> = ({
   actionLabel,
 }) => {
   const { t } = useTranslation();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const methods = useForm<ItemSchema>({
     values: currentItem,
     resolver: yupResolver(schema),
@@ -77,6 +79,7 @@ export const ItemDialog: FC<ItemDialogProps> = ({
   };
 
   return (
+    <>
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent>
         <DialogHeader>
@@ -102,11 +105,7 @@ export const ItemDialog: FC<ItemDialogProps> = ({
                   type="button"
                   variant="ghost"
                   className="text-destructive hover:bg-destructive/10"
-                  onClick={() => {
-                    if (window.confirm(t("itemForm.deleteConfirm"))) {
-                      handleDelete();
-                    }
-                  }}
+                  onClick={() => { setConfirmDelete(true); }}
                 >
                   {t("itemForm.delete")}
                 </Button>
@@ -123,5 +122,14 @@ export const ItemDialog: FC<ItemDialogProps> = ({
         </FormProvider>
       </DialogContent>
     </Dialog>
+    <ConfirmDialog
+      open={confirmDelete}
+      onOpenChange={setConfirmDelete}
+      title={t("itemForm.delete")}
+      description={t("itemForm.deleteConfirm")}
+      confirmLabel={t("itemForm.delete")}
+      onConfirm={() => { handleDelete?.(); }}
+    />
+    </>
   );
 };

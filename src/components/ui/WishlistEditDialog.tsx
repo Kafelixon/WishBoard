@@ -11,6 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -62,6 +63,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
   handleItemChange,
 }) => {
   const { t } = useTranslation();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const {
     register,
     handleSubmit,
@@ -77,6 +79,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
   const hexInvalid = hexValue !== "" && !isHexColor(hexValue);
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={setDialogOpen}>
       <DialogContent>
         <DialogHeader>
@@ -215,14 +218,7 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
                 type="button"
                 variant="ghost"
                 className="text-destructive hover:bg-destructive/10"
-                onClick={() => {
-                  if (
-                    window.confirm(t("wishlistEdit.deleteConfirm"))
-                  ) {
-                    handleDelete();
-                    setDialogOpen(false);
-                  }
-                }}
+                onClick={() => { setConfirmDelete(true); }}
               >
                 {t("wishlistEdit.delete")}
               </Button>
@@ -240,5 +236,17 @@ export const WishlistEditDialog: FC<WishlistDialogProps> = ({
         </form>
       </DialogContent>
     </Dialog>
+    <ConfirmDialog
+      open={confirmDelete}
+      onOpenChange={setConfirmDelete}
+      title={t("wishlistEdit.delete")}
+      description={t("wishlistEdit.deleteConfirm")}
+      confirmLabel={t("wishlistEdit.delete")}
+      onConfirm={() => {
+        handleDelete?.();
+        setDialogOpen(false);
+      }}
+    />
+    </>
   );
 };
