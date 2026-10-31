@@ -74,11 +74,10 @@ test.describe("own wishlists", () => {
 
     await page.getByRole("button", { name: "Actions for Birthday 2026" }).click();
     await page.getByRole("menuitem", { name: "Edit wishlist" }).click();
-    page.once("dialog", (dialog) => {
-      expect(dialog.message()).toContain("Delete this wishlist");
-      void dialog.accept();
-    });
     await page.getByRole("button", { name: "Delete wishlist" }).click();
+    const confirmWishlist = page.getByRole("dialog", { name: "Delete wishlist" });
+    await expect(confirmWishlist).toContainText("Delete this wishlist and all of its items?");
+    await confirmWishlist.getByRole("button", { name: "Delete wishlist" }).click();
     await expect(page.getByRole("link", { name: "Birthday 2026" })).toBeHidden();
     await expect(page.getByText("Plant your first wishlist")).toBeVisible();
   });
@@ -113,11 +112,10 @@ test.describe("own wishlists", () => {
     await expect(page.getByRole("heading", { name: "Linen throw" })).toBeHidden();
 
     await page.getByRole("button", { name: "Edit Wool throw" }).click();
-    page.once("dialog", (dialog) => {
-      expect(dialog.message()).toContain("Delete this item");
-      void dialog.accept();
-    });
     await page.getByRole("button", { name: "Delete item" }).click();
+    const confirmItem = page.getByRole("dialog", { name: "Delete item" });
+    await expect(confirmItem).toContainText("Delete this item?");
+    await confirmItem.getByRole("button", { name: "Delete item" }).click();
     await expect(page.getByRole("heading", { name: "Wool throw" })).toBeHidden();
     await expect(page.getByText("Add your first wish")).toBeVisible();
   });
