@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { Suspense, lazy, useState, useEffect } from "react";
 import { Plus, Sprout } from "lucide-react";
 import {
   createWishlist,
@@ -16,7 +16,12 @@ import {
   WishlistCard,
   WishlistCardSkeleton,
 } from "@/components/ui/wishlist-card";
-import { WishlistEditDialog } from "./WishlistEditDialog";
+
+const loadEditDialog = () => import("./WishlistEditDialog");
+// The form needs yup, react-hook-form and the dialog; keep them out of the page's first load.
+const WishlistEditDialog = lazy(async () => ({
+  default: (await loadEditDialog()).WishlistEditDialog,
+}));
 
 export const UserWishlists: React.FC = () => {
   usePageTitle("Your wishlists");
@@ -31,6 +36,8 @@ export const UserWishlists: React.FC = () => {
 
   const [wishlists, setWishlists] = useState<Wishlist[] | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  // Becomes true once the dialog code has been fetched in the background, so opening it is instant.
+  const [dialogLoaded, setDialogLoaded] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [currentItem, setCurrentItem] = useState<Wishlist>(PLACEHOLDER_ITEM);
 
@@ -38,6 +45,17 @@ export const UserWishlists: React.FC = () => {
   const [actionType, setActionType] = useState<"Add" | "Update">("Add");
   const userId = useUserId();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      void loadEditDialog().then(() => {
+        setDialogLoaded(true);
+      });
+    }, 800);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -128,6 +146,8 @@ export const UserWishlists: React.FC = () => {
           </Button>
         }
       />
+      {(dialogOpen || dialogLoaded) && (
+      <Suspense fallback={null}>
       <WishlistEditDialog
         isOpen={dialogOpen}
         isSubmitting={isSubmitting}
@@ -145,6 +165,8 @@ export const UserWishlists: React.FC = () => {
         }}
         wishlist={currentItem}
       />
+      </Suspense>
+      )}
       {isLoading ? (
         <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
           {["a", "b", "c"].map((key) => (

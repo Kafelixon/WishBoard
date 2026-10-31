@@ -1,4 +1,4 @@
-import { FC, useMemo, useRef, useState } from "react";
+import { FC, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { ExternalLink, Gift, Lock, Pencil, Plus } from "lucide-react";
 import { WishlistItem } from "@/lib/types";
 import {
@@ -8,7 +8,10 @@ import {
   updateWishlistItem,
 } from "@/lib/wishlistHandlers";
 import { Button } from "@/components/ui/button";
-import { ItemDialog } from "@/components/ui/ItemDialog";
+
+const loadItemDialog = () => import("@/components/ui/ItemDialog");
+// Only owners can edit; the form's yup and react-hook-form code stays out of everyone else's load.
+const ItemDialog = lazy(async () => ({ default: (await loadItemDialog()).ItemDialog }));
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/page";
 import { useToast } from "@/components/ui/use-toast";
@@ -138,6 +141,17 @@ export default function WishlistItemsTable({
     setEditDialogOpen(false);
   };
 
+  useEffect(() => {
+    if (!canEditWishlist) return;
+    // Fetch the dialog code in the background so the first click doesn't wait for it.
+    const timer = setTimeout(() => {
+      void loadItemDialog();
+    }, 800);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [canEditWishlist]);
+
   const privateCount = items.filter((item) => item.public === false).length;
 
   return (
@@ -155,43 +169,47 @@ export default function WishlistItemsTable({
           )}
         </div>
       )}
-      <ItemDialog
-        dialogOpen={addDialogOpen}
-        setDialogOpen={setAddDialogOpen}
-        currentItem={currentItem}
-        handleItemChange={handleItemChange}
-        handleAction={() =>
-          { handleAddOrUpdateItem(
-            addItemToWishlist,
-            "Item added successfully.",
-            "Failed to add item to wishlist.",
-          ); }
-        }
-        isSubmitting={isSubmitting}
-        dialogTitle="Add an item"
-        dialogDescription="Only the name is required. Add an image, price and link if you have them."
-        actionLabel="Add item"
-      />
-
-      {editDialogOpen && (
+      {canEditWishlist && (
+        <Suspense fallback={null}>
         <ItemDialog
-          dialogOpen={editDialogOpen}
-          setDialogOpen={setEditDialogOpen}
+          dialogOpen={addDialogOpen}
+          setDialogOpen={setAddDialogOpen}
           currentItem={currentItem}
           handleItemChange={handleItemChange}
           handleAction={() =>
             { handleAddOrUpdateItem(
-              updateWishlistItem,
-              "Item updated successfully.",
-              "Failed to update item in wishlist.",
+              addItemToWishlist,
+              "Item added successfully.",
+              "Failed to add item to wishlist.",
             ); }
           }
-          handleDelete={handleDeleteItem}
           isSubmitting={isSubmitting}
-          dialogTitle="Edit item"
-          dialogDescription="Update this item, then save your changes."
-          actionLabel="Save changes"
+          dialogTitle="Add an item"
+          dialogDescription="Only the name is required. Add an image, price and link if you have them."
+          actionLabel="Add item"
         />
+
+        {editDialogOpen && (
+          <ItemDialog
+            dialogOpen={editDialogOpen}
+            setDialogOpen={setEditDialogOpen}
+            currentItem={currentItem}
+            handleItemChange={handleItemChange}
+            handleAction={() =>
+              { handleAddOrUpdateItem(
+                updateWishlistItem,
+                "Item updated successfully.",
+                "Failed to update item in wishlist.",
+              ); }
+            }
+            handleDelete={handleDeleteItem}
+            isSubmitting={isSubmitting}
+            dialogTitle="Edit item"
+            dialogDescription="Update this item, then save your changes."
+            actionLabel="Save changes"
+          />
+        )}
+        </Suspense>
       )}
       {isLoading ? (
         <CardsSkeletonLoader />
