@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Polish localization alongside English (react-i18next): browser language detection, a language switcher in Settings (and the header for signed-out visitors) saved in localStorage, `<html lang>` kept in sync, Polish plural forms, locale-aware price and date formatting, translated auth errors (#69).
 - ESLint rule rejecting hardcoded UI text in JSX, and Polish-locale Playwright smoke tests (#69).
 - Gift reservations: signed-in visitors can reserve an item so nobody else buys it, and other signed-in visitors see it as reserved. The owner and signed-out visitors never see reservations; the server leaves them out of the response. Needs the new `item_reservations` table from `db/schema.sql`; not available in the Firestore-only build (#70).
+- Security headers on every response (`vercel.json`): a Content-Security-Policy (scripts from this site and Google's sign-in loader only, Firebase Auth/Firestore connections, the Firebase auth frame, `frame-ancestors 'none'`), `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` (#84).
+- "Fetch details from link" is limited to 30 lookups per user per 10 minutes (429 after that). Needs the new `rate_limits` table from `db/schema.sql` (#84).
 
 ## [1.1.0] - 2026-10-31
 

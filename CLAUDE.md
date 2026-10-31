@@ -24,7 +24,7 @@ Firebase config is read from `VITE_APP_FIREBASE_*` env vars (`src/firebaseSetup.
 
 ## Architecture
 
-Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No backend of its own: the browser talks directly to Firebase Auth and Firestore. Deployed on Vercel, whose SPA fallback rewrites live in `vercel.json`; Vercel Analytics/SpeedInsights are mounted in `App.tsx`.
+Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No backend of its own: the browser talks directly to Firebase Auth and Firestore. Deployed on Vercel, whose SPA fallback rewrites and security headers (CSP etc.) live in `vercel.json`; a new third-party script, API host or frame must be added to the CSP there; Vercel Analytics/SpeedInsights are mounted in `App.tsx`.
 
 - `@/` alias -> `src/` (set in both `vite.config.ts` and `tsconfig.json`).
 - **Routing** (`src/App.tsx`): `/`, `/login`, `/wishlists`, `/wishlist/:wishlistId`, `/settings`, under `BrowserRouter` (`main.tsx`).
@@ -53,7 +53,7 @@ UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/local
 
 ## Product detail fetching
 
-Item form has a "Fetch details from link" button. No free API gives reliable prices/images across shops, so `api/product-meta.ts` (Vercel function, Firebase-token required) fetches the product page server-side and `api/_lib/productMeta.ts` reads JSON-LD `Product` data, then Open Graph / `product:price:amount` meta tags, for name, image and price. It only fills empty fields. SSRF-guarded (public IPs only, re-checked per redirect, 1 MB / 6 s caps). Limits: JS-rendered shops and sites that block bots (Amazon, many marketplaces) return nothing; price is a listed price, not an average; unavailable in the Firestore-only build. Possible next step: a paid product API (e.g. a price-comparison service) behind the same endpoint.
+Item form has a "Fetch details from link" button. No free API gives reliable prices/images across shops, so `api/product-meta.ts` (Vercel function, Firebase-token required) fetches the product page server-side and `api/_lib/productMeta.ts` reads JSON-LD `Product` data, then Open Graph / `product:price:amount` meta tags, for name, image and price. It only fills empty fields. SSRF-guarded (public IPs only, re-checked per redirect, 1 MB / 6 s caps) and rate-limited per user (`api/_lib/rateLimit.ts`, a fixed-window counter in the `rate_limits` table). Limits: JS-rendered shops and sites that block bots (Amazon, many marketplaces) return nothing; price is a listed price, not an average; unavailable in the Firestore-only build. Possible next step: a paid product API (e.g. a price-comparison service) behind the same endpoint.
 
 ## Known rough edges
 
