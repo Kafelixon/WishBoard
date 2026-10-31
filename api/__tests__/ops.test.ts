@@ -119,6 +119,13 @@ describe("wishlist operations", () => {
     assert.deepEqual(await op(bob, { op: "isFollowing", wishlistId }), { following: true });
     const followed = (await op(bob, { op: "followed" })) as { id: string }[];
     assert.deepEqual(followed.map((w) => w.id), [wishlistId]);
+    await op(bob, { op: "renameFollow", wishlistId, customName: "  Mum's list " });
+    const renamed = (await op(bob, { op: "followed" })) as { customName?: string }[];
+    assert.equal(renamed[0]?.customName, "Mum's list");
+    await op(bob, { op: "renameFollow", wishlistId, customName: "" });
+    const cleared = (await op(bob, { op: "followed" })) as { customName?: string }[];
+    assert.equal(cleared[0]?.customName, undefined);
+    await rejects(op(alice, { op: "renameFollow", wishlistId, customName: "x" }), 404);
     await op(bob, { op: "unfollow", wishlistId });
     assert.deepEqual(await op(bob, { op: "isFollowing", wishlistId }), { following: false });
     await rejects(op(bob, { op: "follow", wishlistId: "nope" }), 404);

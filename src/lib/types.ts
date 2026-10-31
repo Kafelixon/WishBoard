@@ -17,6 +17,8 @@ export interface Wishlist {
   /** `#rrggbb`; undefined uses the theme color. */
   iconColor?: string;
   updateTimestamp: number;
+  /** The viewer's own name for a wishlist they follow; shown instead of `name`. */
+  customName?: string;
 }
 
 export interface User {

@@ -32,6 +32,11 @@ const toWishlist = (row: Row) => ({
   updateTimestamp: Number(row.updated_ms),
 });
 
+const toFollowedWishlist = (row: Row) => ({
+  ...toWishlist(row),
+  ...(typeof row.custom_name === "string" && { customName: row.custom_name }),
+});
+
 const toItem = (row: Row): Item => ({
   id: String(row.id),
   name: String(row.name),
@@ -314,12 +319,27 @@ export async function handleOp(
     case "followed": {
       const user = requireCaller(caller);
       const { rows } = await db.query(
-        `select ${WISHLIST_COLUMNS} from wishlists
-         where id in (select wishlist_id from user_follows where user_id = $1)
+        `select ${WISHLIST_COLUMNS}, f.custom_name from wishlists
+         join user_follows f on f.wishlist_id = wishlists.id and f.user_id = $1
          order by updated_at desc`,
         [user.uid],
       );
-      return rows.map(toWishlist);
+      return rows.map(toFollowedWishlist);
+    }
+
+    case "renameFollow": {
+      const user = requireCaller(caller);
+      const customName =
+        body.customName === null || body.customName === undefined
+          ? ""
+          : str(body.customName, "customName", true).trim();
+      const { rows } = await db.query(
+        `update user_follows set custom_name = $3
+         where user_id = $1 and wishlist_id = $2 returning 1`,
+        [user.uid, str(body.wishlistId, "wishlistId"), customName || null],
+      );
+      if (!rows[0]) throw new HttpError(404, "You are not following this wishlist.");
+      return {};
     }
 
     case "updateAuthor": {

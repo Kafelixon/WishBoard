@@ -1,4 +1,5 @@
 import {
+  deleteField,
   addDoc,
   arrayRemove,
   arrayUnion,
@@ -234,6 +235,22 @@ export const unfollowWishlist: FollowStateChanger = async (
   );
 };
 
+/** Sets the viewer's own name for a followed wishlist; an empty name goes back to the original. */
+export const renameFollowedWishlist = async (
+  userId: string,
+  wishlistId: string,
+  customName: string,
+) => {
+  validateUserIdAndWishlistId(userId, wishlistId);
+
+  const name = customName.trim();
+  await setDoc(
+    doc(getFirestoreDb(), "user_follows", userId),
+    { names: { [wishlistId]: name || deleteField() } },
+    { merge: true },
+  );
+};
+
 /**
  * Validates user ID and wishlist ID.
  * @param userId - The ID of the user.
@@ -260,8 +277,12 @@ export const fetchFollowedWishlists = async (
   const userFollowsData = await getDoc(userFollowsDocument);
 
   if (userFollowsData.exists()) {
-    const followedWishlistIds = userFollowsData.data().follows as string[];
-    return await fetchWishlistsByIds(followedWishlistIds);
+    const data = userFollowsData.data();
+    const names = (data.names ?? {}) as Record<string, string>;
+    const wishlists = await fetchWishlistsByIds(data.follows as string[]);
+    return wishlists.map((wishlist) =>
+      names[wishlist.id] ? { ...wishlist, customName: names[wishlist.id] } : wishlist,
+    );
   }
 
   return [];
