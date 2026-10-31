@@ -34,7 +34,7 @@ test.describe("sign in", () => {
     await page.getByLabel("Email").fill(TEST_USER.email);
     await page.getByLabel("Password").fill("wrong-password");
     await page.getByRole("button", { name: "Sign in", exact: true }).click();
-    await expect(page.getByText("Invalid email or password.").first()).toBeVisible();
+    await expect(page.getByText("Invalid email or password.", { exact: true })).toBeVisible();
     await expect(page).toHaveURL(/\/login$/);
   });
 
@@ -70,10 +70,14 @@ test.describe("own wishlists", () => {
     await page.getByLabel("Name").fill("Birthday 2026");
     await page.getByRole("button", { name: "Save changes" }).click();
     await expect(page.getByRole("link", { name: "Birthday 2026" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Birthday", exact: true })).toBeHidden();
 
     await page.getByRole("button", { name: "Actions for Birthday 2026" }).click();
     await page.getByRole("menuitem", { name: "Edit wishlist" }).click();
-    page.once("dialog", (dialog) => void dialog.accept());
+    page.once("dialog", (dialog) => {
+      expect(dialog.message()).toContain("Delete this wishlist");
+      void dialog.accept();
+    });
     await page.getByRole("button", { name: "Delete wishlist" }).click();
     await expect(page.getByRole("link", { name: "Birthday 2026" })).toBeHidden();
     await expect(page.getByText("Plant your first wishlist")).toBeVisible();
@@ -89,8 +93,17 @@ test.describe("own wishlists", () => {
     await page.getByRole("button", { name: "Add item" }).first().click();
     await page.getByLabel("Name").fill("Linen throw");
     await page.getByLabel("Average price").fill("129.5");
-    await page.getByRole("button", { name: "Add item" }).last().click();
+    const publicSwitch = page.getByRole("switch", { name: "Public" });
+    const wasPublic = (await publicSwitch.getAttribute("aria-checked")) === "true";
+    await publicSwitch.click();
+    const addRequest = page.waitForRequest(
+      (request) => request.url().endsWith("/api/wishlists") && request.postData()?.includes('"addItem"') === true,
+    );
+    await page.getByRole("dialog").getByRole("button", { name: "Add item" }).click();
     await expect(page.getByRole("heading", { name: "Linen throw" })).toBeVisible();
+    await expect(page.getByText("zł 129.5", { exact: true })).toBeVisible();
+    const sent = (await addRequest).postDataJSON() as { item: { public: boolean; price: number } };
+    expect(sent.item).toMatchObject({ public: !wasPublic, price: 129.5 });
     await expect(page.getByText("Item added successfully.", { exact: true })).toBeVisible();
 
     await page.getByRole("button", { name: "Edit Linen throw" }).click();
@@ -100,13 +113,16 @@ test.describe("own wishlists", () => {
     await expect(page.getByRole("heading", { name: "Linen throw" })).toBeHidden();
 
     await page.getByRole("button", { name: "Edit Wool throw" }).click();
-    page.once("dialog", (dialog) => void dialog.accept());
+    page.once("dialog", (dialog) => {
+      expect(dialog.message()).toContain("Delete this item");
+      void dialog.accept();
+    });
     await page.getByRole("button", { name: "Delete item" }).click();
     await expect(page.getByRole("heading", { name: "Wool throw" })).toBeHidden();
     await expect(page.getByText("Add your first wish")).toBeVisible();
   });
 
-  test("a private item is hidden from other visitors", async ({ page, backend, browser }) => {
+  test("the Public switch is sent to the API, and the page shows what the API returns per viewer", async ({ page, backend, browser }) => {
     const id = backend.seed({
       ownerId: TEST_USER.uid,
       name: "Mixed",

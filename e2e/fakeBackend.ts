@@ -3,9 +3,10 @@ import type { Page, Route } from "@playwright/test";
 
 /**
  * Stands in for Firebase Auth and the /api/wishlists function, so signed-in flows
- * run against the production build with no secrets or database. It mirrors the
- * contract of api/_lib/ops.ts: ownership checks, and private items hidden from
- * everyone but the owner.
+ * run against the production build with no secrets or database. It follows
+ * api/_lib/ops.ts for request keys, validation, ownership checks and private-item
+ * filtering, but is a hand-written copy: the real logic is covered by `pnpm test`,
+ * so these tests prove the UI talks to the API correctly, not that the API is right.
  */
 
 export const TEST_USER = {
@@ -69,14 +70,38 @@ const makeIdToken = (user: typeof TEST_USER) => {
 
 const callerFrom = (authorization: string | undefined): string | null => {
   if (!authorization) return null;
-  const payload = authorization.replace(/^Bearer\s+/i, "").split(".")[1];
-  if (!payload) throw new ApiError(401, "Invalid or expired session.");
-  return (JSON.parse(Buffer.from(payload, "base64url").toString()) as { sub: string }).sub;
+  try {
+    const payload = authorization.replace(/^Bearer\s+/i, "").split(".")[1] ?? "";
+    const { sub } = JSON.parse(Buffer.from(payload, "base64url").toString()) as { sub?: unknown };
+    if (typeof sub === "string" && sub) return sub;
+  } catch {
+    // falls through to the same 401 the real function gives a bad token
+  }
+  throw new ApiError(401, "Invalid or expired session.");
 };
 
-const required = (value: unknown, field: string): string => {
-  if (typeof value !== "string" || !value.trim()) throw new ApiError(400, `${field} is required.`);
+const required = (value: unknown, field: string, allowEmpty = false): string => {
+  if (typeof value !== "string" || (!allowEmpty && !value.trim())) {
+    throw new ApiError(400, `${field} is required.`);
+  }
   return value;
+};
+
+const color = (value: unknown): string | undefined => {
+  if (value === undefined || value === null || value === "") return undefined;
+  if (typeof value !== "string" || !/^#[0-9a-f]{6}$/.test(value)) {
+    throw new ApiError(400, "iconColor must be a #rrggbb color.");
+  }
+  return value;
+};
+
+const toCurrency = (value: unknown): string =>
+  typeof value === "string" && /^[A-Za-z]{3}$/.test(value) ? value.toUpperCase() : "PLN";
+
+const toPrice = (value: unknown): number => {
+  const price = value === undefined || value === null ? 0 : Number(value);
+  if (!Number.isFinite(price) || price < 0) throw new ApiError(400, "price must be a non-negative number.");
+  return Math.round(price * 100) / 100;
 };
 
 const toItem = (raw: unknown, id: string): Item => {
@@ -84,8 +109,8 @@ const toItem = (raw: unknown, id: string): Item => {
   return {
     id,
     name: required(item.name, "item name"),
-    price: Number(item.price ?? 0),
-    currency: typeof item.currency === "string" ? item.currency : "PLN",
+    price: toPrice(item.price),
+    currency: toCurrency(item.currency),
     link: typeof item.link === "string" ? item.link : "",
     image: typeof item.image === "string" ? item.image : "",
     public: item.public === true,
@@ -117,8 +142,9 @@ export class FakeBackend {
       if (!uid) throw new ApiError(401, "Sign in required.");
       return uid;
     };
-    const owned = () => {
-      const wishlist = this.wishlists.get(required(body.wishlistId ?? body.id, "wishlistId"));
+    /** `key` is the request field naming the wishlist, which differs between ops just as in ops.ts. */
+    const owned = (key: "id" | "wishlistId") => {
+      const wishlist = this.wishlists.get(required(body[key], key));
       if (!wishlist) throw new ApiError(404, "Wishlist is invalid.");
       if (wishlist.ownerId !== user()) throw new ApiError(403, "You cannot modify this wishlist.");
       wishlist.updateTimestamp = Date.now();
@@ -135,39 +161,39 @@ export class FakeBackend {
         const id = this.seed({
           ownerId: user(),
           name: required(body.name, "name"),
-          author: typeof body.author === "string" ? body.author : "",
+          author: required(body.author, "author", true),
         });
         const created = this.wishlists.get(id);
         if (created) {
           created.icon = required(body.icon, "icon");
-          created.iconColor = typeof body.iconColor === "string" ? body.iconColor : undefined;
+          created.iconColor = color(body.iconColor);
         }
         return { id };
       }
 
       case "updateWishlist": {
-        const wishlist = owned();
+        const wishlist = owned("id");
         wishlist.name = required(body.name, "name");
-        wishlist.author = typeof body.author === "string" ? body.author : "";
+        wishlist.author = required(body.author, "author", true);
         wishlist.icon = required(body.icon, "icon");
-        wishlist.iconColor = typeof body.iconColor === "string" ? body.iconColor : undefined;
+        wishlist.iconColor = color(body.iconColor);
         return {};
       }
 
       case "deleteWishlist": {
-        const wishlist = owned();
+        const wishlist = owned("id");
         this.wishlists.delete(wishlist.id);
         return {};
       }
 
       case "addItem": {
-        const wishlist = owned();
+        const wishlist = owned("wishlistId");
         wishlist.items.push(toItem(body.item, randomUUID()));
         return wishlist.items;
       }
 
       case "updateItem": {
-        const wishlist = owned();
+        const wishlist = owned("wishlistId");
         const itemId = required((body.item as Partial<Item> | undefined)?.id, "Item ID");
         const index = wishlist.items.findIndex((item) => item.id === itemId);
         if (index < 0) throw new ApiError(404, "Item not found.");
@@ -176,7 +202,7 @@ export class FakeBackend {
       }
 
       case "deleteItem": {
-        const wishlist = owned();
+        const wishlist = owned("wishlistId");
         const itemId = required(body.itemId, "itemId");
         wishlist.items = wishlist.items.filter((item) => item.id !== itemId);
         return wishlist.items;
@@ -216,10 +242,13 @@ export class FakeBackend {
         return { following: this.follows.get(user())?.has(required(body.wishlistId, "wishlistId")) ?? false };
 
       case "followed":
-        return [...(this.follows.get(user()) ?? [])].flatMap(([id, customName]) => {
-          const wishlist = this.wishlists.get(id);
-          return wishlist ? [{ ...summary(wishlist), ...(customName && { customName }) }] : [];
-        });
+        return [...(this.follows.get(user()) ?? [])]
+          .flatMap(([id, customName]) => {
+            const wishlist = this.wishlists.get(id);
+            return wishlist ? [{ wishlist, customName }] : [];
+          })
+          .sort((a, b) => newestFirst(a.wishlist, b.wishlist))
+          .map(({ wishlist, customName }) => ({ ...summary(wishlist), ...(customName && { customName }) }));
 
       case "renameFollow": {
         const mine = this.follows.get(user());
@@ -227,6 +256,25 @@ export class FakeBackend {
         if (!mine?.has(id)) throw new ApiError(404, "You are not following this wishlist.");
         const customName = typeof body.customName === "string" ? body.customName.trim() : "";
         mine.set(id, customName || undefined);
+        return {};
+      }
+
+      case "updateAuthor": {
+        const author = required(body.author, "author");
+        for (const wishlist of this.wishlists.values()) {
+          if (wishlist.ownerId === user()) {
+            wishlist.author = author;
+            wishlist.updateTimestamp = Date.now();
+          }
+        }
+        return {};
+      }
+
+      case "deleteAccount": {
+        for (const [id, wishlist] of this.wishlists) {
+          if (wishlist.ownerId === user()) this.wishlists.delete(id);
+        }
+        this.follows.delete(user());
         return {};
       }
 
@@ -300,8 +348,9 @@ export async function installFakeBackend(page: Page, backend: FakeBackend): Prom
       const body = route.request().postDataJSON() as Body;
       return json(route, 200, { data: backend.handle(uid, body) });
     } catch (error) {
+      // Fulfil even unexpected errors so a fake bug fails the test instead of hanging the request.
       if (error instanceof ApiError) return json(route, error.status, { error: error.message });
-      throw error;
+      return json(route, 500, { error: String(error) });
     }
   });
 }
