@@ -63,6 +63,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
   } = useFormContext();
   const [fetching, setFetching] = useState(false);
   const [fetchMessage, setFetchMessage] = useState<string | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
   // What the last fetch overwrote, so it can be taken back.
   const [undoValues, setUndoValues] = useState<Partial<WishlistItem> | null>(null);
 
@@ -71,10 +72,12 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
     const link = normalizeUrl(getValues("link") as string);
     if (!link || !isValidWebUrl(link)) {
       setFetchMessage("Add a valid link first.");
+      setFetchFailed(true);
       return;
     }
     setFetching(true);
     setFetchMessage(null);
+    setFetchFailed(false);
     setUndoValues(null);
     try {
       const meta = await fetchProductMeta(link);
@@ -101,6 +104,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
       );
     } catch (error) {
       setFetchMessage(error instanceof Error ? error.message : "Couldn't fetch details.");
+      setFetchFailed(true);
     } finally {
       setFetching(false);
     }
@@ -168,7 +172,10 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
                 Fetch details from link
               </Button>
               {fetchMessage && (
-                <p role="status" className="text-sm text-muted-foreground">
+                <p
+                  role={fetchFailed ? "alert" : "status"}
+                  className={`text-sm ${fetchFailed ? "text-destructive" : "text-muted-foreground"}`}
+                >
                   {fetchMessage}
                 </p>
               )}
