@@ -13,8 +13,10 @@ import {
 
 interface WishlistCardProps {
   wishlist: Wishlist;
-  /** Owners get an actions menu; followed wishlists pass nothing. */
+  /** Owners get an actions menu. */
   onEdit?: (wishlist: Wishlist) => void;
+  /** Followed wishlists get a menu to rename them for the viewer only. */
+  onRename?: (wishlist: Wishlist) => void;
 }
 
 const formatUpdated = (timestamp: number) =>
@@ -24,7 +26,7 @@ const formatUpdated = (timestamp: number) =>
     year: "numeric",
   });
 
-export function WishlistCard({ wishlist, onEdit }: WishlistCardProps) {
+export function WishlistCard({ wishlist, onEdit, onRename }: WishlistCardProps) {
   const { toast } = useToast();
 
   const copyLink = () => {
@@ -39,28 +41,41 @@ export function WishlistCard({ wishlist, onEdit }: WishlistCardProps) {
       });
   };
 
+  const displayName = wishlist.customName ?? wishlist.name;
+
   return (
     <div className="group relative flex min-h-44 flex-col justify-between gap-6 rounded-xl border border-border bg-card p-5 shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift">
       <div className="flex items-start justify-between">
         <div className="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
           <Icon name={wishlist.icon} className="size-6" aria-hidden="true" />
         </div>
-        {onEdit && (
+        {(onEdit ?? onRename) && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              aria-label={`Actions for ${wishlist.name}`}
+              aria-label={`Actions for ${displayName}`}
               className="relative z-10 -mr-2 -mt-1 rounded-md p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <MoreHorizontal className="size-5" aria-hidden="true" />
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem
-                onSelect={() => {
-                  onEdit(wishlist);
-                }}
-              >
-                <Pencil aria-hidden="true" /> Edit wishlist
-              </DropdownMenuItem>
+              {onEdit && (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    onEdit(wishlist);
+                  }}
+                >
+                  <Pencil aria-hidden="true" /> Edit wishlist
+                </DropdownMenuItem>
+              )}
+              {onRename && (
+                <DropdownMenuItem
+                  onSelect={() => {
+                    onRename(wishlist);
+                  }}
+                >
+                  <Pencil aria-hidden="true" /> Rename
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onSelect={copyLink}>
                 <Link2 aria-hidden="true" /> Copy link
               </DropdownMenuItem>
@@ -74,9 +89,14 @@ export function WishlistCard({ wishlist, onEdit }: WishlistCardProps) {
             to={`/wishlist/${wishlist.id}`}
             className="rounded-sm after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-ring"
           >
-            {wishlist.name}
+            {displayName}
           </Link>
         </h2>
+        {wishlist.customName && (
+          <p className="truncate text-sm text-muted-foreground" title={wishlist.name}>
+            Originally “{wishlist.name}”
+          </p>
+        )}
         <p className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
           <span className="truncate">{wishlist.author}</span>
           <span className="tabular shrink-0">Updated {formatUpdated(wishlist.updateTimestamp)}</span>

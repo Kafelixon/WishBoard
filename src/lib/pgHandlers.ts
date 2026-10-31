@@ -160,6 +160,14 @@ export const unfollowWishlist: FollowStateChanger = async (_u, wishlistId) => {
   await call("unfollow", { wishlistId });
 };
 
+export const renameFollowedWishlist = async (
+  _userId: string,
+  wishlistId: string,
+  customName: string,
+) => {
+  await call("renameFollow", { wishlistId, customName });
+};
+
 export const fetchFollowedWishlists = async (
   _userId: string,
 ): Promise<Wishlist[]> => (await call<Wishlist[]>("followed")).map(toWishlist);
