@@ -55,7 +55,7 @@ The project uses [pnpm](https://pnpm.io/) (the version is pinned in `package.jso
 | `pnpm build`     | Type-check and build to `dist/`               |
 | `pnpm lint`      | ESLint (warnings fail)                        |
 | `pnpm test`      | API integration tests against the Neon DB     |
-| `pnpm test:e2e`  | Playwright smoke tests                        |
+| `pnpm test:e2e`  | Playwright tests (needs `pnpm build` first)   |
 
 ## Contributing
 
