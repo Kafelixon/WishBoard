@@ -1,6 +1,7 @@
 /** Local stand-in for Vercel: serves api/wishlists on :3001 (Vite proxies /api to it). */
 import { createServer } from "node:http";
-import { POST } from "../api/wishlists.js";
+import { POST as wishlists } from "../api/wishlists.js";
+import { POST as productMeta } from "../api/product-meta.js";
 
 const port = Number(process.env.API_PORT ?? 3001);
 
@@ -12,7 +13,8 @@ createServer((req, res) => {
     for (const [k, v] of Object.entries(req.headers)) {
       if (typeof v === "string") headers.set(k, v);
     }
-    const response = await POST(
+    const handler = req.url?.startsWith("/api/product-meta") ? productMeta : wishlists;
+    const response = await handler(
       new Request("http://localhost/api/wishlists", {
         method: "POST",
         headers,

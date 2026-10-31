@@ -1,9 +1,14 @@
-import { FC } from "react";
+import { FC, useState } from "react";
 import { useFormContext } from "react-hook-form";
 import { WishlistItem } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Switch } from "./switch";
+import { Loader2 } from "lucide-react";
+import { fetchProductMeta } from "@/lib/wishlistHandlers";
+import { isValidWebUrl, normalizeUrl } from "@/lib/url";
+import { DEFAULT_CURRENCY, currencyOptions } from "@/lib/currency";
 
 interface ItemFormFieldsProps {
   currentItem: WishlistItem;
@@ -53,8 +58,69 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
     register,
     formState: { errors },
     watch,
+    setValue,
+    getValues,
   } = useFormContext();
+  const [fetching, setFetching] = useState(false);
+  const [fetchMessage, setFetchMessage] = useState<string | null>(null);
+  const [fetchFailed, setFetchFailed] = useState(false);
+  // What the last fetch overwrote, so it can be taken back.
+  const [undoValues, setUndoValues] = useState<Partial<WishlistItem> | null>(null);
+
+  /** Fills name and image from the product link where empty, and sets the price and currency. */
+  const fetchDetails = async () => {
+    const link = normalizeUrl(getValues("link") as string);
+    if (!link || !isValidWebUrl(link)) {
+      setFetchMessage("Add a valid link first.");
+      setFetchFailed(true);
+      return;
+    }
+    setFetching(true);
+    setFetchMessage(null);
+    setFetchFailed(false);
+    setUndoValues(null);
+    try {
+      const meta = await fetchProductMeta(link);
+      const changes: Partial<WishlistItem> = {};
+      if (meta.name && !(getValues("name") as string)) changes.name = meta.name;
+      if (meta.image && !(getValues("image") as string)) changes.image = meta.image;
+      // The shop's price replaces any typed one (Undo brings it back); name and image only fill gaps.
+      if (meta.price !== null) {
+        changes.price = meta.price;
+        // The price is only meaningful in the currency the shop quoted it in.
+        if (meta.currency) changes.currency = meta.currency;
+      }
+      const previous: Record<string, unknown> = {};
+      for (const key of Object.keys(changes)) previous[key] = getValues(key);
+      for (const [key, value] of Object.entries(changes)) {
+        setValue(key, value, { shouldDirty: true, shouldValidate: true });
+      }
+      handleItemChange(changes);
+      setUndoValues(Object.keys(changes).length > 0 ? (previous) : null);
+      setFetchMessage(
+        Object.keys(changes).length > 0
+          ? "Filled in what we could find."
+          : "Nothing new found on that page.",
+      );
+    } catch (error) {
+      setFetchMessage(error instanceof Error ? error.message : "Couldn't fetch details.");
+      setFetchFailed(true);
+    } finally {
+      setFetching(false);
+    }
+  };
+  const currency = (watch("currency", currentItem.currency) as string | undefined) ?? DEFAULT_CURRENCY;
   const publicField = watch("public", currentItem.public) as boolean;
+
+  const undoFetch = () => {
+    if (!undoValues) return;
+    for (const [key, value] of Object.entries(undoValues)) {
+      setValue(key, value, { shouldDirty: true, shouldValidate: true });
+    }
+    handleItemChange(undoValues);
+    setUndoValues(null);
+    setFetchMessage("Put your earlier values back.");
+  };
 
   return (
     <>
@@ -73,21 +139,52 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
               aria-describedby={errors[field] ? `${id}-error` : undefined}
               {...register(field)}
               onChange={(e) => { handleItemChange({ [field]: e.target.value }); }}
-              className={type === "number" ? "pr-10" : undefined}
+              className={type === "number" ? "pr-20" : undefined}
             />
             {type === "number" && (
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+              <select
+                aria-label="Currency"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-transparent py-1 pl-1 text-sm text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
+                {...register("currency")}
+                onChange={(e) => { handleItemChange({ currency: e.target.value }); }}
               >
-                zł
-              </span>
+                {currencyOptions(currency).map((code) => (
+                  <option key={code} value={code}>{code}</option>
+                ))}
+              </select>
             )}
           </div>
           {errors[field] && (
             <p id={`${id}-error`} role="alert" className="text-sm text-destructive">
               {errors[field].message as string}
             </p>
+          )}
+          {field === "link" && (
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={fetching}
+                onClick={() => void fetchDetails()}
+              >
+                {fetching && <Loader2 className="animate-spin" aria-hidden="true" />}
+                Fetch details from link
+              </Button>
+              {fetchMessage && (
+                <p
+                  role={fetchFailed ? "alert" : "status"}
+                  className={`text-sm ${fetchFailed ? "text-destructive" : "text-muted-foreground"}`}
+                >
+                  {fetchMessage}
+                </p>
+              )}
+              {undoValues && (
+                <Button type="button" variant="ghost" size="sm" onClick={undoFetch}>
+                  Undo
+                </Button>
+              )}
+            </div>
           )}
         </div>
       ))}

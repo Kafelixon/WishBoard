@@ -97,6 +97,14 @@ describe("wishlist operations", () => {
     assert.equal(after.length, 7);
   });
 
+  it("stores an item's currency, defaulting to PLN", async () => {
+    const items = (await op(alice, {
+      op: "addItem", wishlistId, item: { name: "Euro thing", price: 5, currency: "eur", public: true },
+    })) as { name: string; currency: string }[];
+    assert.equal(items.find((i) => i.name === "Euro thing")?.currency, "EUR");
+    assert.equal(items.find((i) => i.name !== "Euro thing")?.currency, "PLN");
+  });
+
   it("blocks non-owners from changing a wishlist", async () => {
     await rejects(op(bob, { op: "addItem", wishlistId, item: { name: "x" } }), 403);
     await rejects(op(bob, { op: "deleteWishlist", id: wishlistId }), 403);

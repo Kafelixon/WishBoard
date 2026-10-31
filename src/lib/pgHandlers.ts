@@ -1,7 +1,7 @@
 import { auth } from "@/firebaseSetup";
 import { readCachedIdToken } from "@/lib/cachedToken";
 import { getStoredUser } from "@/lib/userStore";
-import { WishlistItem, Wishlist } from "@/lib/types";
+import { WishlistItem, Wishlist, ProductMeta } from "@/lib/types";
 import { toWishlistIconColor, toWishlistIconName } from "@/lib/wishlistIcons";
 import type {
   FollowStateChanger,
@@ -18,10 +18,7 @@ import type {
  */
 const wasSignedIn = (): boolean => getStoredUser() !== null;
 
-async function send<T>(
-  op: string,
-  params: Record<string, unknown> = {},
-): Promise<T> {
+async function authHeaders(): Promise<Record<string, string>> {
   const headers: Record<string, string> = { "content-type": "application/json" };
   // Signed-out visitors have no token to wait for. Returning visitors send the
   // saved token right away instead of waiting for Firebase to re-validate them.
@@ -36,6 +33,14 @@ async function send<T>(
   if (!headers.authorization && auth.currentUser) {
     headers.authorization = `Bearer ${await auth.currentUser.getIdToken()}`;
   }
+  return headers;
+}
+
+async function send<T>(
+  op: string,
+  params: Record<string, unknown> = {},
+): Promise<T> {
+  const headers = await authHeaders();
   const response = await fetch("/api/wishlists", {
     method: "POST",
     headers,
@@ -196,4 +201,20 @@ export const updateExistingWishlistsAuthor = async (
 /** Removes the signed-in user's wishlists, items and follows. */
 export const deleteUserData = async (_userId: string) => {
   await call("deleteAccount");
+};
+
+export const fetchProductMeta = async (link: string): Promise<ProductMeta> => {
+  const response = await fetch("/api/product-meta", {
+    method: "POST",
+    headers: await authHeaders(),
+    body: JSON.stringify({ url: link }),
+  });
+  const payload = (await response.json().catch(() => null)) as {
+    data?: ProductMeta;
+    error?: string;
+  } | null;
+  if (!response.ok || !payload?.data) {
+    throw new Error(payload?.error ?? `Request failed (${String(response.status)})`);
+  }
+  return payload.data;
 };

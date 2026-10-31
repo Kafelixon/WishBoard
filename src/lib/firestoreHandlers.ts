@@ -16,7 +16,7 @@ import {
   type Transaction,
 } from "firebase/firestore";
 import { getFirestoreDb } from "@/firestoreSetup";
-import { WishlistItem, Wishlist } from "@/lib/types";
+import { WishlistItem, Wishlist, ProductMeta } from "@/lib/types";
 import { toWishlistIconColor, toWishlistIconName } from "@/lib/wishlistIcons";
 import { v4 as uuid } from "uuid";
 
@@ -386,3 +386,7 @@ export const updateExistingWishlistsAuthor = async (
 /** Firestore data is not cleaned up on account deletion (existing behaviour). */
 export const deleteUserData = (_userId: string): Promise<void> =>
   Promise.resolve();
+
+/** Product lookup needs the /api function, which the Firestore-only build doesn't have. */
+export const fetchProductMeta = (_link: string): Promise<ProductMeta> =>
+  Promise.reject(new Error("Fetching product details isn't available in this build."));

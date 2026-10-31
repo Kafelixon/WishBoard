@@ -15,6 +15,7 @@ interface Item {
   id: string;
   name: string;
   price: number;
+  currency: string;
   link: string;
   image: string;
   public: boolean;
@@ -41,6 +42,7 @@ const toItem = (row: Row): Item => ({
   id: String(row.id),
   name: String(row.name),
   price: Number(row.price_cents) / 100,
+  currency: typeof row.currency === "string" ? row.currency : "PLN",
   link: typeof row.link === "string" ? row.link : "",
   image: typeof row.image === "string" ? row.image : "",
   public: Boolean(row.is_public),
@@ -62,6 +64,10 @@ const str = (value: unknown, field: string, allowEmpty = false): string => {
   }
   return value;
 };
+
+/** ISO 4217 code; anything else falls back to zloty. */
+const toCurrency = (value: unknown): string =>
+  typeof value === "string" && /^[A-Za-z]{3}$/.test(value) ? value.toUpperCase() : "PLN";
 
 const toCents = (price: unknown): number => {
   const value = price === undefined || price === null ? 0 : Number(price);
@@ -103,7 +109,7 @@ const lockOwned = async (q: Queryable, caller: Caller, wishlistId: string) => {
 };
 
 const ITEM_COLUMNS =
-  "select id, name, price_cents, link, image, is_public from wishlist_items";
+  "select id, name, price_cents, currency, link, image, is_public from wishlist_items";
 const ALL_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 order by sort_order, id`;
 const PUBLIC_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 and is_public order by sort_order, id`;
 
@@ -203,8 +209,8 @@ export async function handleOp(
       return changeItems(db, caller, body.wishlistId, async (q, id) => {
         await q.query(
           `insert into wishlist_items
-             (id, wishlist_id, name, price_cents, link, image, is_public, sort_order)
-           values ($1, $2, $3, $4, $5, $6, $7,
+             (id, wishlist_id, name, price_cents, link, image, is_public, currency, sort_order)
+           values ($1, $2, $3, $4, $5, $6, $7, $8,
              (select coalesce(max(sort_order), -1) + 1 from wishlist_items where wishlist_id = $2))`,
           [
             randomUUID(),
@@ -214,6 +220,7 @@ export async function handleOp(
             typeof item.link === "string" ? item.link : "",
             typeof item.image === "string" ? item.image : "",
             item.public === true,
+            toCurrency(item.currency),
           ],
         );
       });
@@ -225,7 +232,7 @@ export async function handleOp(
       return changeItems(db, caller, body.wishlistId, async (q, id) => {
         const { rows } = await q.query(
           `update wishlist_items set name = $3, price_cents = $4, link = $5,
-             image = $6, is_public = $7
+             image = $6, is_public = $7, currency = $8
            where id = $1 and wishlist_id = $2 returning id`,
           [
             itemId,
@@ -235,6 +242,7 @@ export async function handleOp(
             typeof item.link === "string" ? item.link : "",
             typeof item.image === "string" ? item.image : "",
             item.public === true,
+            toCurrency(item.currency),
           ],
         );
         if (!rows[0]) throw new HttpError(404, "Item not found.");

@@ -46,6 +46,10 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
 - `scripts/migrate-firestore.ts` copies Firestore into Postgres (needs a service-account key; `--dry-run` first).
 - Postgres is the default, so any deployment needs the `/api` function (Vercel) and `DATABASE_URL`. Set `VITE_BACKEND=firestore` for a Firestore-only build (still deployed on Vercel).
 
+## Product detail fetching
+
+Item form has a "Fetch details from link" button. No free API gives reliable prices/images across shops, so `api/product-meta.ts` (Vercel function, Firebase-token required) fetches the product page server-side and `api/_lib/productMeta.ts` reads JSON-LD `Product` data, then Open Graph / `product:price:amount` meta tags, for name, image and price. It only fills empty fields. SSRF-guarded (public IPs only, re-checked per redirect, 1 MB / 6 s caps). Limits: JS-rendered shops and sites that block bots (Amazon, many marketplaces) return nothing; price is a listed price, not an average; unavailable in the Firestore-only build. Possible next step: a paid product API (e.g. a price-comparison service) behind the same endpoint.
+
 ## Known rough edges
 
 - Several handlers still `console.error` instead of surfacing failures to the UI (see `ISSUES.md` for the full list of open problems).

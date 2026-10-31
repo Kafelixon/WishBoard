@@ -42,6 +42,7 @@ const schema: yup.ObjectSchema<ItemSchema> = yup.object({
     .typeError("Price must be a number")
     .min(0, "Price can't be negative")
     .required(),
+  currency: yup.string(),
   link: yup
     .string()
     .defined()
