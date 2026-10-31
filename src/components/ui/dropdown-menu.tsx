@@ -33,7 +33,7 @@ function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        "relative flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 py-2 text-[0.95rem] outline-none transition-colors focus:bg-secondary data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:text-muted-foreground",
+        "relative flex cursor-pointer select-none items-center gap-2.5 rounded-lg px-3 pb-[0.4rem] pt-[0.6rem] text-[0.95rem] outline-none transition-colors focus:bg-secondary data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:relative [&_svg]:-top-[1.5px] [&_svg]:size-4 [&_svg]:text-muted-foreground",
         className,
       )}
       {...props}

@@ -345,8 +345,8 @@ const CardsList: FC<{
         >
           <ItemImage src={item.image} name={item.name} eager={index < EAGER_IMAGE_COUNT} />
           {isPrivate && (
-            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-card/95 px-2 py-0.5 text-xs font-medium text-destructive shadow-sm">
-              <Lock className="size-3" aria-hidden="true" />
+            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-card/95 px-2 pb-px pt-[3px] text-xs font-medium text-destructive shadow-sm">
+              <Lock className="relative -top-px size-3" aria-hidden="true" />
               {t("items.private")}
               <span className="sr-only">{t("items.privateHint")}</span>
             </span>

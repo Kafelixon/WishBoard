@@ -73,7 +73,7 @@ function PaperPreview() {
               <span className="flex-1 font-display font-medium">{t(item.name)}</span>
               {item.isPrivate ? (
                 <span className="inline-flex items-center gap-1 text-xs text-destructive">
-                  <Lock className="size-3" /> {t("landing.preview.private")}
+                  <Lock className="relative -top-px size-3" /> {t("landing.preview.private")}
                 </span>
               ) : (
                 <span className="tabular text-sm text-muted-foreground">{item.price}</span>
@@ -82,8 +82,8 @@ function PaperPreview() {
           ))}
         </ul>
       </div>
-      <div className="absolute -bottom-5 -right-2 flex rotate-3 items-center gap-2 rounded-lg border border-border bg-popover px-4 py-2 text-sm shadow-dialog">
-        <Link2 className="size-4 text-primary" /> {t("landing.preview.linkCopied")}
+      <div className="absolute -bottom-5 -right-2 flex rotate-3 items-center gap-2 rounded-lg border border-border bg-popover px-4 pb-1.5 pt-2.5 text-sm shadow-dialog">
+        <Link2 className="relative -top-[1.5px] size-4 text-primary" /> {t("landing.preview.linkCopied")}
       </div>
     </div>
   );
@@ -100,7 +100,7 @@ export const LandingPage = () => {
     <div className="space-y-28 pt-4 md:pt-10">
       <section className="grid items-center gap-16 lg:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-7">
-          <p className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-1.5 text-sm text-muted-foreground">
+          <p className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 pb-1 pt-2 text-sm text-muted-foreground [&_svg]:relative [&_svg]:-top-[1.5px]">
             <Sprout className="size-4 text-primary" aria-hidden="true" />
             {t("landing.badge")}
           </p>
