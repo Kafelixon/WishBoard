@@ -1,12 +1,16 @@
 import { DEFAULT_CURRENCY } from "@/lib/currency";
 import { FC, Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
-import { ExternalLink, Gift, Lock, Pencil, Plus } from "lucide-react";
+import { BookmarkCheck, BookmarkPlus, BookmarkX, ExternalLink, Gift, Lock, Pencil, Plus } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { WishlistItem } from "@/lib/types";
 import {
   WishlistItemChanger,
   addItemToWishlist,
   deleteWishlistItem,
+  fetchWishlistView,
+  reserveItem,
+  unreserveItem,
   updateWishlistItem,
 } from "@/lib/wishlistHandlers";
 import { Button } from "@/components/ui/button";
@@ -39,6 +43,9 @@ const PLACEHOLDER_ITEM: WishlistItem = {
   public: true,
 };
 
+/** Reservations need the Postgres backend's /api function. */
+const RESERVATIONS_AVAILABLE = import.meta.env.VITE_BACKEND !== "firestore";
+
 export default function WishlistItemsTable({
   canEditWishlist,
   isLoading,
@@ -49,6 +56,7 @@ export default function WishlistItemsTable({
 }: WishlistItemsTableProps) {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const location = useLocation();
   const [pendingWrites, setPendingWrites] = useState(0);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -146,6 +154,25 @@ export default function WishlistItemsTable({
     setEditDialogOpen(false);
   };
 
+  const canReserve = RESERVATIONS_AVAILABLE && !canEditWishlist && !!userId;
+
+  const handleToggleReservation = (item: WishlistItem) => {
+    if (!userId) return;
+    const reserve = item.reservation !== "mine";
+    const change = reserve ? reserveItem : unreserveItem;
+    enqueueWrite(
+      () =>
+        change(userId, wishlistId, item.id).catch(async (error: unknown) => {
+          // Someone may have reserved it first; show the current state along with the error.
+          const view = await fetchWishlistView(wishlistId, userId);
+          if (view) onItemsChange(view.items);
+          throw error;
+        }),
+      reserve ? t("items.reservedToast") : t("items.unreservedToast"),
+      reserve ? t("items.reserveFailed") : t("items.unreserveFailed"),
+    );
+  };
+
   useEffect(() => {
     if (!canEditWishlist) return;
     // Fetch the dialog code in the background so the first click doesn't wait for it.
@@ -173,6 +200,18 @@ export default function WishlistItemsTable({
             </Button>
           )}
         </div>
+      )}
+      {RESERVATIONS_AVAILABLE && !isLoading && items.length > 0 && !canEditWishlist && !userId && (
+        <p className="border-y border-border py-4 text-muted-foreground">
+          {t("items.signInToReserve")}{" "}
+          <Link
+            to="/login"
+            state={{ from: location.pathname }}
+            className="rounded-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {t("items.signInToReserveLink")}
+          </Link>
+        </p>
       )}
       {canEditWishlist && (
         <Suspense fallback={null}>
@@ -241,6 +280,7 @@ export default function WishlistItemsTable({
           canEditWishlist={canEditWishlist}
           setCurrentItem={setCurrentItem}
           setEditDialogOpen={setEditDialogOpen}
+          onToggleReservation={canReserve ? handleToggleReservation : undefined}
         />
       )}
     </section>
@@ -331,25 +371,71 @@ const CardsList: FC<{
   canEditWishlist: boolean;
   setCurrentItem: (item: WishlistItem) => void;
   setEditDialogOpen: (open: boolean) => void;
-}> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen }) => {
+  /** Set for signed-in visitors who may reserve items. */
+  onToggleReservation?: (item: WishlistItem) => void;
+}> = ({ items, canEditWishlist, setCurrentItem, setEditDialogOpen, onToggleReservation }) => {
   const { t } = useTranslation();
   return (
   <ul className={GRID_CLASS}>
     {items.map((item, index) => {
       const isPrivate = item.public === false;
+      const isTaken = item.reservation === "taken";
+      const isMine = item.reservation === "mine";
       const title = <span className="line-clamp-2">{item.name}</span>;
       return (
         <li
           key={item.id}
           className="group relative aspect-[4/5] animate-rise overflow-hidden rounded-xl border border-border bg-[hsl(41_36%_88%)] shadow-paper transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lift"
         >
-          <ItemImage src={item.image} name={item.name} eager={index < EAGER_IMAGE_COUNT} />
+          <div className={isTaken ? "absolute inset-0 opacity-50 grayscale" : "absolute inset-0"}>
+            <ItemImage src={item.image} name={item.name} eager={index < EAGER_IMAGE_COUNT} />
+          </div>
           {isPrivate && (
             <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-card/95 px-2 pb-px pt-[3px] text-xs font-medium text-destructive shadow-sm">
               <Lock className="relative -top-px size-3" aria-hidden="true" />
               {t("items.private")}
               <span className="sr-only">{t("items.privateHint")}</span>
             </span>
+          )}
+          {isTaken && (
+            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-card/95 px-2 pb-px pt-[3px] text-xs font-medium text-muted-foreground shadow-sm">
+              <BookmarkCheck className="relative -top-px size-3" aria-hidden="true" />
+              {t("items.reserved")}
+              <span className="sr-only">{t("items.reservedHint")}</span>
+            </span>
+          )}
+          {isMine && (
+            <span className="absolute left-2.5 top-2.5 inline-flex items-center gap-1 rounded-md bg-primary px-2 pb-px pt-[3px] text-xs font-medium text-primary-foreground shadow-sm">
+              <BookmarkCheck className="relative -top-px size-3" aria-hidden="true" />
+              {t("items.reservedByYou")}
+            </span>
+          )}
+          {onToggleReservation && isMine && (
+            <Button
+              variant="secondary"
+              size="icon"
+              className="absolute right-2.5 top-2.5 z-10 size-8 rounded-lg text-primary shadow-sm"
+              aria-label={t("items.unreserveLabel", { name: item.name })}
+              title={t("items.unreserveLabel", { name: item.name })}
+              onClick={() => {
+                onToggleReservation(item);
+              }}
+            >
+              <BookmarkX aria-hidden="true" />
+            </Button>
+          )}
+          {onToggleReservation && !item.reservation && (
+            <Button
+              size="sm"
+              className="absolute right-2.5 top-2.5 z-10 h-8 rounded-lg shadow-sm"
+              aria-label={t("items.reserveLabel", { name: item.name })}
+              onClick={() => {
+                onToggleReservation(item);
+              }}
+            >
+              <BookmarkPlus aria-hidden="true" />
+              {t("items.reserve")}
+            </Button>
           )}
           {canEditWishlist && (
             <Button

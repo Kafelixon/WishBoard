@@ -325,7 +325,19 @@
     "private": "Prywatne",
     "privateHint": ", widzisz to tylko Ty",
     "edit": "Edytuj: {{name}}",
-    "viewOnline": "{{name}}, zobacz w sieci (otwiera się w nowej karcie)"
+    "viewOnline": "{{name}}, zobacz w sieci (otwiera się w nowej karcie)",
+    "reserve": "Zarezerwuj",
+    "reserveLabel": "Zarezerwuj: {{name}}, żeby nikt inny tego nie kupił",
+    "unreserveLabel": "Anuluj rezerwację: {{name}}",
+    "reserved": "Zarezerwowane",
+    "reservedHint": ", ktoś inny już to kupuje",
+    "reservedByYou": "Twoja rezerwacja",
+    "reservedToast": "Zarezerwowano. Inni odwiedzający zobaczą, że jest zajęte.",
+    "reserveFailed": "Nie udało się zarezerwować. Ktoś mógł właśnie to zarezerwować.",
+    "unreservedToast": "Rezerwacja anulowana.",
+    "unreserveFailed": "Nie udało się anulować rezerwacji.",
+    "signInToReserve": "Zaloguj się, aby zarezerwować prezent i zobaczyć, które są już zajęte.",
+    "signInToReserveLink": "Zaloguj się"
   },
   "itemForm": {
     "name": "Nazwa",

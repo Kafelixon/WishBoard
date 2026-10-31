@@ -48,6 +48,7 @@ UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/local
 - `DATABASE_URL` (server only, never `VITE_`-prefixed) comes from `neon env pull` into `.env.local`; local dev uses the Neon `test` branch.
 - `npm test` runs integration tests against that DB (`node --test` via tsx). `npm run dev:api` serves the function on :3001 and Vite proxies `/api` to it.
 - `scripts/migrate-firestore.ts` copies Firestore into Postgres (needs a service-account key; `--dry-run` first).
+- **Reservations** (`item_reservations`, one row per item): `reserveItem`/`unreserveItem` ops. They're for signed-in non-owners only; a second reserver gets 409, and only the reserver can release. The `view` op adds `reservation: "mine" | "taken"` to items for signed-in visitors only. Owner queries (`listItems`) never select it, and signed-out visitors don't get it either, so the owner can't see it by opening their own link signed out. The Firestore build stubs the handlers and hides the controls.
 - Postgres is the default, so any deployment needs the `/api` function (Vercel) and `DATABASE_URL`. Set `VITE_BACKEND=firestore` for a Firestore-only build (still deployed on Vercel).
 
 ## Product detail fetching

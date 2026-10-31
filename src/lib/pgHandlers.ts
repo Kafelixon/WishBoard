@@ -148,6 +148,18 @@ export const deleteWishlistItem = (
   itemId: string,
 ): Promise<WishlistItem[]> => call("deleteItem", { wishlistId, itemId });
 
+export const reserveItem = (
+  _userId: string,
+  wishlistId: string,
+  itemId: string,
+): Promise<WishlistItem[]> => call("reserveItem", { wishlistId, itemId });
+
+export const unreserveItem = (
+  _userId: string,
+  wishlistId: string,
+  itemId: string,
+): Promise<WishlistItem[]> => call("unreserveItem", { wishlistId, itemId });
+
 export const findWishlistsByOwner = async (_userId: string) =>
   (await call<Wishlist[]>("listMine")).map(toWishlist);
 

@@ -9,6 +9,11 @@ export interface WishlistItem {
   currency?: string;
   link: string;
   public?: boolean;
+  /**
+   * Set only for signed-in visitors when someone has reserved the item; the owner
+   * never gets it. Always undefined in the Firestore build, which has no reservations.
+   */
+  reservation?: "mine" | "taken";
 }
 
 export interface Wishlist {
