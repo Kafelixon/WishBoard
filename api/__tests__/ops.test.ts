@@ -12,6 +12,7 @@ const db = poolDb(pool);
 const run = randomUUID().slice(0, 8);
 const alice: Caller = { uid: `t-alice-${run}`, name: "Alice" };
 const bob: Caller = { uid: `t-bob-${run}`, name: "Bob" };
+const carol: Caller = { uid: `t-carol-${run}`, name: "Carol" };
 
 const op = (caller: Caller | null, body: Record<string, unknown>) =>
   handleOp(db, caller, body);
@@ -20,7 +21,7 @@ const rejects = (promise: Promise<unknown>, status: number) =>
 
 after(async () => {
   await pool.query("delete from users where id = any($1)", [
-    [alice.uid, bob.uid],
+    [alice.uid, bob.uid, carol.uid],
   ]);
   await pool.end();
 });
@@ -167,6 +168,88 @@ describe("wishlist operations", () => {
       [wishlistId],
     );
     assert.deepEqual(left.rows[0], { i: 0, f: 0 });
+  });
+});
+
+describe("item reservations", () => {
+  interface ViewItem { id: string; name: string; reservation?: string }
+  let wishlistId = "";
+  let giftId = "";
+  let secretId = "";
+
+  const items = async (caller: Caller | null) =>
+    ((await op(caller, { op: "view", wishlistId })) as { items: ViewItem[] }).items;
+  const reservationOf = async (caller: Caller | null, itemId = giftId) =>
+    (await items(caller)).find((i) => i.id === itemId)?.reservation;
+  const reserve = (caller: Caller | null, itemId = giftId) =>
+    op(caller, { op: "reserveItem", wishlistId, itemId });
+  const unreserve = (caller: Caller | null, itemId = giftId) =>
+    op(caller, { op: "unreserveItem", wishlistId, itemId });
+
+  it("sets up a wishlist with a public and a private item", async () => {
+    ({ id: wishlistId } = (await op(alice, {
+      op: "createWishlist", name: "Wedding", author: "Alice", icon: "gift",
+    })) as { id: string });
+    await op(alice, { op: "addItem", wishlistId, item: { name: "Gift", public: true } });
+    const all = (await op(alice, {
+      op: "addItem", wishlistId, item: { name: "Secret", public: false },
+    })) as ViewItem[];
+    giftId = all.find((i) => i.name === "Gift")?.id ?? "";
+    secretId = all.find((i) => i.name === "Secret")?.id ?? "";
+    assert.ok(giftId && secretId);
+  });
+
+  it("lets a visitor reserve an item and shows it as taken to other visitors", async () => {
+    const returned = (await reserve(bob)) as ViewItem[];
+    assert.equal(returned.find((i) => i.id === giftId)?.reservation, "mine");
+    await reserve(bob); // reserving twice is a no-op
+    assert.equal(await reservationOf(bob), "mine");
+    assert.equal(await reservationOf(carol), "taken");
+  });
+
+  it("hides reservations from the owner and from signed-out visitors", async () => {
+    for (const caller of [alice, null]) {
+      const visible = await items(caller);
+      assert.ok(visible.length > 0);
+      assert.ok(visible.every((i) => !("reservation" in i)));
+    }
+    const ownerLists = [
+      await op(alice, { op: "updateItem", wishlistId, item: { id: giftId, name: "Gift", public: true } }),
+      await op(alice, { op: "addItem", wishlistId, item: { name: "Another", public: true } }),
+    ] as ViewItem[][];
+    for (const list of ownerLists) assert.ok(list.every((i) => !("reservation" in i)));
+  });
+
+  it("refuses a second reservation and lets only the reserver release it", async () => {
+    await rejects(reserve(carol), 409);
+    await unreserve(carol);
+    assert.equal(await reservationOf(bob), "mine");
+    const released = (await unreserve(bob)) as ViewItem[];
+    assert.equal(released.find((i) => i.id === giftId)?.reservation, undefined);
+    assert.equal(await reservationOf(carol), undefined);
+    await reserve(carol);
+    assert.equal(await reservationOf(bob), "taken");
+  });
+
+  it("rejects the owner, signed-out callers, private and unknown items", async () => {
+    await rejects(reserve(alice), 403);
+    await rejects(unreserve(alice), 403);
+    await rejects(reserve(null), 401);
+    await rejects(reserve(bob, secretId), 404);
+    await rejects(reserve(bob, "nope"), 404);
+    await rejects(op(bob, { op: "reserveItem", wishlistId: "nope", itemId: giftId }), 404);
+  });
+
+  it("drops reservations with the item and with the reserver's account", async () => {
+    await reserve(bob, (await items(bob)).find((i) => i.name === "Another")?.id);
+    const count = async () =>
+      (await pool.query("select count(*)::int n from item_reservations where item_id in (select id from wishlist_items where wishlist_id = $1)", [wishlistId])).rows[0] as { n: number };
+    assert.deepEqual(await count(), { n: 2 });
+    await op(alice, { op: "deleteItem", wishlistId, itemId: giftId });
+    assert.deepEqual(await count(), { n: 1 });
+    await op(bob, { op: "deleteAccount" });
+    assert.deepEqual(await count(), { n: 0 });
+    await op(alice, { op: "deleteWishlist", id: wishlistId });
   });
 });
 

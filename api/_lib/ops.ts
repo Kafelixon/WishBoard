@@ -19,6 +19,8 @@ interface Item {
   link: string;
   image: string;
   public: boolean;
+  /** Visitors only: whether someone reserved it. Never sent to the owner. */
+  reservation?: "mine" | "taken";
 }
 
 const WISHLIST_COLUMNS = `id, name, author, icon_name, icon_color,
@@ -46,6 +48,9 @@ const toItem = (row: Row): Item => ({
   link: typeof row.link === "string" ? row.link : "",
   image: typeof row.image === "string" ? row.image : "",
   public: Boolean(row.is_public),
+  ...((row.reservation === "mine" || row.reservation === "taken") && {
+    reservation: row.reservation,
+  }),
 });
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/;
@@ -112,17 +117,47 @@ const ITEM_COLUMNS =
   "select id, name, price_cents, currency, link, image, is_public from wishlist_items";
 const ALL_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 order by sort_order, id`;
 const PUBLIC_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 and is_public order by sort_order, id`;
+// Reservation state only goes to signed-in visitors, so the owner can't spot it by opening their own link signed out.
+const VISITOR_ITEMS = `select i.id, i.name, i.price_cents, i.currency, i.link, i.image, i.is_public,
+    case when r.user_id is null then null when r.user_id = $2 then 'mine' else 'taken' end as reservation
+  from wishlist_items i left join item_reservations r on r.item_id = i.id
+  where i.wishlist_id = $1 and i.is_public order by i.sort_order, i.id`;
 
-const listItems = async (
-  q: Queryable,
-  wishlistId: string,
-  onlyPublic = false,
-): Promise<Item[]> => {
-  const { rows } = await q.query(onlyPublic ? PUBLIC_ITEMS : ALL_ITEMS, [
-    wishlistId,
-  ]);
+/** The owner's view: every item, and nothing about reservations. */
+const listItems = async (q: Queryable, wishlistId: string): Promise<Item[]> => {
+  const { rows } = await q.query(ALL_ITEMS, [wishlistId]);
   // Rows come from our own query for one wishlist, not from the request body.
   return rows.map(toItem); // nosemgrep
+};
+
+/** A visitor's view: public items, with reservations when signed in. */
+const listVisitorItems = async (
+  q: Queryable,
+  wishlistId: string,
+  visitorId: string | null,
+): Promise<Item[]> => {
+  const { rows } = visitorId
+    ? await q.query(VISITOR_ITEMS, [wishlistId, visitorId])
+    : await q.query(PUBLIC_ITEMS, [wishlistId]);
+  return rows.map(toItem); // nosemgrep
+};
+
+/** Locks a public item and checks the caller is a visitor, not the wishlist's owner. */
+const lockReservable = async (
+  q: Queryable,
+  caller: Caller,
+  wishlistId: string,
+  itemId: string,
+) => {
+  const { rows } = await q.query(
+    `select w.owner_id from wishlist_items i join wishlists w on w.id = i.wishlist_id
+     where i.id = $1 and i.wishlist_id = $2 and i.is_public for update of i`,
+    [itemId, wishlistId],
+  );
+  if (!rows[0]) throw new HttpError(404, "Item not found.");
+  if (rows[0].owner_id === caller.uid) {
+    throw new HttpError(403, "You cannot reserve items on your own wishlist.");
+  }
 };
 
 const touch = (q: Queryable, wishlistId: string) =>
@@ -259,6 +294,39 @@ export async function handleOp(
       });
     }
 
+    case "reserveItem":
+    case "unreserveItem": {
+      const user = requireCaller(caller);
+      const wishlistId = str(body.wishlistId, "wishlistId");
+      const itemId = str(body.itemId, "itemId");
+      const reserve = body.op === "reserveItem";
+      return db.transaction(async (q) => {
+        await lockReservable(q, user, wishlistId, itemId);
+        if (reserve) {
+          await ensureUser(q, user);
+          await q.query(
+            `insert into item_reservations (item_id, user_id) values ($1, $2)
+             on conflict (item_id) do nothing`,
+            [itemId, user.uid],
+          );
+          const { rows } = await q.query(
+            "select user_id from item_reservations where item_id = $1",
+            [itemId],
+          );
+          if (rows[0]?.user_id !== user.uid) {
+            throw new HttpError(409, "Someone has already reserved this item.");
+          }
+        } else {
+          // Only the visitor's own reservation can be released.
+          await q.query(
+            "delete from item_reservations where item_id = $1 and user_id = $2",
+            [itemId, user.uid],
+          );
+        }
+        return listVisitorItems(q, wishlistId, user.uid);
+      });
+    }
+
     case "ping": {
       // Wakes a suspended database; the client sends it while a visitor is still on a page that needs no data.
       await db.query("select 1");
@@ -286,7 +354,9 @@ export async function handleOp(
       return {
         info: toWishlist(rows[0]),
         isOwner,
-        items: await listItems(db, id, !isOwner),
+        items: isOwner
+          ? await listItems(db, id)
+          : await listVisitorItems(db, id, caller?.uid ?? null),
       };
     }
 
@@ -361,7 +431,7 @@ export async function handleOp(
 
     case "deleteAccount": {
       const user = requireCaller(caller);
-      // Wishlists, items and follows go with the user row (ON DELETE CASCADE).
+      // Wishlists, items, follows and reservations go with the user row (ON DELETE CASCADE).
       await db.query("delete from users where id = $1", [user.uid]);
       return {};
     }
