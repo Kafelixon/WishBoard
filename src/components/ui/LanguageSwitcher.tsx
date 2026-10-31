@@ -35,7 +35,7 @@ export function LanguageSwitcher({ className, compact = false, hideLabel = compa
             void i18n.changeLanguage(event.target.value);
           }}
           className={cn(
-            "cursor-pointer appearance-none rounded-lg text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "cursor-pointer appearance-none rounded-lg pt-[0.2em] text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
             compact
               ? "h-9 bg-transparent pl-8 pr-7 text-sm hover:bg-secondary"
               : "h-11 border border-input bg-card pl-10 pr-9 text-base hover:border-foreground/30",
