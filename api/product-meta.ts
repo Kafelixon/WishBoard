@@ -1,9 +1,21 @@
+import { Pool } from "pg";
 import { createRemoteJWKSet } from "jose";
+import { attachDatabasePool } from "@vercel/functions";
 import { createVerifier, FIREBASE_JWKS_URL, firebaseProjectId } from "./_lib/auth.js";
+import { poolDb } from "./_lib/db.js";
 import { HttpError } from "./_lib/ops.js";
 import { fetchPage, parseProductMeta } from "./_lib/productMeta.js";
+import { takeRateLimit } from "./_lib/rateLimit.js";
 
 const verify = createVerifier(firebaseProjectId(), createRemoteJWKSet(new URL(FIREBASE_JWKS_URL)));
+
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+attachDatabasePool(pool);
+const db = poolDb(pool);
+
+/** Lookups per user per window: plenty for filling in a wishlist, too few to use us as a crawler. */
+const LOOKUP_LIMIT = 30;
+const LOOKUP_WINDOW_SECONDS = 600;
 
 const json = (status: number, body: unknown) =>
   new Response(JSON.stringify(body), {
@@ -16,11 +28,12 @@ export async function POST(request: Request): Promise<Response> {
   try {
     const header = request.headers.get("authorization");
     if (!header) throw new HttpError(401, "Sign in to fetch product details.");
-    await verify(header.replace(/^Bearer\s+/i, "")).catch(() => {
+    const caller = await verify(header.replace(/^Bearer\s+/i, "")).catch(() => {
       throw new HttpError(401, "Invalid or expired session.");
     });
     const body = (await request.json().catch(() => null)) as { url?: unknown } | null;
     if (typeof body?.url !== "string") throw new HttpError(400, "Missing link.");
+    await takeRateLimit(db, `product-meta:${caller.uid}`, LOOKUP_LIMIT, LOOKUP_WINDOW_SECONDS);
     const { html, url } = await fetchPage(body.url.trim());
     return json(200, { data: parseProductMeta(html, url) });
   } catch (error) {
