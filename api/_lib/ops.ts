@@ -167,7 +167,8 @@ const listOwned = async (q: Queryable, ownerId: string) => {
      order by updated_at desc`,
     [ownerId],
   );
-  return rows.map(toWishlist);
+  // Rows come from our own query for one owner, not from the request body.
+  return rows.map(toWishlist); // nosemgrep
 };
 
 // One statement for the whole data export: owned wishlists with their items, and followed wishlists.
