@@ -4,6 +4,8 @@ const port = "4173";
 
 export default defineConfig({
   testDir: "e2e",
+  // Tests within a file run in parallel too; the specs are independent (each page fakes its own backend).
+  fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? [["github"], ["html", { open: "never" }]] : "list",
