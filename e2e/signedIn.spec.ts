@@ -300,6 +300,42 @@ test.describe("reservations", () => {
   });
 });
 
+test.describe("sharing", () => {
+  const seedShared = (backend: FakeBackend) =>
+    backend.seed({ ownerId: "someone-else", name: "Wedding", author: "Alex", items: [{ name: "Tea set", public: true }] });
+
+  test("Share opens the native share sheet with the wishlist link", async ({ page, backend }) => {
+    const id = seedShared(backend);
+    await page.addInitScript(() => {
+      const shared: ShareData[] = [];
+      Object.assign(window, { shared });
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: (data: ShareData) => {
+          shared.push(data);
+          return Promise.resolve();
+        },
+      });
+    });
+    await page.goto(`/wishlist/${id}`);
+    await page.getByRole("button", { name: "Share", exact: true }).click();
+    expect(await page.evaluate(() => (window as unknown as { shared: ShareData[] }).shared)).toEqual([
+      { title: "Wedding", url: new URL(`/wishlist/${id}`, page.url()).href },
+    ]);
+    await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+  });
+
+  test("without a native share sheet only Copy link is shown", async ({ page, backend }) => {
+    const id = seedShared(backend);
+    await page.addInitScript(() => {
+      Reflect.deleteProperty(Navigator.prototype, "share");
+    });
+    await page.goto(`/wishlist/${id}`);
+    await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Share", exact: true })).toHaveCount(0);
+  });
+});
+
 test.describe("data export", () => {
   test("downloads own wishlists with private items, and followed wishlists", async ({ page, backend }) => {
     backend.seed({
