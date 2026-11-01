@@ -1,6 +1,15 @@
 import { randomUUID } from "node:crypto";
 import type { Caller } from "./auth.js";
 import type { Db, Queryable, Row } from "./db.js";
+import {
+  MAX_AUTHOR_LENGTH,
+  MAX_NAME_LENGTH,
+  MAX_NOTES_LENGTH,
+  MAX_PRICE,
+  MAX_QUANTITY,
+  MAX_URL_LENGTH,
+  RESERVATION_DAYS,
+} from "./limits.js";
 
 export class HttpError extends Error {
   constructor(
@@ -26,6 +35,8 @@ interface Item {
   createdAt: number;
   /** Visitors only: whether someone reserved it. Never sent to the owner. */
   reservation?: "mine" | "taken";
+  /** Visitors only, on their own reservation: when it lapses (ms since epoch). */
+  reservedUntil?: number;
 }
 
 const WISHLIST_COLUMNS = `id, name, author, icon_name, icon_color,
@@ -60,11 +71,10 @@ const toItem = (row: Row): Item => ({
   ...((row.reservation === "mine" || row.reservation === "taken") && {
     reservation: row.reservation,
   }),
+  ...(row.reservation === "mine" && { reservedUntil: Number(row.reserved_until_ms) }),
 });
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/;
-const MAX_QUANTITY = 99;
-const MAX_NOTES_LENGTH = 500;
 
 const color = (value: unknown): string | null => {
   if (value === undefined || value === null || value === "") return null;
@@ -74,11 +84,40 @@ const color = (value: unknown): string | null => {
   return value;
 };
 
-const str = (value: unknown, field: string, allowEmpty = false): string => {
+const MAX_ID_LENGTH = 100;
+
+const str = (
+  value: unknown,
+  field: string,
+  allowEmpty = false,
+  maxLength = MAX_ID_LENGTH,
+): string => {
   if (typeof value !== "string" || (!allowEmpty && !value.trim())) {
     throw new HttpError(400, `${field} is required.`);
   }
+  if (value.length > maxLength) {
+    throw new HttpError(400, `${field} must be at most ${String(maxLength)} characters.`);
+  }
   return value;
+};
+
+const name = (value: unknown, field: string) => str(value, field, false, MAX_NAME_LENGTH);
+const author = (value: unknown) => str(value, "author", true, MAX_AUTHOR_LENGTH);
+
+/** An optional http(s) address; anything else (javascript:, data:, junk) is refused. */
+const webUrl = (value: unknown, field: string): string => {
+  if (value === undefined || value === null || value === "") return "";
+  const text = str(value, field, true, MAX_URL_LENGTH);
+  let protocol = "";
+  try {
+    protocol = new URL(text).protocol;
+  } catch {
+    // not a URL at all
+  }
+  if (protocol !== "http:" && protocol !== "https:") {
+    throw new HttpError(400, `${field} must be an http(s) address.`);
+  }
+  return text;
 };
 
 /** ISO 4217 code; anything else falls back to zloty. */
@@ -89,6 +128,9 @@ const toCents = (price: unknown): number => {
   const value = price === undefined || price === null ? 0 : Number(price);
   if (!Number.isFinite(value) || value < 0) {
     throw new HttpError(400, "price must be a non-negative number.");
+  }
+  if (value > MAX_PRICE) {
+    throw new HttpError(400, `price must be at most ${String(MAX_PRICE)}.`);
   }
   return Math.round(value * 100);
 };
@@ -153,9 +195,14 @@ const ITEM_COLUMNS = `select ${ITEM_FIELDS} from wishlist_items i`;
 const ALL_ITEMS = `${ITEM_COLUMNS} where i.wishlist_id = $1 order by i.sort_order, i.id`;
 const PUBLIC_ITEMS = `${ITEM_COLUMNS} where i.wishlist_id = $1 and i.is_public order by i.sort_order, i.id`;
 // Reservation state only goes to signed-in visitors, so the owner can't spot it by opening their own link signed out.
+// Reservations older than $3 days have lapsed and count as no reservation at all.
 const VISITOR_ITEMS = `select ${ITEM_FIELDS},
-    case when r.user_id is null then null when r.user_id = $2 then 'mine' else 'taken' end as reservation
-  from wishlist_items i left join item_reservations r on r.item_id = i.id
+    case when r.user_id is null then null when r.user_id = $2 then 'mine' else 'taken' end as reservation,
+    case when r.user_id = $2
+      then (extract(epoch from r.reserved_at + make_interval(days => $3)) * 1000)::bigint
+    end as reserved_until_ms
+  from wishlist_items i left join item_reservations r
+    on r.item_id = i.id and r.reserved_at > now() - make_interval(days => $3)
   where i.wishlist_id = $1 and i.is_public order by i.sort_order, i.id`;
 
 /** The owner's view: every item, and nothing about reservations. */
@@ -172,17 +219,17 @@ const listVisitorItems = async (
   visitorId: string | null,
 ): Promise<Item[]> => {
   const { rows } = visitorId
-    ? await q.query(VISITOR_ITEMS, [wishlistId, visitorId])
+    ? await q.query(VISITOR_ITEMS, [wishlistId, visitorId, RESERVATION_DAYS])
     : await q.query(PUBLIC_ITEMS, [wishlistId]);
   return rows.map(toItem); // nosemgrep
 };
 
 /** The editable columns of an item, in the order addItem and updateItem bind them. */
 const itemValues = (item: Record<string, unknown>) => [
-  str(item.name, "item name"),
+  name(item.name, "item name"),
   toCents(item.price),
-  typeof item.link === "string" ? item.link : "",
-  typeof item.image === "string" ? item.image : "",
+  webUrl(item.link, "link"),
+  webUrl(item.image, "image"),
   item.public === true,
   toCurrency(item.currency),
   toNotes(item.notes),
@@ -247,8 +294,8 @@ export async function handleOp(
           [
             id,
             user.uid,
-            str(body.name, "name"),
-            str(body.author, "author", true),
+            name(body.name, "name"),
+            author(body.author),
             str(body.icon, "icon"),
             color(body.iconColor),
           ],
@@ -267,8 +314,8 @@ export async function handleOp(
            icon_color = $5, updated_at = now() where id = $1`,
           [
             id,
-            str(body.name, "name"),
-            str(body.author, "author", true),
+            name(body.name, "name"),
+            author(body.author),
             str(body.icon, "icon"),
             color(body.iconColor),
           ],
@@ -360,17 +407,22 @@ export async function handleOp(
         await lockReservable(q, user, wishlistId, itemId);
         if (reserve) {
           await ensureUser(q, user);
-          await q.query(
-            `insert into item_reservations (item_id, user_id) values ($1, $2)
-             on conflict (item_id) do nothing`,
-            [itemId, user.uid],
-          );
+          // The item row is locked, so nobody can reserve it between this check and the insert.
           const { rows } = await q.query(
-            "select user_id from item_reservations where item_id = $1",
-            [itemId],
+            `select user_id from item_reservations
+             where item_id = $1 and reserved_at > now() - make_interval(days => $2)`,
+            [itemId, RESERVATION_DAYS],
           );
-          if (rows[0]?.user_id !== user.uid) {
+          if (rows[0] && rows[0].user_id !== user.uid) {
             throw new HttpError(409, "Someone has already reserved this item.");
+          }
+          if (!rows[0]) {
+            // A lapsed reservation, whoever made it, is taken over and starts a fresh period.
+            await q.query(
+              `insert into item_reservations (item_id, user_id) values ($1, $2)
+               on conflict (item_id) do update set user_id = excluded.user_id, reserved_at = now()`,
+              [itemId, user.uid],
+            );
           }
         } else {
           // Only the visitor's own reservation can be released.
@@ -466,7 +518,7 @@ export async function handleOp(
       const customName =
         body.customName === null || body.customName === undefined
           ? ""
-          : str(body.customName, "customName", true).trim();
+          : str(body.customName, "customName", true, MAX_NAME_LENGTH).trim();
       const { rows } = await db.query(
         `update user_follows set custom_name = $3
          where user_id = $1 and wishlist_id = $2 returning 1`,
@@ -480,7 +532,7 @@ export async function handleOp(
       const user = requireCaller(caller);
       await db.query(
         "update wishlists set author = $2, updated_at = now() where owner_id = $1",
-        [user.uid, str(body.author, "author")],
+        [user.uid, str(body.author, "author", false, MAX_AUTHOR_LENGTH)],
       );
       return {};
     }

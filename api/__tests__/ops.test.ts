@@ -6,6 +6,7 @@ import { exportJWK, generateKeyPair, SignJWT, createLocalJWKSet } from "jose";
 import { createVerifier, type Caller } from "../_lib/auth.js";
 import { poolDb } from "../_lib/db.js";
 import { handleOp, HttpError } from "../_lib/ops.js";
+import { MAX_PRICE, RESERVATION_DAYS } from "../_lib/limits.js";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const db = poolDb(pool);
@@ -72,6 +73,28 @@ describe("wishlist operations", () => {
     assert.ok(view.items.some((i) => i.price === 3.5));
   });
 
+  it("refuses overlong text, non-web links and out-of-range prices", async () => {
+    const add = (item: Record<string, unknown>) =>
+      op(alice, { op: "addItem", wishlistId, item: { name: "Valid", ...item } });
+    await rejects(add({ name: "x".repeat(201) }), 400);
+    await rejects(add({ link: "javascript:alert(1)" }), 400);
+    await rejects(add({ link: "not a url" }), 400);
+    await rejects(add({ image: "data:image/png;base64,AAAA" }), 400);
+    await rejects(add({ link: `https://shop.example/${"a".repeat(4096)}` }), 400);
+    await rejects(add({ price: MAX_PRICE + 1 }), 400);
+    await rejects(
+      op(alice, { op: "updateWishlist", id: wishlistId, name: "Birthday", author: "a".repeat(101), icon: "gift" }),
+      400,
+    );
+    await rejects(op(alice, { op: "updateAuthor", author: "a".repeat(101) }), 400);
+    const items = (await add({ link: "https://shop.example/p", image: "http://cdn.example/i.jpg", price: MAX_PRICE })) as {
+      id: string; name: string;
+    }[];
+    const added = items.find((i) => i.name === "Valid");
+    assert.ok(added);
+    await op(alice, { op: "deleteItem", wishlistId, itemId: added.id });
+  });
+
   it("shows only public items to other users and anonymous visitors", async () => {
     for (const caller of [bob, null]) {
       const view = (await op(caller, { op: "view", wishlistId })) as {
@@ -107,7 +130,7 @@ describe("wishlist operations", () => {
   });
 
   it("stores notes, quantity and most wanted, with defaults and limits", async () => {
-    type Detailed = { name: string; notes: string; quantity: number; mostWanted: boolean; createdAt: number };
+    interface Detailed { name: string; notes: string; quantity: number; mostWanted: boolean; createdAt: number }
     const items = (await op(alice, {
       op: "addItem", wishlistId,
       item: { name: "Shoes", notes: "  Size 42  ", quantity: 2, mostWanted: true, public: true },
@@ -147,7 +170,7 @@ describe("wishlist operations", () => {
     await rejects(op(bob, { op: "reorderItems", wishlistId, itemIds: reversed }), 403);
     // A new item still goes to the end of the custom order.
     const added = (await op(alice, { op: "addItem", wishlistId, item: { name: "Last one" } })) as { name: string }[];
-    assert.equal(added.at(-1)?.name, "Last one");
+    assert.equal(added[added.length - 1]?.name, "Last one");
   });
 
   it("blocks non-owners from changing a wishlist", async () => {
@@ -216,7 +239,7 @@ describe("wishlist operations", () => {
 });
 
 describe("item reservations", () => {
-  interface ViewItem { id: string; name: string; reservation?: string }
+  interface ViewItem { id: string; name: string; reservation?: string; reservedUntil?: number }
   let wishlistId = "";
   let giftId = "";
   let secretId = "";
@@ -229,6 +252,12 @@ describe("item reservations", () => {
     op(caller, { op: "reserveItem", wishlistId, itemId });
   const unreserve = (caller: Caller | null, itemId = giftId) =>
     op(caller, { op: "unreserveItem", wishlistId, itemId });
+  /** Backdates a reservation so it lapsed a minute ago. */
+  const lapse = (itemId: string) =>
+    pool.query(
+      "update item_reservations set reserved_at = now() - make_interval(days => $2, mins => 1) where item_id = $1",
+      [itemId, RESERVATION_DAYS],
+    );
 
   it("sets up a wishlist with a public and a private item", async () => {
     ({ id: wishlistId } = (await op(alice, {
@@ -255,7 +284,7 @@ describe("item reservations", () => {
     for (const caller of [alice, null]) {
       const visible = await items(caller);
       assert.ok(visible.length > 0);
-      assert.ok(visible.every((i) => !("reservation" in i)));
+      assert.ok(visible.every((i) => !("reservation" in i) && !("reservedUntil" in i)));
     }
     const ownerLists = [
       await op(alice, { op: "updateItem", wishlistId, item: { id: giftId, name: "Gift", public: true } }),
@@ -273,6 +302,22 @@ describe("item reservations", () => {
     assert.equal(await reservationOf(carol), undefined);
     await reserve(carol);
     assert.equal(await reservationOf(bob), "taken");
+  });
+
+  it("tells only the reserver when their reservation lapses", async () => {
+    const until = (await items(carol)).find((i) => i.id === giftId)?.reservedUntil ?? 0;
+    const expected = Date.now() + RESERVATION_DAYS * 24 * 60 * 60 * 1000;
+    assert.ok(Math.abs(until - expected) < 60_000, `reservedUntil ${String(until)} vs ${String(expected)}`);
+    assert.equal((await items(bob)).find((i) => i.id === giftId)?.reservedUntil, undefined);
+  });
+
+  it("frees an item once its reservation has lapsed", async () => {
+    await lapse(giftId);
+    assert.equal(await reservationOf(carol), undefined);
+    assert.equal(await reservationOf(bob), undefined);
+    await reserve(bob); // takes over carol's lapsed reservation
+    assert.equal(await reservationOf(bob), "mine");
+    assert.equal(await reservationOf(carol), "taken");
   });
 
   it("rejects the owner, signed-out callers, private and unknown items", async () => {

@@ -22,6 +22,8 @@ export interface WishlistItem {
    * never gets it. Always undefined in the Firestore build, which has no reservations.
    */
   reservation?: "mine" | "taken";
+  /** With `reservation: "mine"`: when the visitor's reservation lapses (ms since epoch). */
+  reservedUntil?: number;
 }
 
 export interface Wishlist {
