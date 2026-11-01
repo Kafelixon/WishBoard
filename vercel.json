@@ -10,6 +10,17 @@
   "crons": [{ "path": "/api/keepalive", "schedule": "0 6 * * *" }],
   "rewrites": [
     {
+      "source": "/wishlist/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|Slackbot|Discordbot|TelegramBot|LinkedInBot|SkypeUriPreview|Pinterestbot|redditbot|Embedly|Iframely|Mastodon|Cardyb|vkShare|Google-PageRenderer).*"
+        }
+      ],
+      "destination": "/api/wishlist-preview?id=:id"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/"
     }
