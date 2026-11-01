@@ -93,9 +93,11 @@ describe("loadPreview", () => {
   });
 
   it("counts public items and takes the first public photo, never a private one", async () => {
-    const { id } = (await op({
+    // The op answers with the owner's wishlists, newest first.
+    const [created] = (await op({
       op: "createWishlist", name: "Birthday", author: "Alice", icon: "gift",
-    })) as { id: string };
+    })) as { id: string }[];
+    const id = created?.id ?? "";
     assert.deepEqual(await loadPreview(db, id), { name: "Birthday", author: "Alice", itemCount: 0, image: null });
 
     await op({ op: "addItem", wishlistId: id, item: { name: "Secret", image: "https://cdn.example/secret.jpg", public: false } });
