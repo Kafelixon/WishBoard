@@ -1,8 +1,6 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
   UserCredential,
   sendEmailVerification,
   updateProfile,
@@ -108,24 +106,7 @@ export const changeUsername = async (newUsername: string) => {
   }
 };
 
-export const loginWithGoogle = async (
-  navigate: NavigateFunction,
-  from: string,
-) => {
-  const provider = new GoogleAuthProvider();
-
-  try {
-    const userCredential = await signInWithPopup(auth, provider);
-    completeLogin(userCredential, navigate, from);
-  } catch (error) {
-    console.error(error);
-    throw Object.assign(new Error(i18n.t("authErrors.googleFailed")), {
-      cause: error,
-    });
-  }
-};
-
-const completeLogin = (
+export const completeLogin = (
   credential: UserCredential,
   navigate: NavigateFunction,
   from: string,

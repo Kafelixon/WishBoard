@@ -39,7 +39,7 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
 
 ## Localization
 
-UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/locales/{en,pl}.json`, keys type-checked against `en.json` via `src/i18next.d.ts`). Language comes from localStorage (`wishboard.language`, set by `LanguageSwitcher`), then the browser; `<html lang>` follows it. Use `t("…")` in components and `i18n.t` in plain modules (e.g. `authHandlers.ts`, yup messages as `() => i18n.t(…)`). Plurals use `_one/_few/_many/_other` suffixes. ESLint (`no-restricted-syntax`) rejects literal text in JSX and in `aria-label`/`placeholder`/`title`/`alt`. Not translated: server error messages from `api/`, `console.error` logs, `index.html` meta description.
+UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/locales/{en,pl}.json`; English is bundled, Polish is fetched by a small i18next backend only when active, so the root is wrapped in `<Suspense>`, keys type-checked against `en.json` via `src/i18next.d.ts`). Language comes from localStorage (`wishboard.language`, set by `LanguageSwitcher`), then the browser; `<html lang>` follows it. Use `t("…")` in components and `i18n.t` in plain modules (e.g. `authHandlers.ts`, yup messages as `() => i18n.t(…)`). Plurals use `_one/_few/_many/_other` suffixes. ESLint (`no-restricted-syntax`) rejects literal text in JSX and in `aria-label`/`placeholder`/`title`/`alt`. Not translated: server error messages from `api/`, `console.error` logs, `index.html` meta description.
 
 ## Postgres backend (Neon, default)
 

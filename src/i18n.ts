@@ -1,26 +1,49 @@
-import i18n, { type ParseKeys } from "i18next";
+import i18n, { type BackendModule, type ParseKeys } from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
 import en from "@/locales/en.json";
-import pl from "@/locales/pl.json";
 
 export const SUPPORTED_LANGUAGES = ["en", "pl"] as const;
 export type Language = (typeof SUPPORTED_LANGUAGES)[number];
 
 export const LANGUAGE_STORAGE_KEY = "wishboard.language";
 
-export const resources = { en: { translation: en }, pl: { translation: pl } } as const;
+// English is bundled (it's also the fallback); other languages are fetched only when active.
+export const resources = { en: { translation: en } } as const;
+
+const lazyLocales: BackendModule = {
+  type: "backend",
+  init: () => undefined,
+  read(language, _namespace, callback) {
+    if (language !== "pl") {
+      callback(null, {});
+      return;
+    }
+    import("@/locales/pl.json").then(
+      (strings) => {
+        callback(null, strings.default);
+      },
+      (error: unknown) => {
+        callback(error instanceof Error ? error : new Error(String(error)), null);
+      },
+    );
+  },
+};
 
 /** Keeps `<html lang>` in step with the UI language (screen readers, hyphenation, spellcheck). */
-const syncDocumentLanguage = (language: string) => {
-  document.documentElement.lang = language;
+const syncDocumentLanguage = () => {
+  // The resolved code ("pl"), not the detected one ("pl-PL") that languageChanged reports.
+  document.documentElement.lang = i18n.resolvedLanguage ?? "en";
 };
 
 void i18n
   .use(LanguageDetector)
+  .use(lazyLocales)
   .use(initReactI18next)
   .init({
     resources,
+    // Fetch languages missing from `resources` through lazyLocales.
+    partialBundledLanguages: true,
     supportedLngs: SUPPORTED_LANGUAGES,
     // "pl-PL" and friends resolve to "pl".
     nonExplicitSupportedLngs: true,
@@ -36,7 +59,7 @@ void i18n
     },
   });
 
-syncDocumentLanguage(i18n.resolvedLanguage ?? "en");
+syncDocumentLanguage();
 i18n.on("languageChanged", syncDocumentLanguage);
 
 /** Switches the UI language and remembers it as the user's explicit choice. */

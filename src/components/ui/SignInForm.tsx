@@ -9,9 +9,9 @@ import {
   authErrorMessage,
   isSilentAuthError,
   loginUser,
-  loginWithGoogle,
   registerUser,
 } from "@/lib/authHandlers";
+import { loginWithGoogle } from "@/lib/googleSignIn";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { RotateCw } from "lucide-react";
