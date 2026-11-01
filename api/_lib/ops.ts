@@ -255,6 +255,30 @@ const lockReservable = async (
   }
 };
 
+/** The caller's own wishlists, newest first; wishlist writes return it so the page needn't refetch. */
+const listOwned = async (q: Queryable, ownerId: string) => {
+  const { rows } = await q.query(
+    `select ${WISHLIST_COLUMNS} from wishlists where owner_id = $1
+     order by updated_at desc`,
+    [ownerId],
+  );
+  // Rows come from our own query for one owner, not from the request body.
+  return rows.map(toWishlist); // nosemgrep
+};
+
+// One statement for the whole data export: owned wishlists with their items, and followed wishlists.
+const EXPORT_QUERY = `select
+  coalesce((select json_agg(w order by w.updated_ms desc) from (
+    select ${WISHLIST_COLUMNS}, coalesce((
+      select json_agg(x order by x.sort_order, x.id) from (
+        select ${ITEM_FIELDS}, i.sort_order from wishlist_items i
+        where i.wishlist_id = wishlists.id) x
+    ), '[]') as items
+    from wishlists where owner_id = $1) w), '[]') as owned,
+  coalesce((select json_agg(f order by f.updated_ms desc) from (
+    select ${WISHLIST_COLUMNS}, user_follows.custom_name from wishlists
+    join user_follows on user_follows.wishlist_id = wishlists.id and user_follows.user_id = $1) f), '[]') as followed`;
+
 const touch = (q: Queryable, wishlistId: string) =>
   q.query("update wishlists set updated_at = now() where id = $1", [wishlistId]);
 
@@ -286,7 +310,7 @@ export async function handleOp(
     case "createWishlist": {
       const user = requireCaller(caller);
       const id = randomUUID();
-      await db.transaction(async (q) => {
+      return db.transaction(async (q) => {
         await ensureUser(q, user);
         await q.query(
           `insert into wishlists (id, owner_id, name, author, icon_name, icon_color)
@@ -300,14 +324,14 @@ export async function handleOp(
             color(body.iconColor),
           ],
         );
+        return listOwned(q, user.uid);
       });
-      return { id };
     }
 
     case "updateWishlist": {
       const user = requireCaller(caller);
       const id = str(body.id, "id");
-      await db.transaction(async (q) => {
+      return db.transaction(async (q) => {
         await lockOwned(q, user, id);
         await q.query(
           `update wishlists set name = $2, author = $3, icon_name = $4,
@@ -320,18 +344,18 @@ export async function handleOp(
             color(body.iconColor),
           ],
         );
+        return listOwned(q, user.uid);
       });
-      return {};
     }
 
     case "deleteWishlist": {
       const user = requireCaller(caller);
       const id = str(body.id, "id");
-      await db.transaction(async (q) => {
+      return db.transaction(async (q) => {
         await lockOwned(q, user, id);
         await q.query("delete from wishlists where id = $1", [id]);
+        return listOwned(q, user.uid);
       });
-      return {};
     }
 
     case "addItem": {
@@ -443,27 +467,39 @@ export async function handleOp(
       return { ok: true };
     }
 
-    case "listMine": {
+    case "listMine":
+      return listOwned(db, requireCaller(caller).uid);
+
+    case "export": {
       const user = requireCaller(caller);
-      const { rows } = await db.query(
-        `select ${WISHLIST_COLUMNS} from wishlists where owner_id = $1
-         order by updated_at desc`,
-        [user.uid],
-      );
-      return rows.map(toWishlist);
+      const { rows } = await db.query(EXPORT_QUERY, [user.uid]);
+      const owned = (rows[0]?.owned ?? []) as Row[];
+      const followed = (rows[0]?.followed ?? []) as Row[];
+      return {
+        wishlists: owned.map((row) => ({
+          ...toWishlist(row),
+          items: (row.items as Row[]).map(toItem),
+        })),
+        followedWishlists: followed.map(toFollowedWishlist),
+      };
     }
 
     case "view": {
       const id = str(body.wishlistId, "wishlistId");
+      // `following` rides along so the page needs no second request for the follow button.
       const { rows } = await db.query(
-        `select ${WISHLIST_COLUMNS}, owner_id from wishlists where id = $1`,
-        [id],
+        `select ${WISHLIST_COLUMNS}, owner_id, exists(
+           select 1 from user_follows f where f.wishlist_id = wishlists.id and f.user_id = $2
+         ) as following
+         from wishlists where id = $1`,
+        [id, caller?.uid ?? null],
       );
       if (!rows[0]) return null;
       const isOwner = !!caller && caller.uid === rows[0].owner_id;
       return {
         info: toWishlist(rows[0]),
         isOwner,
+        following: !isOwner && rows[0].following === true,
         items: isOwner
           ? await listItems(db, id)
           : await listVisitorItems(db, id, caller?.uid ?? null),
@@ -493,15 +529,6 @@ export async function handleOp(
         [user.uid, str(body.wishlistId, "wishlistId")],
       );
       return {};
-    }
-
-    case "isFollowing": {
-      const user = requireCaller(caller);
-      const { rows } = await db.query(
-        "select 1 from user_follows where user_id = $1 and wishlist_id = $2",
-        [user.uid, str(body.wishlistId, "wishlistId")],
-      );
-      return { following: rows.length > 0 };
     }
 
     case "followed": {

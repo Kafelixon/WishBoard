@@ -20,7 +20,8 @@ const call = async (op: Record<string, unknown>, token: string | null = idToken)
 };
 
 const created = await call({ op: "createWishlist", name: "e2e", author: "E2E", icon: "gift" });
-const id = (created.body.data as { id: string }).id;
+// The op answers with the owner's wishlists, newest first.
+const id = (created.body.data as { id: string }[])[0]?.id ?? "";
 console.log("create", created.status);
 console.log("add", (await call({ op: "addItem", wishlistId: id, item: { name: "Thing", price: 9.99, public: true } })).status);
 console.log("anon view", JSON.stringify((await call({ op: "view", wishlistId: id }, null)).body));

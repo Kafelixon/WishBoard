@@ -240,6 +240,16 @@ export class FakeBackend {
     };
     const summary = ({ items: _items, ownerId: _ownerId, ...rest }: StoredWishlist) => rest;
     const newestFirst = (a: StoredWishlist, b: StoredWishlist) => b.updateTimestamp - a.updateTimestamp;
+    const ownWishlists = () =>
+      [...this.wishlists.values()].filter((wishlist) => wishlist.ownerId === user()).sort(newestFirst);
+    const followed = () =>
+      [...(this.follows.get(user()) ?? [])]
+        .flatMap(([id, customName]) => {
+          const wishlist = this.wishlists.get(id);
+          return wishlist ? [{ wishlist, customName }] : [];
+        })
+        .sort((a, b) => newestFirst(a.wishlist, b.wishlist))
+        .map(({ wishlist, customName }) => ({ ...summary(wishlist), ...(customName && { customName }) }));
 
     switch (body.op) {
       case "ping":
@@ -256,7 +266,7 @@ export class FakeBackend {
           created.icon = required(body.icon, "icon");
           created.iconColor = color(body.iconColor);
         }
-        return { id };
+        return ownWishlists().map(summary);
       }
 
       case "updateWishlist": {
@@ -265,13 +275,13 @@ export class FakeBackend {
         wishlist.author = required(body.author, "author", true);
         wishlist.icon = required(body.icon, "icon");
         wishlist.iconColor = color(body.iconColor);
-        return {};
+        return ownWishlists().map(summary);
       }
 
       case "deleteWishlist": {
         const wishlist = owned("id");
         this.wishlists.delete(wishlist.id);
-        return {};
+        return ownWishlists().map(summary);
       }
 
       case "addItem": {
@@ -332,10 +342,13 @@ export class FakeBackend {
       }
 
       case "listMine":
-        return [...this.wishlists.values()]
-          .filter((wishlist) => wishlist.ownerId === user())
-          .sort(newestFirst)
-          .map(summary);
+        return ownWishlists().map(summary);
+
+      case "export":
+        return {
+          wishlists: ownWishlists().map((wishlist) => ({ ...summary(wishlist), items: wishlist.items })),
+          followedWishlists: followed(),
+        };
 
       case "view": {
         const wishlist = this.wishlists.get(required(body.wishlistId, "wishlistId"));
@@ -344,6 +357,7 @@ export class FakeBackend {
         return {
           info: summary(wishlist),
           isOwner,
+          following: !isOwner && !!uid && (this.follows.get(uid)?.has(wishlist.id) ?? false),
           items: this.visibleItems(wishlist, uid),
         };
       }
@@ -361,17 +375,8 @@ export class FakeBackend {
         this.follows.get(user())?.delete(required(body.wishlistId, "wishlistId"));
         return {};
 
-      case "isFollowing":
-        return { following: this.follows.get(user())?.has(required(body.wishlistId, "wishlistId")) ?? false };
-
       case "followed":
-        return [...(this.follows.get(user()) ?? [])]
-          .flatMap(([id, customName]) => {
-            const wishlist = this.wishlists.get(id);
-            return wishlist ? [{ wishlist, customName }] : [];
-          })
-          .sort((a, b) => newestFirst(a.wishlist, b.wishlist))
-          .map(({ wishlist, customName }) => ({ ...summary(wishlist), ...(customName && { customName }) }));
+        return followed();
 
       case "renameFollow": {
         const mine = this.follows.get(user());
