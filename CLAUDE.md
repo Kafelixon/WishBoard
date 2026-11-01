@@ -10,13 +10,13 @@ Package manager is **pnpm** (pinned in `package.json`; the README's `npm` instru
 pnpm install
 pnpm dev        # Vite dev server on http://localhost:5173
 pnpm build      # tsc && vite build -> dist/
-pnpm lint       # eslint . --max-warnings 0 (warnings fail the build)
+pnpm lint       # oxlint . --max-warnings 0 (warnings fail the build)
 pnpm preview
 ```
 
-There is no test runner configured. `pnpm build` (type-check) and `pnpm lint` are the verification steps; CI runs ESLint (`.github/workflows/eslint.yml`); deployment is Vercel.
+There is no test runner configured. `pnpm build` (type-check) and `pnpm lint` are the verification steps; CI runs lint and `tsc --noEmit` (`.github/workflows/ci.yml`); deployment is Vercel.
 
-ESLint uses `typescript-eslint` **strictTypeChecked** + stylistic, `@eslint-react` strict, react-hooks and jsx-a11y strict, with `reportUnusedDisableDirectives: "error"`. Unused vars must be prefixed with `_`.
+Linting is **Oxlint** (`.oxlintrc.json`, generated from the old ESLint config) with type-aware rules via `oxlint-tsgolint`, so it runs on the TypeScript 7 compiler (typescript-eslint and `@eslint-react` need the TS JS API and can't run on TS 7). It enables the typescript strict/stylistic type-checked rules, native react, react-hooks and jsx-a11y rules, and reports unused disable directives as errors (flag in the `lint` script). Unused vars must be prefixed with `_`. Oxlint has no `no-restricted-syntax`, so the i18n check is a local JS plugin, `tools/oxlint-i18n-plugin.mjs` (JS plugins are alpha). `eslint-disable` comments still work.
 
 ## Environment
 
@@ -39,7 +39,7 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
 
 ## Localization
 
-UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/locales/{en,pl}.json`; English is bundled, Polish is fetched by a small i18next backend only when active, so the root is wrapped in `<Suspense>`, keys type-checked against `en.json` via `src/i18next.d.ts`). Language comes from localStorage (`wishboard.language`, set by `LanguageSwitcher`), then the browser; `<html lang>` follows it. Use `t("…")` in components and `i18n.t` in plain modules (e.g. `authHandlers.ts`, yup messages as `() => i18n.t(…)`). Plurals use `_one/_few/_many/_other` suffixes. ESLint (`no-restricted-syntax`) rejects literal text in JSX and in `aria-label`/`placeholder`/`title`/`alt`. Not translated: server error messages from `api/`, `console.error` logs, `index.html` meta description.
+UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/locales/{en,pl}.json`; English is bundled, Polish is fetched by a small i18next backend only when active, so the root is wrapped in `<Suspense>`, keys type-checked against `en.json` via `src/i18next.d.ts`). Language comes from localStorage (`wishboard.language`, set by `LanguageSwitcher`), then the browser; `<html lang>` follows it. Use `t("…")` in components and `i18n.t` in plain modules (e.g. `authHandlers.ts`, yup messages as `() => i18n.t(…)`). Plurals use `_one/_few/_many/_other` suffixes. The `i18n/no-literal-ui-text` lint rule rejects literal text in JSX and in `aria-label`/`placeholder`/`title`/`alt`. Not translated: server error messages from `api/`, `console.error` logs, `index.html` meta description.
 
 ## Postgres backend (Neon, default)
 
