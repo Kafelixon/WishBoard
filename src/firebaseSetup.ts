@@ -1,5 +1,9 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  indexedDBLocalPersistence,
+  initializeAuth,
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_APP_FIREBASE_API_KEY as string,
@@ -12,4 +16,8 @@ const firebaseConfig = {
 };
 
 export const firebase = initializeApp(firebaseConfig);
-export const auth = getAuth(firebase);
+// Not getAuth: it also bundles the popup/redirect resolver, which only Google sign-in
+// needs, so that passes browserPopupRedirectResolver itself (lib/googleSignIn.ts).
+export const auth = initializeAuth(firebase, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+});

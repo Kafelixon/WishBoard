@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { fetchPage, parseProductMeta } from "../_lib/productMeta.js";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import { fetchPage, isPrivateAddress, parseProductMeta } from "../_lib/productMeta.js";
 
 const page = new URL("https://shop.example/p/1");
 
@@ -49,4 +51,34 @@ test("refuses internal addresses", async () => {
   await assert.rejects(fetchPage("http://127.0.0.1/"));
   await assert.rejects(fetchPage("http://169.254.169.254/latest/meta-data"));
   await assert.rejects(fetchPage("file:///etc/passwd"));
+});
+
+test("treats internal and special-purpose addresses as private", () => {
+  for (const address of [
+    "127.0.0.1", "10.1.2.3", "172.31.0.1", "192.168.1.1", "169.254.169.254", "100.64.0.1", "0.0.0.0",
+    "224.0.0.1", "::", "::1", "::ffff:127.0.0.1", "::ffff:7f00:1", "::ffff:a9fe:a9fe", "::7f00:1",
+    "64:ff9b::7f00:1", "2002:7f00:1::", "fd00::1", "fe80::1", "ff02::1", "not-an-ip",
+  ]) {
+    assert.equal(isPrivateAddress(address), true, address);
+  }
+  for (const address of ["93.184.216.34", "8.8.8.8", "::ffff:808:808", "2606:4700::6810:84e5"]) {
+    assert.equal(isPrivateAddress(address), false, address);
+  }
+});
+
+test("refuses internal addresses written as IPv6, by name, or reached by a redirect", async () => {
+  const server = createServer((_req, res) => {
+    res.writeHead(200, { "content-type": "text/html" }).end("<title>internal</title>");
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address() as AddressInfo;
+  try {
+    const refused = (url: string) =>
+      assert.rejects(fetchPage(url), (e: { status?: number }) => e.status === 400, url);
+    await refused(`http://[::ffff:127.0.0.1]:${String(port)}/`);
+    await refused(`http://[::ffff:7f00:1]:${String(port)}/`);
+    await refused(`http://localhost:${String(port)}/`);
+  } finally {
+    server.close();
+  }
 });

@@ -1,5 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import type { Page, Route } from "@playwright/test";
+import { RESERVATION_DAYS } from "../api/_lib/limits";
 
 /**
  * Stands in for Firebase Auth and the /api/wishlists function, so signed-in flows
@@ -44,6 +45,8 @@ interface Item {
   public: boolean;
   /** Visitors only: whether someone reserved it. Never sent to the owner. */
   reservation?: "mine" | "taken";
+  /** With `reservation: "mine"`: when it lapses (ms since epoch). */
+  reservedUntil?: number;
 }
 
 interface StoredWishlist {
@@ -67,6 +70,8 @@ class ApiError extends Error {
     super(message);
   }
 }
+
+const RESERVATION_MS = RESERVATION_DAYS * 24 * 60 * 60 * 1000;
 
 const base64Url = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
 
@@ -150,8 +155,8 @@ const toItem = (raw: unknown, id: string): Item => {
 
 export class FakeBackend {
   private readonly wishlists = new Map<string, StoredWishlist>();
-  /** item id -> the user who reserved it */
-  private readonly reservations = new Map<string, string>();
+  /** item id -> who reserved it and when that lapses */
+  private readonly reservations = new Map<string, { userId: string; until: number }>();
   /** user id -> followed wishlist id -> the follower's own name for it */
   private readonly follows = new Map<string, Map<string, string | undefined>>();
 
@@ -177,15 +182,23 @@ export class FakeBackend {
     return item.id;
   }
 
+  /** An item's reservation, unless it has lapsed. */
+  private activeReservation(itemId: string) {
+    const reservation = this.reservations.get(itemId);
+    return reservation && reservation.until > Date.now() ? reservation : undefined;
+  }
+
   /** The owner's view has every item and no reservation info; a visitor's has public items, with reservations when signed in. */
   private visibleItems(wishlist: StoredWishlist, uid: string | null): Item[] {
     if (uid === wishlist.ownerId) return wishlist.items;
     return wishlist.items
       .filter((item) => item.public)
       .map((item) => {
-        const holder = this.reservations.get(item.id);
+        const holder = this.activeReservation(item.id);
         if (!uid || !holder) return item;
-        return { ...item, reservation: holder === uid ? ("mine" as const) : ("taken" as const) };
+        return holder.userId === uid
+          ? { ...item, reservation: "mine" as const, reservedUntil: holder.until }
+          : { ...item, reservation: "taken" as const };
       });
   }
 
@@ -204,6 +217,16 @@ export class FakeBackend {
     };
     const summary = ({ items: _items, ownerId: _ownerId, ...rest }: StoredWishlist) => rest;
     const newestFirst = (a: StoredWishlist, b: StoredWishlist) => b.updateTimestamp - a.updateTimestamp;
+    const ownWishlists = () =>
+      [...this.wishlists.values()].filter((wishlist) => wishlist.ownerId === user()).sort(newestFirst);
+    const followed = () =>
+      [...(this.follows.get(user()) ?? [])]
+        .flatMap(([id, customName]) => {
+          const wishlist = this.wishlists.get(id);
+          return wishlist ? [{ wishlist, customName }] : [];
+        })
+        .sort((a, b) => newestFirst(a.wishlist, b.wishlist))
+        .map(({ wishlist, customName }) => ({ ...summary(wishlist), ...(customName && { customName }) }));
 
     switch (body.op) {
       case "ping":
@@ -220,7 +243,7 @@ export class FakeBackend {
           created.icon = required(body.icon, "icon");
           created.iconColor = color(body.iconColor);
         }
-        return { id };
+        return ownWishlists().map(summary);
       }
 
       case "updateWishlist": {
@@ -229,13 +252,13 @@ export class FakeBackend {
         wishlist.author = required(body.author, "author", true);
         wishlist.icon = required(body.icon, "icon");
         wishlist.iconColor = color(body.iconColor);
-        return {};
+        return ownWishlists().map(summary);
       }
 
       case "deleteWishlist": {
         const wishlist = owned("id");
         this.wishlists.delete(wishlist.id);
-        return {};
+        return ownWishlists().map(summary);
       }
 
       case "addItem": {
@@ -268,21 +291,24 @@ export class FakeBackend {
         const item = wishlist?.items.find((candidate) => candidate.id === itemId && candidate.public);
         if (!wishlist || !item) throw new ApiError(404, "Item not found.");
         if (wishlist.ownerId === me) throw new ApiError(403, "You cannot reserve items on your own wishlist.");
-        const holder = this.reservations.get(itemId);
         if (body.op === "reserveItem") {
-          if (holder && holder !== me) throw new ApiError(409, "Someone has already reserved this item.");
-          this.reservations.set(itemId, me);
-        } else if (holder === me) {
+          const holder = this.activeReservation(itemId);
+          if (holder && holder.userId !== me) throw new ApiError(409, "Someone has already reserved this item.");
+          if (!holder) this.reservations.set(itemId, { userId: me, until: Date.now() + RESERVATION_MS });
+        } else if (this.reservations.get(itemId)?.userId === me) {
           this.reservations.delete(itemId);
         }
         return this.visibleItems(wishlist, me);
       }
 
       case "listMine":
-        return [...this.wishlists.values()]
-          .filter((wishlist) => wishlist.ownerId === user())
-          .sort(newestFirst)
-          .map(summary);
+        return ownWishlists().map(summary);
+
+      case "export":
+        return {
+          wishlists: ownWishlists().map((wishlist) => ({ ...summary(wishlist), items: wishlist.items })),
+          followedWishlists: followed(),
+        };
 
       case "view": {
         const wishlist = this.wishlists.get(required(body.wishlistId, "wishlistId"));
@@ -291,6 +317,7 @@ export class FakeBackend {
         return {
           info: summary(wishlist),
           isOwner,
+          following: !isOwner && !!uid && (this.follows.get(uid)?.has(wishlist.id) ?? false),
           items: this.visibleItems(wishlist, uid),
         };
       }
@@ -308,17 +335,8 @@ export class FakeBackend {
         this.follows.get(user())?.delete(required(body.wishlistId, "wishlistId"));
         return {};
 
-      case "isFollowing":
-        return { following: this.follows.get(user())?.has(required(body.wishlistId, "wishlistId")) ?? false };
-
       case "followed":
-        return [...(this.follows.get(user()) ?? [])]
-          .flatMap(([id, customName]) => {
-            const wishlist = this.wishlists.get(id);
-            return wishlist ? [{ wishlist, customName }] : [];
-          })
-          .sort((a, b) => newestFirst(a.wishlist, b.wishlist))
-          .map(({ wishlist, customName }) => ({ ...summary(wishlist), ...(customName && { customName }) }));
+        return followed();
 
       case "renameFollow": {
         const mine = this.follows.get(user());
@@ -346,7 +364,7 @@ export class FakeBackend {
         }
         this.follows.delete(user());
         for (const [itemId, holder] of this.reservations) {
-          if (holder === user()) this.reservations.delete(itemId);
+          if (holder.userId === user()) this.reservations.delete(itemId);
         }
         return {};
       }

@@ -9,13 +9,15 @@ import {
   authErrorMessage,
   isSilentAuthError,
   loginUser,
-  loginWithGoogle,
   registerUser,
 } from "@/lib/authHandlers";
+import { loginWithGoogle } from "@/lib/googleSignIn";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/components/ui/use-toast";
 import { RotateCw } from "lucide-react";
 import { usePageTitle } from "@/lib/usePageTitle";
+import { looksLikeEmail } from "@/lib/email";
+import { MAX_AUTHOR_LENGTH } from "@/lib/limits";
 
 interface LocationState {
   from: string;
@@ -97,6 +99,7 @@ export const SignInForm = () => {
                 name="username"
                 autoComplete="username"
                 type="text"
+                maxLength={MAX_AUTHOR_LENGTH}
                 value={username}
                 onChange={(e) => { setUsername(e.target.value); }}
               />
@@ -227,16 +230,6 @@ function renderToggleRegisterLogin(
     </p>
   );
 }
-
-// Plain string checks instead of a regex, so long odd input can't cause backtracking.
-const looksLikeEmail = (value: string): boolean => {
-  const at = value.indexOf("@");
-  if (at < 1 || at !== value.lastIndexOf("@")) return false;
-  if (/\s/.test(value)) return false;
-  const domain = value.slice(at + 1);
-  const dot = domain.lastIndexOf(".");
-  return dot > 0 && dot < domain.length - 1;
-};
 
 function validateCredentials(
   t: TFunction,

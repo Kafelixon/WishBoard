@@ -5,7 +5,6 @@ import {
   FollowStateChanger,
   fetchWishlistView,
   followWishlist,
-  isFollowingWishlist,
   unfollowWishlist,
   type WishlistView,
 } from "@/lib/wishlistHandlers";
@@ -175,18 +174,15 @@ const WishlistPageContent: React.FC<{ wishlistId: string; userId: string }> = ({
   useEffect(() => {
     let cancelled = false;
 
-    Promise.all([
-      fetchWishlistView(wishlistId, userId || null),
-      userId ? isFollowingWishlist(userId, wishlistId) : false,
-    ])
-      .then(([view, following]) => {
+    fetchWishlistView(wishlistId, userId || null)
+      .then((view) => {
         if (cancelled) return;
         if (!view) {
           setState({ status: "missing" });
           return;
         }
         setItems(view.items);
-        setIsFollowing(following);
+        setIsFollowing(view.following);
         setState({ status: "ready", view });
       })
       .catch((error: unknown) => {

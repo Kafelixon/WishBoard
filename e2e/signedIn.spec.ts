@@ -223,6 +223,8 @@ test.describe("reservations", () => {
     await page.getByRole("button", { name: /^Reserve Tea set/ }).click();
     await expect(page.getByText("Reserved. Other visitors will see it's taken.", { exact: true })).toBeVisible();
     await expect(page.getByText("Reserved by you", { exact: true })).toBeVisible();
+    // Reservations lapse after a while; the reserver sees until when it holds.
+    await expect(page.getByText(/^until [A-Z][a-z]{2} \d{1,2}$/)).toBeVisible();
     await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toHaveCount(0);
 
     // It is still there after a reload: the reservation lives on the server.
@@ -331,5 +333,39 @@ test.describe("sharing", () => {
     await page.goto(`/wishlist/${id}`);
     await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Share", exact: true })).toHaveCount(0);
+  });
+});
+
+test.describe("data export", () => {
+  test("downloads own wishlists with private items, and followed wishlists", async ({ page, backend }) => {
+    backend.seed({
+      ownerId: TEST_USER.uid,
+      name: "Birthday",
+      author: "E2E Tester",
+      items: [
+        { name: "Book", public: true },
+        { name: "Surprise", public: false },
+      ],
+    });
+    const followedId = backend.seed({ ownerId: "someone-else", name: "Wedding", author: "Alex" });
+    await signIn(page);
+    await page.goto(`/wishlist/${followedId}`);
+    await page.getByRole("button", { name: "Follow", exact: true }).click();
+    await expect(page.getByText("You are now following this wishlist", { exact: true })).toBeVisible();
+
+    await page.goto("/settings");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export my data" }).click();
+    const stream = await (await download).createReadStream();
+    let text = "";
+    for await (const chunk of stream) text += String(chunk);
+    const data = JSON.parse(text) as {
+      wishlists: { name: string; items: { name: string }[] }[];
+      followedWishlists: { id: string }[];
+    };
+    expect(data.wishlists.map((w) => [w.name, w.items.map((i) => i.name)])).toEqual([
+      ["Birthday", ["Book", "Surprise"]],
+    ]);
+    expect(data.followedWishlists.map((w) => w.id)).toEqual([followedId]);
   });
 });
