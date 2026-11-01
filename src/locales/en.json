@@ -359,6 +359,7 @@
     "sortNewest": "Newest first",
     "sortCurrencyHint": "Each currency is sorted separately.",
     "arrange": "Arrange",
+    "autoArrange": "Auto-arrange by",
     "arrangeHint": "Drag items, or use the arrows, to set the order everyone sees.",
     "saveOrder": "Save order",
     "cancelArrange": "Cancel",

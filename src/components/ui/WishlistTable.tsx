@@ -8,9 +8,11 @@ import {
   BookmarkPlus,
   BookmarkX,
   Check,
+  ChevronDown,
   ExternalLink,
   Gift,
   GripVertical,
+  ListOrdered,
   Lock,
   Pencil,
   Plus,
@@ -33,6 +35,16 @@ import {
 import { ITEM_SORTS, type ItemSort, priceCurrencies, sortItems, toItemSort } from "@/lib/itemSort";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const loadItemDialog = () => import("@/components/ui/ItemDialog");
 // Only owners can edit; the form's yup and react-hook-form code stays out of everyone else's load.
@@ -214,6 +226,15 @@ export default function WishlistItemsTable({
     });
   };
 
+  const autoArrange = (by: ItemSort) => {
+    setArrangeOrder((order) => {
+      if (!order) return order;
+      const byId = new Map(items.map((item) => [item.id, item]));
+      const draft = order.flatMap((id) => byId.get(id) ?? []);
+      return sortItems(draft, by).map((item) => item.id);
+    });
+  };
+
   const saveOrder = () => {
     setArrangeOrder(null);
     setDraggedId(null);
@@ -267,17 +288,18 @@ export default function WishlistItemsTable({
   const privateCount = items.filter((item) => item.public === false).length;
   const askToSignIn = RESERVATIONS_AVAILABLE && !canEditWishlist && !userId;
   const sortSelect = items.length > 1 && (
-    <SortSelect sort={sort} onChange={setSort} mixedCurrencies={mixedCurrencies} />
+    <SortMenu sort={sort} onChange={setSort} mixedCurrencies={mixedCurrencies} />
   );
 
   return (
     <section aria-label={t("items.section")} className="flex flex-col gap-8">
       {!isLoading && items.length > 0 && canEditWishlist && (
-        <div className="flex flex-wrap items-end justify-between gap-4 border-y border-border py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-y border-border py-4">
           {arrangedItems ? (
             <>
               <p className="text-muted-foreground">{t("items.arrangeHint")}</p>
               <div className="flex flex-wrap gap-2">
+                <AutoArrangeMenu onPick={autoArrange} />
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -297,7 +319,7 @@ export default function WishlistItemsTable({
                 <Stat label={t("items.statItems", { count: items.length })} value={String(items.length)} />
                 {privateCount > 0 && <Stat label={t("items.statPrivate", { count: privateCount })} value={String(privateCount)} />}
               </dl>
-              <div className="flex flex-wrap items-end gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {sortSelect}
                 {items.length > 1 && (
                   <Button variant="outline" disabled={isSubmitting} onClick={startArranging}>
@@ -315,7 +337,7 @@ export default function WishlistItemsTable({
         </div>
       )}
       {!isLoading && items.length > 0 && !canEditWishlist && (askToSignIn || sortSelect) && (
-        <div className="flex flex-wrap items-end justify-between gap-4 border-y border-border py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-y border-border py-4">
           {askToSignIn && (
             <p className="text-muted-foreground">
               {t("items.signInToReserve")}{" "}
@@ -424,7 +446,7 @@ const SORT_LABELS: Record<ItemSort, TKey> = {
   newest: "items.sortNewest",
 };
 
-const SortSelect: FC<{
+const SortMenu: FC<{
   sort: ItemSort;
   onChange: (sort: ItemSort) => void;
   /** Price sorts with more than one currency say that each currency is sorted on its own. */
@@ -432,31 +454,61 @@ const SortSelect: FC<{
 }> = ({ sort, onChange, mixedCurrencies }) => {
   const { t } = useTranslation();
   return (
-    <div className="grid gap-1">
-      <label htmlFor="itemSort" className="text-sm text-muted-foreground">
-        {t("items.sortLabel")}
-      </label>
-      <select
-        id="itemSort"
-        value={sort}
-        aria-describedby={mixedCurrencies ? "itemSort-hint" : undefined}
-        onChange={(e) => {
-          onChange(toItemSort(e.target.value));
-        }}
-        className="h-10 rounded-xl border border-input bg-card px-3 text-sm text-foreground transition-colors hover:border-foreground/30 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30"
-      >
-        {ITEM_SORTS.map((option) => (
-          <option key={option} value={option}>
+    <DropdownMenu>
+      <DropdownMenuTrigger className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-input bg-card px-3 pt-[0.2em] text-sm text-foreground transition-colors hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:border-foreground/30 [&_svg]:relative [&_svg]:-top-[0.1em] [&_svg]:size-4 [&_svg]:text-muted-foreground">
+        <span className="text-muted-foreground">{t("items.sortLabel")}:</span>
+        {t(SORT_LABELS[sort])}
+        <ChevronDown aria-hidden="true" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        <DropdownMenuRadioGroup
+          value={sort}
+          onValueChange={(value) => {
+            onChange(toItemSort(value));
+          }}
+        >
+          {ITEM_SORTS.map((option) => (
+            <DropdownMenuRadioItem key={option} value={option}>
+              {t(SORT_LABELS[option])}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+        {mixedCurrencies && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="max-w-56 py-1 text-xs">
+              {t("items.sortCurrencyHint")}
+            </DropdownMenuLabel>
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+/** Arrange mode: reorders the draft by one of the sorts; the owner can still drag to fine-tune. */
+const AutoArrangeMenu: FC<{ onPick: (sort: ItemSort) => void }> = ({ onPick }) => {
+  const { t } = useTranslation();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-xl border border-input bg-card px-4 pt-[0.2em] text-foreground transition-colors hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:border-foreground/30 [&_svg]:relative [&_svg]:-top-[0.1em] [&_svg]:size-4 [&_svg]:text-muted-foreground">
+        <ListOrdered aria-hidden="true" />
+        {t("items.autoArrange")}
+        <ChevronDown aria-hidden="true" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent>
+        {ITEM_SORTS.filter((option) => option !== "owner").map((option) => (
+          <DropdownMenuItem
+            key={option}
+            onSelect={() => {
+              onPick(option);
+            }}
+          >
             {t(SORT_LABELS[option])}
-          </option>
+          </DropdownMenuItem>
         ))}
-      </select>
-      {mixedCurrencies && (
-        <p id="itemSort-hint" className="max-w-56 text-xs text-muted-foreground">
-          {t("items.sortCurrencyHint")}
-        </p>
-      )}
-    </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 };
 

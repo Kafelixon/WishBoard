@@ -361,22 +361,26 @@ test.describe("item order, sorting and details", () => {
       ],
     });
     await page.goto(`/wishlist/${id}`);
-    const sort = page.getByLabel("Sort by");
-    await expect(sort).toHaveValue("owner");
+    const sort = page.getByRole("button", { name: /^Sort by/ });
+    await expect(sort).toHaveText("Sort by:Wishlist order");
     await expect(shownNames(page)).toHaveText(["Lamp", "Socks", "Scarf", "Card", "Vase"]);
 
     // Zloty is the most common currency, so it comes first; the euro item is never compared with it.
-    await sort.selectOption({ label: "Price: low to high" });
+    await sort.click();
+    await page.getByRole("menuitemradio", { name: "Price: low to high" }).click();
     await expect(shownNames(page)).toHaveText(["Socks", "Vase", "Lamp", "Scarf", "Card"]);
+    await sort.click();
     await expect(page.getByText("Each currency is sorted separately.")).toBeVisible();
+    await page.keyboard.press("Escape");
     await expect(page).toHaveURL(/\?sort=price-asc$/);
 
-    await sort.selectOption({ label: "Price: high to low" });
+    await sort.click();
+    await page.getByRole("menuitemradio", { name: "Price: high to low" }).click();
     await expect(shownNames(page)).toHaveText(["Lamp", "Vase", "Socks", "Scarf", "Card"]);
 
     // The choice survives a reload because it is in the URL.
     await page.reload();
-    await expect(page.getByLabel("Sort by")).toHaveValue("price-desc");
+    await expect(page.getByRole("button", { name: /^Sort by/ })).toHaveText("Sort by:Price: high to low");
     await expect(shownNames(page)).toHaveText(["Lamp", "Vase", "Socks", "Scarf", "Card"]);
   });
 
@@ -415,6 +419,30 @@ test.describe("item order, sorting and details", () => {
 
     await page.reload();
     await expect(shownNames(page)).toHaveText(["Third", "First", "Second"]);
+  });
+
+  test("auto-arrange reorders the draft by price and is saved with Save order", async ({ page, backend }) => {
+    const id = backend.seed({
+      ownerId: TEST_USER.uid,
+      name: "Auto",
+      author: TEST_USER.name,
+      items: [
+        { name: "Pricey", price: 90, public: true },
+        { name: "Cheap", price: 10, public: true },
+        { name: "Middle", price: 50, public: true },
+      ],
+    });
+    await signIn(page);
+    await page.goto(`/wishlist/${id}`);
+    await page.getByRole("button", { name: "Arrange" }).click();
+    await page.getByRole("button", { name: /^Auto-arrange by/ }).click();
+    await page.getByRole("menuitem", { name: "Price: low to high" }).click();
+    await expect(shownNames(page)).toHaveText(["Cheap", "Middle", "Pricey"]);
+
+    await page.getByRole("button", { name: "Save order" }).click();
+    await expect(page.getByText("Order saved.", { exact: true })).toBeVisible();
+    await page.reload();
+    await expect(shownNames(page)).toHaveText(["Cheap", "Middle", "Pricey"]);
   });
 
   test("cancelling arrange mode keeps the saved order", async ({ page, backend }) => {
