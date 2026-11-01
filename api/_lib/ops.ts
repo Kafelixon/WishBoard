@@ -142,17 +142,22 @@ const listVisitorItems = async (
   return rows.map(toItem); // nosemgrep
 };
 
-/** Locks a public item and checks the caller is a visitor, not the wishlist's owner. */
+/**
+ * Locks an item and checks the caller is a visitor, not the wishlist's owner.
+ * Reserving needs a public item; releasing doesn't, so a reservation never gets
+ * stuck on an item the owner has since made private.
+ */
 const lockReservable = async (
   q: Queryable,
   caller: Caller,
   wishlistId: string,
   itemId: string,
+  requirePublic: boolean,
 ) => {
   const { rows } = await q.query(
     `select w.owner_id from wishlist_items i join wishlists w on w.id = i.wishlist_id
-     where i.id = $1 and i.wishlist_id = $2 and i.is_public for update of i`,
-    [itemId, wishlistId],
+     where i.id = $1 and i.wishlist_id = $2 and (i.is_public or not $3) for update of i`,
+    [itemId, wishlistId, requirePublic],
   );
   if (!rows[0]) throw new HttpError(404, "Item not found.");
   if (rows[0].owner_id === caller.uid) {
@@ -281,6 +286,10 @@ export async function handleOp(
           ],
         );
         if (!rows[0]) throw new HttpError(404, "Item not found.");
+        // Visitors can no longer see a private item, so a reservation on it would only linger.
+        if (item.public !== true) {
+          await q.query("delete from item_reservations where item_id = $1", [itemId]);
+        }
       });
     }
 
@@ -301,7 +310,7 @@ export async function handleOp(
       const itemId = str(body.itemId, "itemId");
       const reserve = body.op === "reserveItem";
       return db.transaction(async (q) => {
-        await lockReservable(q, user, wishlistId, itemId);
+        await lockReservable(q, user, wishlistId, itemId, reserve);
         if (reserve) {
           await ensureUser(q, user);
           await q.query(

@@ -100,6 +100,8 @@ export const changeUsername = async (newUsername: string) => {
     await updateProfile(auth.currentUser, {
       displayName: newUsername,
     });
+    // The API reads `name` from the ID token, which keeps the old name until it is refreshed.
+    await auth.currentUser.getIdToken(true);
   } catch (error) {
     console.error(error);
     throw Object.assign(new Error(i18n.t("authErrors.usernameFailed")), {

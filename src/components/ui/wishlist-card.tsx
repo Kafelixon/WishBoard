@@ -99,8 +99,9 @@ export function WishlistCard({ wishlist, onEdit, onRename }: WishlistCardProps) 
           </p>
         )}
         <p className="flex items-center justify-between gap-3 text-sm text-muted-foreground">
-          <span className="truncate">{wishlist.author}</span>
-          <span className="tabular shrink-0">{t("card.updated", { date: formatUpdated(wishlist.updateTimestamp) })}</span>
+          {/* Some migrated wishlists have no author; the date then stays on the right on its own. */}
+          {wishlist.author.trim() !== "" && <span className="truncate">{wishlist.author}</span>}
+          <span className="tabular ml-auto shrink-0">{t("card.updated", { date: formatUpdated(wishlist.updateTimestamp) })}</span>
         </p>
       </div>
     </div>

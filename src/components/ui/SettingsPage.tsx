@@ -11,7 +11,7 @@ import {
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
 import { auth } from "@/firebaseSetup";
-import { logout } from "@/lib/userStore";
+import { login, logout } from "@/lib/userStore";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ import {
   findWishlistsByOwner,
   updateExistingWishlistsAuthor,
 } from "@/lib/wishlistHandlers";
-import { useUserId } from "@/lib/common";
+import { useUser, useUserId } from "@/lib/common";
 
 export const SettingsPage = () => {
   const { t } = useTranslation();
@@ -90,6 +90,8 @@ const ChooseLanguage: React.FC = () => {
 const ResetPassword: React.FC = () => {
   const { toast } = useToast();
   const { t } = useTranslation();
+  const email = useUser()?.email ?? null;
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const resetPassword = async () => {
     if (!auth.currentUser?.email) {
@@ -100,7 +102,10 @@ const ResetPassword: React.FC = () => {
 
     try {
       await sendPasswordResetEmail(auth, auth.currentUser.email);
-      toast({ title: t("settings.password.sent") });
+      toast({
+        title: t("settings.password.sent"),
+        description: t("settings.password.sentDescription", { email: auth.currentUser.email }),
+      });
     } catch (error) {
       console.error("Error sending reset email:", error);
       toast({
@@ -115,35 +120,44 @@ const ResetPassword: React.FC = () => {
       label={t("settings.password.label")}
       description={t("settings.password.description")}
     >
-      <Button variant="outline" className="self-start" onClick={() => void resetPassword()}>
+      <Button variant="outline" className="self-start" onClick={() => { setConfirmOpen(true); }}>
         {t("settings.password.button")}
       </Button>
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={t("settings.password.label")}
+        description={
+          email
+            ? t("settings.password.confirm", { email })
+            : t("settings.password.confirmNoEmail")
+        }
+        confirmLabel={t("settings.password.button")}
+        onConfirm={() => void resetPassword()}
+        destructive={false}
+      />
     </CommonSettingsForm>
   );
 };
 
 const ChangeUsername: React.FC = () => {
   const { toast } = useToast();
-  const navigate = useNavigate();
   const { t } = useTranslation();
-  const userId = useUserId();
+  const user = useUser();
   const [username, setUsername] = useState("");
 
   const submitNewUsername = async () => {
-    if (!auth.currentUser) {
+    if (!auth.currentUser || !user) {
       console.error("No user found.");
       toast({ title: t("common.somethingWrong") });
       return;
     }
     try {
       await changeUsername(username);
-      await updateExistingWishlistsAuthor(userId, username);
-      toast({
-        title: t("settings.username.updated"),
-        description: t("settings.username.updatedDescription"),
-      });
-      logout();
-      void navigate("/");
+      await updateExistingWishlistsAuthor(user.uid, username);
+      login({ ...user, displayName: username });
+      setUsername("");
+      toast({ title: t("settings.username.updated") });
     } catch (error) {
       console.error("Error updating username:", error);
       toast({ title: t("settings.username.failed"), variant: "destructive" });
@@ -246,9 +260,12 @@ type Toast = ReturnType<typeof useToast>["toast"];
 
 const authErrorTitle = (t: TFunction, error: unknown, fallback: string): string => {
   const code = (error as { code?: unknown } | null)?.code;
-  return code === "auth/wrong-password" || code === "auth/invalid-credential"
-    ? t("settings.reauth.incorrectPassword")
-    : fallback;
+  if (code === "auth/wrong-password" || code === "auth/invalid-credential") {
+    return t("settings.reauth.incorrectPassword");
+  }
+  // Reauthenticating through the Google popup with another Google account than the signed-in one.
+  if (code === "auth/user-mismatch") return t("settings.reauth.userMismatch");
+  return fallback;
 };
 
 /**
@@ -323,7 +340,10 @@ const ExportData: React.FC = () => {
       link.href = url;
       link.download = "wishboard-export.json";
       link.click();
-      URL.revokeObjectURL(url);
+      // Some browsers start the download after click() returns, so revoking right away can cancel it.
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 10_000);
       toast({ title: t("settings.export.done") });
     } catch (error) {
       console.error("Error exporting data:", error);

@@ -64,6 +64,7 @@ export default function WishlistItemsTable({
     useState<WishlistItem>(PLACEHOLDER_ITEM);
   // Saves run one after another so a slow write can never overwrite a newer
   // list, and the form is only reset when a dialog opens, never when a save ends.
+  // The item dialog stays open until its save is done, so a failed save keeps what was typed.
   const writeQueueRef = useRef<Promise<void>>(Promise.resolve());
   const isSubmitting = pendingWrites > 0;
 
@@ -82,21 +83,25 @@ export default function WishlistItemsTable({
     write: () => Promise<WishlistItem[]>,
     successMessage: string,
     errorMessage: string,
-  ) => {
+  ): Promise<boolean> => {
     setPendingWrites((count) => count + 1);
-    writeQueueRef.current = writeQueueRef.current
+    const saved = writeQueueRef.current
       .then(write)
       .then((updatedItems) => {
         onItemsChange(updatedItems);
         toast({ title: successMessage });
+        return true;
       })
       .catch((error: unknown) => {
         console.error(error);
         toast({ title: errorMessage, variant: "destructive" });
+        return false;
       })
       .finally(() => {
         setPendingWrites((count) => count - 1);
       });
+    writeQueueRef.current = saved.then(() => undefined);
+    return saved;
   };
 
   const openAddDialog = () => {
@@ -117,10 +122,10 @@ export default function WishlistItemsTable({
     itemAction: WishlistItemChanger,
     successMessage: string,
     errorMessage: string,
-  ) => {
+  ): Promise<boolean> => {
     if (!userId || !wishlistId) {
       console.error("User ID or Wishlist ID is missing");
-      return;
+      return Promise.resolve(false);
     }
 
     // The number input can hand back "" while it is being edited.
@@ -133,7 +138,7 @@ export default function WishlistItemsTable({
       price: Number(rawPrice) || 0,
     };
 
-    enqueueWrite(
+    return enqueueWrite(
       () => itemAction(userId, wishlistId, itemWithCorrectLink),
       successMessage,
       errorMessage,
@@ -146,7 +151,7 @@ export default function WishlistItemsTable({
       return;
     }
     const itemId = currentItem.id;
-    enqueueWrite(
+    void enqueueWrite(
       () => deleteWishlistItem(userId, wishlistId, itemId),
       t("items.deleted"),
       t("items.deleteFailed"),
@@ -160,7 +165,7 @@ export default function WishlistItemsTable({
     if (!userId) return;
     const reserve = item.reservation !== "mine";
     const change = reserve ? reserveItem : unreserveItem;
-    enqueueWrite(
+    void enqueueWrite(
       () =>
         change(userId, wishlistId, item.id).catch(async (error: unknown) => {
           // Someone may have reserved it first; show the current state along with the error.
@@ -221,11 +226,11 @@ export default function WishlistItemsTable({
           currentItem={currentItem}
           handleItemChange={handleItemChange}
           handleAction={() =>
-            { handleAddOrUpdateItem(
+            handleAddOrUpdateItem(
               addItemToWishlist,
               t("items.added"),
               t("items.addFailed"),
-            ); }
+            )
           }
           isSubmitting={isSubmitting}
           dialogTitle={t("items.addTitle")}
@@ -240,11 +245,11 @@ export default function WishlistItemsTable({
             currentItem={currentItem}
             handleItemChange={handleItemChange}
             handleAction={() =>
-              { handleAddOrUpdateItem(
+              handleAddOrUpdateItem(
                 updateWishlistItem,
                 t("items.updated"),
                 t("items.updateFailed"),
-              ); }
+              )
             }
             handleDelete={handleDeleteItem}
             isSubmitting={isSubmitting}

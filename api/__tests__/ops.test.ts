@@ -3,7 +3,7 @@ import { after, describe, it } from "node:test";
 import { randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { exportJWK, generateKeyPair, SignJWT, createLocalJWKSet } from "jose";
-import { createVerifier, type Caller } from "../_lib/auth.js";
+import { createVerifier, firebaseProjectId, type Caller } from "../_lib/auth.js";
 import { poolDb } from "../_lib/db.js";
 import { handleOp, HttpError } from "../_lib/ops.js";
 
@@ -240,6 +240,18 @@ describe("item reservations", () => {
     await rejects(op(bob, { op: "reserveItem", wishlistId: "nope", itemId: giftId }), 404);
   });
 
+  it("drops a reservation when the item is made private, and still lets the reserver release it", async () => {
+    // Carol holds the gift from the previous test.
+    const setPublic = (isPublic: boolean) =>
+      op(alice, { op: "updateItem", wishlistId, item: { id: giftId, name: "Gift", public: isPublic } });
+    await setPublic(false);
+    await unreserve(carol); // no longer 404 on a private item
+    await setPublic(true);
+    assert.equal(await reservationOf(carol), undefined);
+    assert.equal(await reservationOf(bob), undefined);
+    await reserve(carol);
+  });
+
   it("drops reservations with the item and with the reserver's account", async () => {
     await reserve(bob, (await items(bob)).find((i) => i.name === "Another")?.id);
     const count = async () =>
@@ -273,5 +285,11 @@ describe("firebase token verification", () => {
     await assert.rejects(verify(await sign(privateKey, { aud: "evil" })));
     await assert.rejects(verify(await sign(privateKey, { iss: "https://evil.example" })));
     await assert.rejects(verify(await sign(other.privateKey, {})));
+  });
+
+  it("refuses to start without a project ID", () => {
+    assert.equal(firebaseProjectId({ FIREBASE_PROJECT_ID: "proj" }), "proj");
+    assert.equal(firebaseProjectId({ FIREBASE_PROJECT_ID: "", VITE_APP_FIREBASE_PROJECT_ID: "web" }), "web");
+    assert.throws(() => firebaseProjectId({}), /FIREBASE_PROJECT_ID/);
   });
 });

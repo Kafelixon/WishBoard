@@ -145,16 +145,18 @@
       "label": "Password",
       "description": "We'll email you a link to choose a new one.",
       "button": "Send reset email",
-      "sent": "Password reset email sent successfully!",
+      "confirm": "We'll send a link to {{email}} where you can choose a new password. Your current password keeps working until you do.",
+      "confirmNoEmail": "We'll email you a link where you can choose a new password. Your current password keeps working until you do.",
+      "sent": "Password reset email sent",
+      "sentDescription": "Check {{email}}, including the spam folder.",
       "failed": "Failed to send password reset email."
     },
     "username": {
       "label": "Username",
-      "description": "Shown on your wishlists. You'll be asked to sign in again after changing it.",
+      "description": "Shown on your wishlists.",
       "placeholder": "New username",
       "button": "Update username",
       "updated": "Username updated successfully!",
-      "updatedDescription": "Please log in again.",
       "failed": "Failed to update username."
     },
     "email": {
@@ -168,6 +170,7 @@
     },
     "reauth": {
       "incorrectPassword": "Incorrect password",
+      "userMismatch": "That's a different Google account. Choose the one you signed in with.",
       "loading": "Your account is still loading",
       "loadingDescription": "Please try again in a moment.",
       "unavailable": "Not available for this account yet",
