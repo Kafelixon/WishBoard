@@ -53,7 +53,7 @@ The project uses [pnpm](https://pnpm.io/) (the version is pinned in `package.jso
 | `pnpm dev`       | Vite dev server                               |
 | `pnpm dev:api`   | Serve the `/api` function on port 3001        |
 | `pnpm build`     | Type-check and build to `dist/`               |
-| `pnpm lint`      | ESLint (warnings fail)                        |
+| `pnpm lint`      | Oxlint (warnings fail)                        |
 | `pnpm test`      | API integration tests against the Neon DB     |
 | `pnpm test:e2e`  | Playwright tests (needs `pnpm build` first)   |
 

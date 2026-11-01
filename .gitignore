@@ -17,7 +17,6 @@ build/Release
 
 # Cache directories
 .npm
-.eslintcache
 .firebase/
 .turbo
 
