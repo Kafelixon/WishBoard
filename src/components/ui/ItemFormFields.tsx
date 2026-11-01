@@ -121,6 +121,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
   };
   const currency = (watch("currency", currentItem.currency) as string | undefined) ?? DEFAULT_CURRENCY;
   const publicField = watch("public", currentItem.public) as boolean;
+  const mostWantedField = (watch("mostWanted", currentItem.mostWanted) as boolean | undefined) ?? false;
 
   const undoFetch = () => {
     if (!undoValues) return;
@@ -198,6 +199,62 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
           )}
         </div>
       ))}
+      <div className="grid gap-2">
+        <Label htmlFor="itemNotes">{t("itemForm.notes")}</Label>
+        <textarea
+          id="itemNotes"
+          rows={2}
+          maxLength={500}
+          placeholder={t("itemForm.notesPlaceholder")}
+          aria-invalid={errors.notes ? true : undefined}
+          aria-describedby={errors.notes ? "itemNotes-error" : undefined}
+          {...register("notes")}
+          onChange={(e) => { handleItemChange({ notes: e.target.value }); }}
+          className="flex w-full resize-y rounded-xl border border-input bg-card px-3.5 py-2.5 text-base text-foreground shadow-[inset_0_1px_2px_hsl(28_30%_20%/0.05)] transition-colors placeholder:text-muted-foreground/70 hover:border-foreground/30 focus-visible:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 aria-invalid:border-destructive"
+        />
+        {errors.notes && (
+          <p id="itemNotes-error" role="alert" className="text-sm text-destructive">
+            {errors.notes.message as string}
+          </p>
+        )}
+      </div>
+      <div className="grid gap-2">
+        <Label htmlFor="itemQuantity">{t("itemForm.quantity")}</Label>
+        <Input
+          id="itemQuantity"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={99}
+          step={1}
+          className="w-28"
+          aria-invalid={errors.quantity ? true : undefined}
+          aria-describedby={errors.quantity ? "itemQuantity-error" : undefined}
+          {...register("quantity")}
+          onChange={(e) => {
+            // NaN while the field is empty; validation and saving treat that as 1.
+            handleItemChange({ quantity: e.target.valueAsNumber });
+          }}
+        />
+        {errors.quantity && (
+          <p id="itemQuantity-error" role="alert" className="text-sm text-destructive">
+            {errors.quantity.message as string}
+          </p>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-secondary/50 px-4 py-3">
+        <div className="space-y-0.5">
+          <Label htmlFor="itemMostWanted">{t("itemForm.mostWanted")}</Label>
+          <p className="text-sm text-muted-foreground">
+            {t("itemForm.mostWantedHint")}
+          </p>
+        </div>
+        <Switch
+          id="itemMostWanted"
+          checked={mostWantedField}
+          onCheckedChange={() => { handleItemChange({ mostWanted: !mostWantedField }); }}
+        />
+      </div>
       <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-secondary/50 px-4 py-3">
         <div className="space-y-0.5">
           <Label htmlFor="itemPublic">{t("itemForm.public")}</Label>

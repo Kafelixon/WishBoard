@@ -122,7 +122,7 @@ export const addItemToWishlist: WishlistItemChanger = (
 ) =>
   writeItems(userId, wishlistId, (items) => [
     ...items,
-    { ...item, id: uuid() },
+    { ...item, id: uuid(), createdAt: Date.now() },
   ]);
 
 export const updateWishlistItem: WishlistItemChanger = (
@@ -144,6 +144,24 @@ export const deleteWishlistItem = (
   writeItems(userId, wishlistId, (items) =>
     items.filter((element) => element.id !== itemId),
   );
+
+/** Saves the owner's order; `itemIds` must list every item of the wishlist. */
+export const reorderItems = (
+  userId: string,
+  wishlistId: string,
+  itemIds: string[],
+): Promise<WishlistItem[]> =>
+  writeItems(userId, wishlistId, (items) => {
+    const byId = new Map(items.map((item) => [item.id, item]));
+    const complete =
+      itemIds.length === items.length &&
+      new Set(itemIds).size === items.length &&
+      itemIds.every((id) => byId.has(id));
+    if (!complete) {
+      throw new Error("The wishlist changed. Reload it and try again.");
+    }
+    return itemIds.flatMap((id) => byId.get(id) ?? []);
+  });
 
 export const findWishlistsByOwner = async (userId: string) => {
   const q = query(

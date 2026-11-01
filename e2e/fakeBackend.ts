@@ -42,6 +42,10 @@ interface Item {
   link: string;
   image: string;
   public: boolean;
+  notes: string;
+  quantity: number;
+  mostWanted: boolean;
+  createdAt: number;
   /** Visitors only: whether someone reserved it. Never sent to the owner. */
   reservation?: "mine" | "taken";
 }
@@ -135,7 +139,22 @@ const toPrice = (value: unknown): number => {
   return Math.round(price * 100) / 100;
 };
 
-const toItem = (raw: unknown, id: string): Item => {
+const toQuantity = (value: unknown): number => {
+  const quantity = value === undefined || value === null ? 1 : Number(value);
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
+    throw new ApiError(400, "quantity must be a whole number from 1 to 99.");
+  }
+  return quantity;
+};
+
+const toNotes = (value: unknown): string => {
+  const notes = typeof value === "string" ? value.trim() : "";
+  if (notes.length > 500) throw new ApiError(400, "notes must be at most 500 characters.");
+  return notes;
+};
+
+/** `createdAt` is kept from the stored item on update, as the real table's column is. */
+const toItem = (raw: unknown, id: string, createdAt = Date.now()): Item => {
   const item = (raw ?? {}) as Record<string, unknown>;
   return {
     id,
@@ -145,6 +164,10 @@ const toItem = (raw: unknown, id: string): Item => {
     link: typeof item.link === "string" ? item.link : "",
     image: typeof item.image === "string" ? item.image : "",
     public: item.public === true,
+    notes: toNotes(item.notes),
+    quantity: toQuantity(item.quantity),
+    mostWanted: item.mostWanted === true,
+    createdAt: typeof item.createdAt === "number" ? item.createdAt : createdAt,
   };
 };
 
@@ -249,7 +272,8 @@ export class FakeBackend {
         const itemId = required((body.item as Partial<Item> | undefined)?.id, "Item ID");
         const index = wishlist.items.findIndex((item) => item.id === itemId);
         if (index < 0) throw new ApiError(404, "Item not found.");
-        wishlist.items[index] = toItem(body.item, itemId);
+        const { createdAt } = wishlist.items[index];
+        wishlist.items[index] = { ...toItem(body.item, itemId), createdAt };
         return wishlist.items;
       }
 
@@ -257,6 +281,22 @@ export class FakeBackend {
         const wishlist = owned("wishlistId");
         const itemId = required(body.itemId, "itemId");
         wishlist.items = wishlist.items.filter((item) => item.id !== itemId);
+        return wishlist.items;
+      }
+
+      case "reorderItems": {
+        const wishlist = owned("wishlistId");
+        const itemIds = body.itemIds;
+        const byId = new Map(wishlist.items.map((item) => [item.id, item]));
+        if (
+          !Array.isArray(itemIds) ||
+          itemIds.length !== byId.size ||
+          new Set(itemIds).size !== byId.size ||
+          !itemIds.every((itemId) => typeof itemId === "string" && byId.has(itemId))
+        ) {
+          throw new ApiError(409, "The wishlist changed. Reload it and try again.");
+        }
+        wishlist.items = itemIds.flatMap((itemId: string) => byId.get(itemId) ?? []);
         return wishlist.items;
       }
 

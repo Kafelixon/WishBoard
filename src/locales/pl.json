@@ -107,7 +107,9 @@
     "priceNumber": "Cena musi być liczbą",
     "priceNegative": "Cena nie może być ujemna",
     "wishlistName": "Nadaj swojej liście nazwę",
-    "hex": "Użyj kodu szesnastkowego, np. #2563eb."
+    "hex": "Użyj kodu szesnastkowego, np. #2563eb.",
+    "quantity": "Ilość musi być liczbą całkowitą od 1 do 99",
+    "notesLength": "Uwagi mogą mieć najwyżej 500 znaków"
   },
   "verifyEmail": {
     "message": "Potwierdź swój adres e-mail. Link potwierdzający wysłaliśmy po rejestracji.",
@@ -348,7 +350,26 @@
     "unreservedToast": "Rezerwacja anulowana.",
     "unreserveFailed": "Nie udało się anulować rezerwacji.",
     "signInToReserve": "Zaloguj się, aby zarezerwować prezent i zobaczyć, które są już zajęte.",
-    "signInToReserveLink": "Zaloguj się"
+    "signInToReserveLink": "Zaloguj się",
+    "sortLabel": "Sortuj",
+    "sortOwner": "Kolejność listy",
+    "sortPriceAsc": "Cena: od najniższej",
+    "sortPriceDesc": "Cena: od najwyższej",
+    "sortNewest": "Najnowsze",
+    "sortCurrencyHint": "Każda waluta jest sortowana osobno.",
+    "arrange": "Ułóż",
+    "arrangeHint": "Przeciągnij przedmioty lub użyj strzałek, aby ustalić kolejność widoczną dla wszystkich.",
+    "saveOrder": "Zapisz kolejność",
+    "cancelArrange": "Anuluj",
+    "moveEarlier": "Przesuń wcześniej: {{name}}",
+    "moveLater": "Przesuń dalej: {{name}}",
+    "reordered": "Kolejność zapisana.",
+    "reorderFailed": "Nie udało się zapisać kolejności. Odśwież listę i spróbuj ponownie.",
+    "mostWanted": "Najbardziej wyczekiwane",
+    "quantity_one": "{{count}} sztuka",
+    "quantity_few": "{{count}} sztuki",
+    "quantity_many": "{{count}} sztuk",
+    "quantity_other": "{{count}} sztuki"
   },
   "itemForm": {
     "name": "Nazwa",
@@ -370,6 +391,11 @@
     "public": "Publiczny",
     "publicHint": "Każdy, kto ma link, go zobaczy. Wyłącz, aby zachować go tylko dla siebie.",
     "delete": "Usuń przedmiot",
-    "deleteConfirm": "Usunąć ten przedmiot? Tej operacji nie można cofnąć."
+    "deleteConfirm": "Usunąć ten przedmiot? Tej operacji nie można cofnąć.",
+    "notes": "Uwagi",
+    "notesPlaceholder": "Opcjonalnie: rozmiar, kolor, model…",
+    "quantity": "Ilość",
+    "mostWanted": "Najbardziej wyczekiwane",
+    "mostWantedHint": "Wyróżnij, żeby wszyscy wiedzieli, na czym zależy Ci najbardziej."
   }
 }

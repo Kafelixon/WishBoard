@@ -9,6 +9,14 @@ export interface WishlistItem {
   currency?: string;
   link: string;
   public?: boolean;
+  /** Size, colour, model and the like. */
+  notes?: string;
+  /** How many the owner wants; missing means 1. */
+  quantity?: number;
+  /** Highlighted on the card as "most wanted". */
+  mostWanted?: boolean;
+  /** Epoch ms when the item was added, for the "newest" sort. Missing on older Firestore items. */
+  createdAt?: number;
   /**
    * Set only for signed-in visitors when someone has reserved the item; the owner
    * never gets it. Always undefined in the Firestore build, which has no reservations.

@@ -31,7 +31,7 @@ interface ItemDialogProps {
   actionLabel: string;
 }
 
-type ItemSchema = Omit<WishlistItem, "id" | "reservation">;
+type ItemSchema = Omit<WishlistItem, "id" | "reservation" | "createdAt">;
 
 const schema: yup.ObjectSchema<ItemSchema> = yup.object({
   name: yup.string().required(() => i18n.t("validation.itemName")),
@@ -51,6 +51,17 @@ const schema: yup.ObjectSchema<ItemSchema> = yup.object({
     .defined()
     .test("web-url", () => i18n.t("validation.webUrl"), isValidWebUrl),
   public: yup.boolean(),
+  notes: yup.string().max(500, () => i18n.t("validation.notesLength")),
+  quantity: yup
+    .number()
+    .transform((value, originalValue) =>
+      originalValue === "" || Number.isNaN(originalValue) ? 1 : (value as number),
+    )
+    .typeError(() => i18n.t("validation.quantity"))
+    .integer(() => i18n.t("validation.quantity"))
+    .min(1, () => i18n.t("validation.quantity"))
+    .max(99, () => i18n.t("validation.quantity")),
+  mostWanted: yup.boolean(),
 });
 
 export const ItemDialog: FC<ItemDialogProps> = ({

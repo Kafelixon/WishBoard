@@ -19,6 +19,11 @@ interface Item {
   link: string;
   image: string;
   public: boolean;
+  notes: string;
+  quantity: number;
+  mostWanted: boolean;
+  /** Epoch ms; used for the "newest" sort. */
+  createdAt: number;
   /** Visitors only: whether someone reserved it. Never sent to the owner. */
   reservation?: "mine" | "taken";
 }
@@ -48,12 +53,18 @@ const toItem = (row: Row): Item => ({
   link: typeof row.link === "string" ? row.link : "",
   image: typeof row.image === "string" ? row.image : "",
   public: Boolean(row.is_public),
+  notes: typeof row.notes === "string" ? row.notes : "",
+  quantity: Number(row.quantity) || 1,
+  mostWanted: Boolean(row.most_wanted),
+  createdAt: Number(row.created_ms),
   ...((row.reservation === "mine" || row.reservation === "taken") && {
     reservation: row.reservation,
   }),
 });
 
 const HEX_COLOR = /^#[0-9a-f]{6}$/;
+const MAX_QUANTITY = 99;
+const MAX_NOTES_LENGTH = 500;
 
 const color = (value: unknown): string | null => {
   if (value === undefined || value === null || value === "") return null;
@@ -80,6 +91,29 @@ const toCents = (price: unknown): number => {
     throw new HttpError(400, "price must be a non-negative number.");
   }
   return Math.round(value * 100);
+};
+
+const toQuantity = (value: unknown): number => {
+  const quantity = value === undefined || value === null ? 1 : Number(value);
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) {
+    throw new HttpError(400, `quantity must be a whole number from 1 to ${String(MAX_QUANTITY)}.`);
+  }
+  return quantity;
+};
+
+const toNotes = (value: unknown): string => {
+  const notes = typeof value === "string" ? value.trim() : "";
+  if (notes.length > MAX_NOTES_LENGTH) {
+    throw new HttpError(400, `notes must be at most ${String(MAX_NOTES_LENGTH)} characters.`);
+  }
+  return notes;
+};
+
+const strList = (value: unknown, field: string): string[] => {
+  if (!Array.isArray(value) || !value.every((entry: unknown) => typeof entry === "string")) {
+    throw new HttpError(400, `${field} is required.`);
+  }
+  return value;
 };
 
 const asRecord = (value: unknown, field: string): Record<string, unknown> => {
@@ -113,12 +147,13 @@ const lockOwned = async (q: Queryable, caller: Caller, wishlistId: string) => {
   }
 };
 
-const ITEM_COLUMNS =
-  "select id, name, price_cents, currency, link, image, is_public from wishlist_items";
-const ALL_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 order by sort_order, id`;
-const PUBLIC_ITEMS = `${ITEM_COLUMNS} where wishlist_id = $1 and is_public order by sort_order, id`;
+const ITEM_FIELDS = `i.id, i.name, i.price_cents, i.currency, i.link, i.image, i.is_public,
+  i.notes, i.quantity, i.most_wanted, (extract(epoch from i.created_at) * 1000)::bigint as created_ms`;
+const ITEM_COLUMNS = `select ${ITEM_FIELDS} from wishlist_items i`;
+const ALL_ITEMS = `${ITEM_COLUMNS} where i.wishlist_id = $1 order by i.sort_order, i.id`;
+const PUBLIC_ITEMS = `${ITEM_COLUMNS} where i.wishlist_id = $1 and i.is_public order by i.sort_order, i.id`;
 // Reservation state only goes to signed-in visitors, so the owner can't spot it by opening their own link signed out.
-const VISITOR_ITEMS = `select i.id, i.name, i.price_cents, i.currency, i.link, i.image, i.is_public,
+const VISITOR_ITEMS = `select ${ITEM_FIELDS},
     case when r.user_id is null then null when r.user_id = $2 then 'mine' else 'taken' end as reservation
   from wishlist_items i left join item_reservations r on r.item_id = i.id
   where i.wishlist_id = $1 and i.is_public order by i.sort_order, i.id`;
@@ -141,6 +176,19 @@ const listVisitorItems = async (
     : await q.query(PUBLIC_ITEMS, [wishlistId]);
   return rows.map(toItem); // nosemgrep
 };
+
+/** The editable columns of an item, in the order addItem and updateItem bind them. */
+const itemValues = (item: Record<string, unknown>) => [
+  str(item.name, "item name"),
+  toCents(item.price),
+  typeof item.link === "string" ? item.link : "",
+  typeof item.image === "string" ? item.image : "",
+  item.public === true,
+  toCurrency(item.currency),
+  toNotes(item.notes),
+  toQuantity(item.quantity),
+  item.mostWanted === true,
+];
 
 /** Locks a public item and checks the caller is a visitor, not the wishlist's owner. */
 const lockReservable = async (
@@ -243,20 +291,11 @@ export async function handleOp(
       const item = asRecord(body.item, "item");
       return changeItems(db, caller, body.wishlistId, async (q, id) => {
         await q.query(
-          `insert into wishlist_items
-             (id, wishlist_id, name, price_cents, link, image, is_public, currency, sort_order)
-           values ($1, $2, $3, $4, $5, $6, $7, $8,
+          `insert into wishlist_items (id, wishlist_id, name, price_cents, link, image,
+             is_public, currency, notes, quantity, most_wanted, sort_order)
+           values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
              (select coalesce(max(sort_order), -1) + 1 from wishlist_items where wishlist_id = $2))`,
-          [
-            randomUUID(),
-            id,
-            str(item.name, "item name"),
-            toCents(item.price),
-            typeof item.link === "string" ? item.link : "",
-            typeof item.image === "string" ? item.image : "",
-            item.public === true,
-            toCurrency(item.currency),
-          ],
+          [randomUUID(), id, ...itemValues(item)],
         );
       });
     }
@@ -267,18 +306,10 @@ export async function handleOp(
       return changeItems(db, caller, body.wishlistId, async (q, id) => {
         const { rows } = await q.query(
           `update wishlist_items set name = $3, price_cents = $4, link = $5,
-             image = $6, is_public = $7, currency = $8
+             image = $6, is_public = $7, currency = $8, notes = $9, quantity = $10,
+             most_wanted = $11
            where id = $1 and wishlist_id = $2 returning id`,
-          [
-            itemId,
-            id,
-            str(item.name, "item name"),
-            toCents(item.price),
-            typeof item.link === "string" ? item.link : "",
-            typeof item.image === "string" ? item.image : "",
-            item.public === true,
-            toCurrency(item.currency),
-          ],
+          [itemId, id, ...itemValues(item)],
         );
         if (!rows[0]) throw new HttpError(404, "Item not found.");
       });
@@ -290,6 +321,31 @@ export async function handleOp(
         await q.query(
           "delete from wishlist_items where id = $1 and wishlist_id = $2",
           [itemId, id],
+        );
+      });
+    }
+
+    case "reorderItems": {
+      const itemIds = strList(body.itemIds, "itemIds");
+      return changeItems(db, caller, body.wishlistId, async (q, id) => {
+        const { rows } = await q.query(
+          "select id from wishlist_items where wishlist_id = $1",
+          [id],
+        );
+        // The new order must name every item exactly once; otherwise the list changed since the owner loaded it.
+        const current = new Set(rows.map((row) => String(row.id)));
+        if (
+          new Set(itemIds).size !== itemIds.length ||
+          itemIds.length !== current.size ||
+          !itemIds.every((itemId) => current.has(itemId))
+        ) {
+          throw new HttpError(409, "The wishlist changed. Reload it and try again.");
+        }
+        await q.query(
+          `update wishlist_items i set sort_order = o.position
+           from unnest($2::text[]) with ordinality as o(item_id, position)
+           where i.id = o.item_id and i.wishlist_id = $1`,
+          [id, itemIds],
         );
       });
     }

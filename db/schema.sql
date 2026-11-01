@@ -30,6 +30,11 @@ CREATE TABLE IF NOT EXISTS wishlist_items (
 );
 -- Existing databases: older rows are all zloty prices, which the default fills in.
 ALTER TABLE wishlist_items ADD COLUMN IF NOT EXISTS currency text NOT NULL DEFAULT 'PLN';
+-- Item details. Existing rows all get the same created_at; "newest" falls back to sort_order for them.
+ALTER TABLE wishlist_items ADD COLUMN IF NOT EXISTS notes text NOT NULL DEFAULT '';
+ALTER TABLE wishlist_items ADD COLUMN IF NOT EXISTS quantity integer NOT NULL DEFAULT 1 CHECK (quantity BETWEEN 1 AND 99);
+ALTER TABLE wishlist_items ADD COLUMN IF NOT EXISTS most_wanted boolean NOT NULL DEFAULT false;
+ALTER TABLE wishlist_items ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
 CREATE INDEX IF NOT EXISTS wishlist_items_wishlist_idx ON wishlist_items(wishlist_id);
 
 CREATE TABLE IF NOT EXISTS user_follows (
