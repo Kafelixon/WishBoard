@@ -22,10 +22,11 @@ import { v4 as uuid } from "uuid";
 
 const WISHLISTS_COLLECTION = "wishlists";
 
+/** Wishlist writers resolve with the owner's updated wishlists, so the page needn't refetch. */
 export type WishlistChanger = (
   userId: string,
   wishlist: Wishlist,
-) => Promise<void>;
+) => Promise<Wishlist[]>;
 
 export const createWishlist: WishlistChanger = async (
   userId: string,
@@ -43,6 +44,7 @@ export const createWishlist: WishlistChanger = async (
     items: [],
     updateTimestamp: new Date().getTime(),
   });
+  return findWishlistsByOwner(userId);
 };
 
 /**
@@ -89,12 +91,17 @@ export const updateWishlist: WishlistChanger = async (
       updateTimestamp: new Date().getTime(),
     });
   });
+  return findWishlistsByOwner(userId);
 };
 
-export const deleteWishlist = async (userId: string, wishlistId: string) => {
+export const deleteWishlist = async (
+  userId: string,
+  wishlistId: string,
+): Promise<Wishlist[]> => {
   await withOwnedWishlist(userId, wishlistId, (_data, tx, ref) => {
     tx.delete(ref);
   });
+  return findWishlistsByOwner(userId);
 };
 
 /** Item writers resolve with the wishlist's full, updated item list. */
@@ -122,7 +129,7 @@ export const addItemToWishlist: WishlistItemChanger = (
 ) =>
   writeItems(userId, wishlistId, (items) => [
     ...items,
-    { ...item, id: uuid() },
+    { ...item, id: uuid(), createdAt: Date.now() },
   ]);
 
 export const updateWishlistItem: WishlistItemChanger = (
@@ -145,7 +152,25 @@ export const deleteWishlistItem = (
     items.filter((element) => element.id !== itemId),
   );
 
-export const findWishlistsByOwner = async (userId: string) => {
+/** Saves the owner's order; `itemIds` must list every item of the wishlist. */
+export const reorderItems = (
+  userId: string,
+  wishlistId: string,
+  itemIds: string[],
+): Promise<WishlistItem[]> =>
+  writeItems(userId, wishlistId, (items) => {
+    const byId = new Map(items.map((item) => [item.id, item]));
+    const complete =
+      itemIds.length === items.length &&
+      new Set(itemIds).size === items.length &&
+      itemIds.every((id) => byId.has(id));
+    if (!complete) {
+      throw new Error("The wishlist changed. Reload it and try again.");
+    }
+    return itemIds.flatMap((id) => byId.get(id) ?? []);
+  });
+
+export const findWishlistsByOwner = async (userId: string): Promise<Wishlist[]> => {
   const q = query(
     collection(getFirestoreDb(), WISHLISTS_COLLECTION),
     where("ownerId", "==", userId),
@@ -167,12 +192,15 @@ export const findWishlistsByOwner = async (userId: string) => {
 export interface WishlistView {
   info: Wishlist;
   isOwner: boolean;
+  /** Whether the signed-in visitor follows it; always false for the owner and signed-out visitors. */
+  following: boolean;
   /** Everything for the owner, only public items for everyone else. */
   items: WishlistItem[];
 }
 
 /**
- * Loads a wishlist page's data with a single document read.
+ * Loads a wishlist page's data: the wishlist document and, for a signed-in
+ * visitor, their follows document, read in parallel.
  * @returns The view, or null when the wishlist does not exist.
  */
 export const fetchWishlistView = async (
@@ -181,7 +209,10 @@ export const fetchWishlistView = async (
 ): Promise<WishlistView | null> => {
   if (!wishlistId) throw new Error("Wishlist ID is not provided.");
 
-  const snapshot = await fetchWishlistData(wishlistId);
+  const [snapshot, following] = await Promise.all([
+    fetchWishlistData(wishlistId),
+    userId ? isFollowingWishlist(userId, wishlistId) : false,
+  ]);
   if (!snapshot.exists()) return null;
 
   const data = snapshot.data();
@@ -191,8 +222,30 @@ export const fetchWishlistView = async (
   return {
     info: toWishlist(wishlistId, data as WishlistData),
     isOwner,
+    following: !isOwner && following,
     items: isOwner ? items : items.filter((item) => item.public),
   };
+};
+
+/** Everything the settings page's data export downloads. */
+export interface UserDataExport {
+  /** Owned wishlists, each with every item, private ones included. */
+  wishlists: (Wishlist & { items: WishlistItem[] })[];
+  followedWishlists: Wishlist[];
+}
+
+export const exportUserData = async (userId: string): Promise<UserDataExport> => {
+  const [owned, followedWishlists] = await Promise.all([
+    findWishlistsByOwner(userId),
+    fetchFollowedWishlists(userId),
+  ]);
+  const wishlists = await Promise.all(
+    owned.map(async (wishlist) => ({
+      ...wishlist,
+      items: (await fetchWishlistView(wishlist.id, userId))?.items ?? [],
+    })),
+  );
+  return { wishlists, followedWishlists };
 };
 
 // Follow Wishlist
@@ -287,7 +340,7 @@ export const fetchFollowedWishlists = async (
   return [];
 };
 
-export const isFollowingWishlist = async (
+const isFollowingWishlist = async (
   userId: string,
   wishlistId: string,
 ): Promise<boolean> => {

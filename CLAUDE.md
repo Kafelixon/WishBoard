@@ -39,7 +39,7 @@ Client-only React 19 + TypeScript SPA (Vite, Tailwind v4, shadcn/Radix). No back
 
 ## Localization
 
-UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/locales/{en,pl}.json`, keys type-checked against `en.json` via `src/i18next.d.ts`). Language comes from localStorage (`wishboard.language`, set by `LanguageSwitcher`), then the browser; `<html lang>` follows it. Use `t("…")` in components and `i18n.t` in plain modules (e.g. `authHandlers.ts`, yup messages as `() => i18n.t(…)`). Plurals use `_one/_few/_many/_other` suffixes. ESLint (`no-restricted-syntax`) rejects literal text in JSX and in `aria-label`/`placeholder`/`title`/`alt`. Not translated: server error messages from `api/`, `console.error` logs, `index.html` meta description.
+UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/locales/{en,pl}.json`; English is bundled, Polish is fetched by a small i18next backend only when active, so the root is wrapped in `<Suspense>`, keys type-checked against `en.json` via `src/i18next.d.ts`). Language comes from localStorage (`wishboard.language`, set by `LanguageSwitcher`), then the browser; `<html lang>` follows it. Use `t("…")` in components and `i18n.t` in plain modules (e.g. `authHandlers.ts`, yup messages as `() => i18n.t(…)`). Plurals use `_one/_few/_many/_other` suffixes. ESLint (`no-restricted-syntax`) rejects literal text in JSX and in `aria-label`/`placeholder`/`title`/`alt`. Not translated: server error messages from `api/`, `console.error` logs, `index.html` meta description.
 
 ## Postgres backend (Neon, default)
 
@@ -54,6 +54,10 @@ UI text is translated with `react-i18next` (`src/i18n.ts`, strings in `src/local
 ## Product detail fetching
 
 Item form has a "Fetch details from link" button. No free API gives reliable prices/images across shops, so `api/product-meta.ts` (Vercel function, Firebase-token required) fetches the product page server-side and `api/_lib/productMeta.ts` reads JSON-LD `Product` data, then Open Graph / `product:price:amount` meta tags, for name, image and price. It only fills empty fields. SSRF-guarded: requests go through `node:http(s)` with a lookup that refuses non-public addresses (`net.BlockList`, so the checked address is the one connected to), on every redirect, with 1 MB / 6 s caps. Limits: JS-rendered shops and sites that block bots (Amazon, many marketplaces) return nothing; price is a listed price, not an average; unavailable in the Firestore-only build. Limits (name/URL lengths, max price, reservation length) live in `api/_lib/limits.ts`, re-exported to the client as `@/lib/limits`. Possible next step: a paid product API (e.g. a price-comparison service) behind the same endpoint.
+
+## Sharing and link previews
+
+The wishlist page has "Copy link" plus a "Share" button that appears only where `navigator.share` exists (phones, some desktop browsers). Link previews: `vercel.json` rewrites `/wishlist/:id` to `api/wishlist-preview.ts` only for link-preview crawler user agents (WhatsApp, Messenger/iMessage, Slack, Discord, Telegram, ...); people still get the static SPA, so there's no added latency. The function (`api/_lib/preview.ts`) renders a small HTML page with `og:*`/`twitter:*` tags from public data only: name, author, public item count, first public item photo. Search engines are deliberately not in the list. Edit the crawler regex in `vercel.json`; `api/__tests__/preview.test.ts` checks it against sample user agents. Not available in the Firestore-only build.
 
 ## Known rough edges
 

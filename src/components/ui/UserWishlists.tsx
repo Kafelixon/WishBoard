@@ -74,7 +74,7 @@ export const UserWishlists: React.FC = () => {
   }, [userId, toast, t]);
 
   const runWishlistWrite = async (
-    write: () => Promise<void>,
+    write: () => Promise<Wishlist[]>,
     successMessage: string,
     errorMessage: string,
   ) => {
@@ -82,8 +82,7 @@ export const UserWishlists: React.FC = () => {
 
     setIsSubmitting(true);
     try {
-      await write();
-      setWishlists(await findWishlistsByOwner(userId));
+      setWishlists(await write());
       toast({ title: successMessage });
     } catch (error) {
       console.error(error);

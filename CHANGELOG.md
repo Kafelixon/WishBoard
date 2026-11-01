@@ -25,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Google accounts can delete their account and change their email (they confirm with the Google popup instead of a password).
 - The Settings email check accepts addresses with `+` and long domain endings.
 
+### Changed
+
+- Fewer requests and a smaller first load (#82): the wishlist page gets its follow state from the `view` op (the `isFollowing` op is gone), data export is one `export` op, and wishlist create/update/delete return the owner's new list. Firebase Auth uses `initializeAuth` with the popup resolver passed only to Google sign-in, and Polish strings load only when Polish is active. New `user_follows(wishlist_id)` index in `db/schema.sql` (apply it with `scripts/apply-schema.ts`).
+
 ## [1.1.0] - 2026-10-31
 
 ### Added

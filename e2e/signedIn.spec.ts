@@ -342,3 +342,198 @@ test.describe("reservations", () => {
     await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toHaveCount(0);
   });
 });
+
+test.describe("item order, sorting and details", () => {
+  /** Item names in the order the page shows them. */
+  const shownNames = (page: Page) => page.getByRole("region", { name: "Items" }).getByRole("listitem").getByRole("heading");
+
+  test("visitors get the owner's order, and price sorts keep each currency apart", async ({ page, backend }) => {
+    const id = backend.seed({
+      ownerId: "someone-else",
+      name: "Mixed prices",
+      author: "Someone",
+      items: [
+        { name: "Lamp", price: 200, public: true },
+        { name: "Socks", price: 20, public: true },
+        { name: "Scarf", price: 15, currency: "EUR", public: true },
+        { name: "Card", public: true },
+        { name: "Vase", price: 80, public: true },
+      ],
+    });
+    await page.goto(`/wishlist/${id}`);
+    const sort = page.getByLabel("Sort by");
+    await expect(sort).toHaveValue("owner");
+    await expect(shownNames(page)).toHaveText(["Lamp", "Socks", "Scarf", "Card", "Vase"]);
+
+    // Zloty is the most common currency, so it comes first; the euro item is never compared with it.
+    await sort.selectOption({ label: "Price: low to high" });
+    await expect(shownNames(page)).toHaveText(["Socks", "Vase", "Lamp", "Scarf", "Card"]);
+    await expect(page.getByText("Each currency is sorted separately.")).toBeVisible();
+    await expect(page).toHaveURL(/\?sort=price-asc$/);
+
+    await sort.selectOption({ label: "Price: high to low" });
+    await expect(shownNames(page)).toHaveText(["Lamp", "Vase", "Socks", "Scarf", "Card"]);
+
+    // The choice survives a reload because it is in the URL.
+    await page.reload();
+    await expect(page.getByLabel("Sort by")).toHaveValue("price-desc");
+    await expect(shownNames(page)).toHaveText(["Lamp", "Vase", "Socks", "Scarf", "Card"]);
+  });
+
+  test("the owner arranges items with the arrow buttons and the order is saved", async ({ page, backend }) => {
+    const id = backend.seed({
+      ownerId: TEST_USER.uid,
+      name: "Ordered",
+      author: TEST_USER.name,
+      items: [
+        { name: "First", public: true },
+        { name: "Second", public: true },
+        { name: "Third", public: true },
+      ],
+    });
+    await signIn(page);
+    await page.goto(`/wishlist/${id}`);
+    await expect(shownNames(page)).toHaveText(["First", "Second", "Third"]);
+
+    await page.getByRole("button", { name: "Arrange" }).click();
+    await expect(page.getByRole("button", { name: "Edit First" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Move First earlier" })).toBeDisabled();
+    await page.getByRole("button", { name: "Move Third earlier" }).click();
+    await expect(page.getByRole("button", { name: "Move Third earlier" })).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(shownNames(page)).toHaveText(["Third", "First", "Second"]);
+    // At the start its "earlier" arrow is disabled, so focus moves to the other one.
+    await expect(page.getByRole("button", { name: "Move Third later" })).toBeFocused();
+
+    const reorder = page.waitForRequest(
+      (request) => request.url().endsWith("/api/wishlists") && request.postData()?.includes('"reorderItems"') === true,
+    );
+    await page.getByRole("button", { name: "Save order" }).click();
+    const sent = (await reorder).postDataJSON() as { itemIds: string[] };
+    expect(sent.itemIds).toEqual(["Third", "First", "Second"].map((name) => backend.itemId(id, name)));
+    await expect(page.getByText("Order saved.", { exact: true })).toBeVisible();
+
+    await page.reload();
+    await expect(shownNames(page)).toHaveText(["Third", "First", "Second"]);
+  });
+
+  test("cancelling arrange mode keeps the saved order", async ({ page, backend }) => {
+    const id = backend.seed({
+      ownerId: TEST_USER.uid,
+      name: "Ordered",
+      author: TEST_USER.name,
+      items: [
+        { name: "First", public: true },
+        { name: "Second", public: true },
+      ],
+    });
+    await signIn(page);
+    await page.goto(`/wishlist/${id}`);
+    await page.getByRole("button", { name: "Arrange" }).click();
+    await page.getByRole("button", { name: "Move Second earlier" }).click();
+    await expect(shownNames(page)).toHaveText(["Second", "First"]);
+    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(shownNames(page)).toHaveText(["First", "Second"]);
+    await expect(page.getByRole("button", { name: "Edit First" })).toBeVisible();
+  });
+
+  test("notes, quantity and most wanted are saved and shown on the card", async ({ page, backend }) => {
+    const id = backend.seed({ ownerId: TEST_USER.uid, name: "Details", author: TEST_USER.name });
+    await signIn(page);
+    await page.goto(`/wishlist/${id}`);
+    await page.getByRole("button", { name: "Add item" }).first().click();
+    await page.getByLabel("Name").fill("Running shoes");
+    await page.getByLabel("Notes").fill("Size 42, blue");
+    await page.getByLabel("Quantity").fill("2");
+    await page.getByRole("switch", { name: "Most wanted" }).click();
+    const addRequest = page.waitForRequest(
+      (request) => request.url().endsWith("/api/wishlists") && request.postData()?.includes('"addItem"') === true,
+    );
+    await page.getByRole("dialog").getByRole("button", { name: "Add item" }).click();
+    const sent = (await addRequest).postDataJSON() as { item: Record<string, unknown> };
+    expect(sent.item).toMatchObject({ notes: "Size 42, blue", quantity: 2, mostWanted: true });
+
+    const card = page.getByRole("listitem").filter({ hasText: "Running shoes" });
+    await expect(card.getByText("Most wanted", { exact: true })).toBeVisible();
+    await expect(card.getByText("Size 42, blue", { exact: true })).toBeVisible();
+    await expect(card.getByText(/2 of these/)).toBeVisible();
+
+    await page.getByRole("button", { name: "Edit Running shoes" }).click();
+    // A fraction is refused (by the field's step check) and the dialog stays open.
+    const quantity = page.getByLabel("Quantity");
+    await quantity.fill("1.5");
+    await page.getByRole("button", { name: "Save changes" }).click();
+    expect(await quantity.evaluate((input: HTMLInputElement) => input.validity.valid)).toBe(false);
+    await expect(page.getByRole("dialog", { name: "Edit item" })).toBeVisible();
+  });
+});
+
+test.describe("sharing", () => {
+  const seedShared = (backend: FakeBackend) =>
+    backend.seed({ ownerId: "someone-else", name: "Wedding", author: "Alex", items: [{ name: "Tea set", public: true }] });
+
+  test("Share opens the native share sheet with the wishlist link", async ({ page, backend }) => {
+    const id = seedShared(backend);
+    await page.addInitScript(() => {
+      const shared: ShareData[] = [];
+      Object.assign(window, { shared });
+      Object.defineProperty(navigator, "share", {
+        configurable: true,
+        value: (data: ShareData) => {
+          shared.push(data);
+          return Promise.resolve();
+        },
+      });
+    });
+    await page.goto(`/wishlist/${id}`);
+    await page.getByRole("button", { name: "Share", exact: true }).click();
+    expect(await page.evaluate(() => (window as unknown as { shared: ShareData[] }).shared)).toEqual([
+      { title: "Wedding", url: new URL(`/wishlist/${id}`, page.url()).href },
+    ]);
+    await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+  });
+
+  test("without a native share sheet only Copy link is shown", async ({ page, backend }) => {
+    const id = seedShared(backend);
+    await page.addInitScript(() => {
+      Reflect.deleteProperty(Navigator.prototype, "share");
+    });
+    await page.goto(`/wishlist/${id}`);
+    await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Share", exact: true })).toHaveCount(0);
+  });
+});
+
+test.describe("data export", () => {
+  test("downloads own wishlists with private items, and followed wishlists", async ({ page, backend }) => {
+    backend.seed({
+      ownerId: TEST_USER.uid,
+      name: "Birthday",
+      author: "E2E Tester",
+      items: [
+        { name: "Book", public: true },
+        { name: "Surprise", public: false },
+      ],
+    });
+    const followedId = backend.seed({ ownerId: "someone-else", name: "Wedding", author: "Alex" });
+    await signIn(page);
+    await page.goto(`/wishlist/${followedId}`);
+    await page.getByRole("button", { name: "Follow", exact: true }).click();
+    await expect(page.getByText("You are now following this wishlist", { exact: true })).toBeVisible();
+
+    await page.goto("/settings");
+    const download = page.waitForEvent("download");
+    await page.getByRole("button", { name: "Export my data" }).click();
+    const stream = await (await download).createReadStream();
+    let text = "";
+    for await (const chunk of stream) text += String(chunk);
+    const data = JSON.parse(text) as {
+      wishlists: { name: string; items: { name: string }[] }[];
+      followedWishlists: { id: string }[];
+    };
+    expect(data.wishlists.map((w) => [w.name, w.items.map((i) => i.name)])).toEqual([
+      ["Birthday", ["Book", "Surprise"]],
+    ]);
+    expect(data.followedWishlists.map((w) => w.id)).toEqual([followedId]);
+  });
+});
