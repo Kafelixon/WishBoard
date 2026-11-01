@@ -380,10 +380,12 @@ export async function handleOp(
           [id],
         );
         // The new order must name every item exactly once; otherwise the list changed since the owner loaded it.
-        const current = new Set(rows.map((row) => String(row.id)));
+        // The length check comes first, so the request's list is only looped over once it's the wishlist's size.
+        // `rows` come from our own query for one wishlist, not from the request body.
+        const current = new Set(rows.map((row) => String(row.id))); // nosemgrep
         if (
-          new Set(itemIds).size !== itemIds.length ||
           itemIds.length !== current.size ||
+          new Set(itemIds).size !== itemIds.length ||
           !itemIds.every((itemId) => current.has(itemId))
         ) {
           throw new HttpError(409, "The wishlist changed. Reload it and try again.");
