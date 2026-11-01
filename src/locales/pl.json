@@ -131,6 +131,7 @@
     "tooManyRequests": "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie.",
     "network": "Problem z siecią. Sprawdź połączenie i spróbuj ponownie.",
     "differentCredential": "Ten adres e-mail jest już zarejestrowany z użyciem innej metody logowania.",
+    "popupBlocked": "Przeglądarka zablokowała okno logowania Google. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.",
     "generic": "Podczas logowania coś poszło nie tak. Spróbuj ponownie.",
     "loginFailed": "Nieprawidłowy e-mail lub hasło. Spróbuj ponownie.",
     "registerFailed": "Rejestracja nie powiodła się. Spróbuj ponownie.",

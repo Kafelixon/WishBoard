@@ -8,7 +8,6 @@ import {
   type User,
   deleteUser,
   reauthenticateWithCredential,
-  reauthenticateWithPopup,
   sendPasswordResetEmail,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
@@ -24,6 +23,7 @@ import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { useToast } from "./use-toast";
 import { usePageTitle } from "@/lib/usePageTitle";
 import { changeUsername, isSilentAuthError } from "@/lib/authHandlers";
+import { reauthenticateWithGoogle } from "@/lib/googleSignIn";
 import { looksLikeEmail } from "@/lib/email";
 import { MAX_AUTHOR_LENGTH } from "@/lib/limits";
 import {
@@ -263,6 +263,7 @@ const authErrorTitle = (t: TFunction, error: unknown, fallback: string): string 
   }
   // Reauthenticating through the Google popup with another Google account than the signed-in one.
   if (code === "auth/user-mismatch") return t("settings.reauth.userMismatch");
+  if (code === "auth/popup-blocked") return t("authErrors.popupBlocked");
   return fallback;
 };
 
@@ -302,7 +303,7 @@ async function reauthenticate(
   if (providers.includes(GoogleAuthProvider.PROVIDER_ID)) {
     // No await before this, so the popup opens within the click and isn't blocked.
     try {
-      await reauthenticateWithPopup(user, new GoogleAuthProvider());
+      await reauthenticateWithGoogle(user);
     } catch (error) {
       if (isSilentAuthError(error)) return null;
       throw error;

@@ -21,6 +21,7 @@ const AUTH_ERROR_KEYS: Partial<Record<string, TKey>> = {
   "auth/too-many-requests": "authErrors.tooManyRequests",
   "auth/network-request-failed": "authErrors.network",
   "auth/account-exists-with-different-credential": "authErrors.differentCredential",
+  "auth/popup-blocked": "authErrors.popupBlocked",
 };
 
 // The user closing the Google popup is not an error worth a toast.

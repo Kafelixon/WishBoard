@@ -129,6 +129,7 @@
     "tooManyRequests": "Too many attempts. Please wait a moment and try again.",
     "network": "Network problem. Check your connection and try again.",
     "differentCredential": "This email is already registered with a different sign-in method.",
+    "popupBlocked": "Your browser blocked the Google sign-in window. Allow pop-ups for this site and try again.",
     "generic": "Something went wrong while signing in. Please try again.",
     "loginFailed": "Invalid email or password. Please try again.",
     "registerFailed": "Registration failed. Please try again.",
