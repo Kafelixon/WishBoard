@@ -108,7 +108,9 @@
     "priceNegative": "Price can't be negative",
     "priceTooHigh": "Price can't be more than {{max, number}}",
     "wishlistName": "Give your wishlist a name",
-    "hex": "Use a hex code like #2563eb."
+    "hex": "Use a hex code like #2563eb.",
+    "quantity": "Quantity must be a whole number from 1 to 99",
+    "notesLength": "Notes can be at most 500 characters"
   },
   "verifyEmail": {
     "message": "Please verify your email address. We sent a confirmation link when you signed up.",
@@ -345,7 +347,24 @@
     "unreservedToast": "Reservation cancelled.",
     "unreserveFailed": "Couldn't cancel the reservation.",
     "signInToReserve": "Sign in to reserve a gift and see which ones are already taken.",
-    "signInToReserveLink": "Sign in"
+    "signInToReserveLink": "Sign in",
+    "sortLabel": "Sort by",
+    "sortOwner": "Wishlist order",
+    "sortPriceAsc": "Price: low to high",
+    "sortPriceDesc": "Price: high to low",
+    "sortNewest": "Newest first",
+    "sortCurrencyHint": "Each currency is sorted separately.",
+    "arrange": "Arrange",
+    "arrangeHint": "Drag items, or use the arrows, to set the order everyone sees.",
+    "saveOrder": "Save order",
+    "cancelArrange": "Cancel",
+    "moveEarlier": "Move {{name}} earlier",
+    "moveLater": "Move {{name}} later",
+    "reordered": "Order saved.",
+    "reorderFailed": "Couldn't save the order. Reload the wishlist and try again.",
+    "mostWanted": "Most wanted",
+    "quantity_one": "{{count}} of these",
+    "quantity_other": "{{count}} of these"
   },
   "itemForm": {
     "name": "Name",
@@ -367,6 +386,11 @@
     "public": "Public",
     "publicHint": "Anyone with the link can see it. Turn off to keep it just for you.",
     "delete": "Delete item",
-    "deleteConfirm": "Delete this item? This cannot be undone."
+    "deleteConfirm": "Delete this item? This cannot be undone.",
+    "notes": "Notes",
+    "notesPlaceholder": "Optional: size, colour, model…",
+    "quantity": "Quantity",
+    "mostWanted": "Most wanted",
+    "mostWantedHint": "Highlight it so people know it matters most."
   }
 }

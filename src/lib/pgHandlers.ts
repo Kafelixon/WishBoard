@@ -151,6 +151,13 @@ export const deleteWishlistItem = (
   itemId: string,
 ): Promise<WishlistItem[]> => call("deleteItem", { wishlistId, itemId });
 
+/** Saves the owner's order; `itemIds` must list every item of the wishlist. */
+export const reorderItems = (
+  _userId: string,
+  wishlistId: string,
+  itemIds: string[],
+): Promise<WishlistItem[]> => call("reorderItems", { wishlistId, itemIds });
+
 export const reserveItem = (
   _userId: string,
   wishlistId: string,

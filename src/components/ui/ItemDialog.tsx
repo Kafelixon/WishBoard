@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemFormFields } from "./ItemFormFields";
 import { isValidWebUrl } from "@/lib/url";
-import { MAX_PRICE } from "@/lib/limits";
+import { MAX_NOTES_LENGTH, MAX_PRICE, MAX_QUANTITY } from "@/lib/limits";
 import i18n from "@/i18n";
 
 interface ItemDialogProps {
@@ -32,7 +32,7 @@ interface ItemDialogProps {
   actionLabel: string;
 }
 
-type ItemSchema = Omit<WishlistItem, "id" | "reservation" | "reservedUntil">;
+type ItemSchema = Omit<WishlistItem, "id" | "reservation" | "reservedUntil" | "createdAt">;
 
 const schema: yup.ObjectSchema<ItemSchema> = yup.object({
   name: yup.string().required(() => i18n.t("validation.itemName")),
@@ -53,6 +53,17 @@ const schema: yup.ObjectSchema<ItemSchema> = yup.object({
     .defined()
     .test("web-url", () => i18n.t("validation.webUrl"), isValidWebUrl),
   public: yup.boolean(),
+  notes: yup.string().max(MAX_NOTES_LENGTH, () => i18n.t("validation.notesLength")),
+  quantity: yup
+    .number()
+    .transform((value, originalValue) =>
+      originalValue === "" || Number.isNaN(originalValue) ? 1 : (value as number),
+    )
+    .typeError(() => i18n.t("validation.quantity"))
+    .integer(() => i18n.t("validation.quantity"))
+    .min(1, () => i18n.t("validation.quantity"))
+    .max(MAX_QUANTITY, () => i18n.t("validation.quantity")),
+  mostWanted: yup.boolean(),
 });
 
 export const ItemDialog: FC<ItemDialogProps> = ({

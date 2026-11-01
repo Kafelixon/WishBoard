@@ -148,6 +148,50 @@ describe("wishlist operations", () => {
     assert.equal(items.find((i) => i.name !== "Euro thing")?.currency, "PLN");
   });
 
+  it("stores notes, quantity and most wanted, with defaults and limits", async () => {
+    interface Detailed { name: string; notes: string; quantity: number; mostWanted: boolean; createdAt: number }
+    const items = (await op(alice, {
+      op: "addItem", wishlistId,
+      item: { name: "Shoes", notes: "  Size 42  ", quantity: 2, mostWanted: true, public: true },
+    })) as Detailed[];
+    const shoes = items.find((i) => i.name === "Shoes");
+    assert.deepEqual(
+      { notes: shoes?.notes, quantity: shoes?.quantity, mostWanted: shoes?.mostWanted },
+      { notes: "Size 42", quantity: 2, mostWanted: true },
+    );
+    assert.ok((shoes?.createdAt ?? 0) > 0);
+    const plain = items.find((i) => i.name === "Euro thing");
+    assert.deepEqual(
+      { notes: plain?.notes, quantity: plain?.quantity, mostWanted: plain?.mostWanted },
+      { notes: "", quantity: 1, mostWanted: false },
+    );
+    for (const item of [{ quantity: 0 }, { quantity: 1.5 }, { quantity: 100 }, { notes: "x".repeat(501) }]) {
+      await rejects(op(alice, { op: "addItem", wishlistId, item: { name: "Bad", ...item } }), 400);
+    }
+  });
+
+  it("reorders items and rejects an order that doesn't list every item once", async () => {
+    const view = async (caller: Caller | null) =>
+      ((await op(caller, { op: "view", wishlistId })) as { items: { id: string; public: boolean }[] }).items;
+    const ids = (await view(alice)).map((i) => i.id);
+    const reversed = [...ids].reverse();
+    const result = (await op(alice, { op: "reorderItems", wishlistId, itemIds: reversed })) as { id: string }[];
+    assert.deepEqual(result.map((i) => i.id), reversed);
+    assert.deepEqual((await view(alice)).map((i) => i.id), reversed);
+    // Visitors see the same order, minus private items.
+    const publicIds = new Set((await view(alice)).filter((i) => i.public).map((i) => i.id));
+    assert.deepEqual((await view(bob)).map((i) => i.id), reversed.filter((id) => publicIds.has(id)));
+
+    await rejects(op(alice, { op: "reorderItems", wishlistId, itemIds: reversed.slice(1) }), 409);
+    await rejects(op(alice, { op: "reorderItems", wishlistId, itemIds: [...reversed.slice(1), reversed[1]] }), 409);
+    await rejects(op(alice, { op: "reorderItems", wishlistId, itemIds: [...reversed, "missing"] }), 409);
+    await rejects(op(alice, { op: "reorderItems", wishlistId, itemIds: "nope" }), 400);
+    await rejects(op(bob, { op: "reorderItems", wishlistId, itemIds: reversed }), 403);
+    // A new item still goes to the end of the custom order.
+    const added = (await op(alice, { op: "addItem", wishlistId, item: { name: "Last one" } })) as { name: string }[];
+    assert.equal(added[added.length - 1]?.name, "Last one");
+  });
+
   it("blocks non-owners from changing a wishlist", async () => {
     await rejects(op(bob, { op: "addItem", wishlistId, item: { name: "x" } }), 403);
     await rejects(op(bob, { op: "deleteWishlist", id: wishlistId }), 403);
