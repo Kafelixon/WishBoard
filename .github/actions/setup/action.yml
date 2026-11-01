@@ -1,0 +1,14 @@
+name: Set up
+description: Install pnpm and Node, then the locked dependencies. Run after actions/checkout.
+
+runs:
+  using: composite
+  steps:
+    # No `version:` here: pnpm/action-setup reads `packageManager` from package.json.
+    - uses: pnpm/action-setup@v6
+    - uses: actions/setup-node@v6
+      with:
+        node-version: 24
+        cache: pnpm
+    - run: pnpm install --frozen-lockfile
+      shell: bash

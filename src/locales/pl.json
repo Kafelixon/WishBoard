@@ -365,6 +365,7 @@
     "sortNewest": "Najnowsze",
     "sortCurrencyHint": "Każda waluta jest sortowana osobno.",
     "arrange": "Ułóż",
+    "autoArrange": "Ułóż automatycznie wg",
     "arrangeHint": "Przeciągnij przedmioty lub użyj strzałek, aby ustalić kolejność widoczną dla wszystkich.",
     "saveOrder": "Zapisz kolejność",
     "cancelArrange": "Anuluj",
