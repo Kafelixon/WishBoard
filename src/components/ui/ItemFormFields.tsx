@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 import { fetchProductMeta } from "@/lib/wishlistHandlers";
 import { isValidWebUrl, normalizeUrl } from "@/lib/url";
 import { DEFAULT_CURRENCY, currencyOptions } from "@/lib/currency";
+import { MAX_NAME_LENGTH, MAX_URL_LENGTH } from "@/lib/limits";
 
 interface ItemFormFieldsProps {
   currentItem: WishlistItem;
@@ -24,6 +25,7 @@ const FIELDS: {
   type: string;
   placeholder: TKey;
   inputMode: "decimal" | "url" | undefined;
+  maxLength: number | undefined;
 }[] = [
   {
     label: "itemForm.name",
@@ -32,6 +34,7 @@ const FIELDS: {
     type: "text",
     placeholder: "itemForm.namePlaceholder",
     inputMode: undefined,
+    maxLength: MAX_NAME_LENGTH,
   },
   {
     label: "itemForm.price",
@@ -40,6 +43,7 @@ const FIELDS: {
     type: "number",
     placeholder: "itemForm.optional",
     inputMode: "decimal",
+    maxLength: undefined,
   },
   {
     label: "itemForm.link",
@@ -48,6 +52,7 @@ const FIELDS: {
     type: "text",
     placeholder: "itemForm.linkPlaceholder",
     inputMode: "url",
+    maxLength: MAX_URL_LENGTH,
   },
   {
     label: "itemForm.image",
@@ -56,6 +61,7 @@ const FIELDS: {
     type: "text",
     placeholder: "itemForm.imagePlaceholder",
     inputMode: "url",
+    maxLength: MAX_URL_LENGTH,
   },
 ];
 
@@ -134,7 +140,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
 
   return (
     <>
-      {FIELDS.map(({ label, id, field, type, placeholder, inputMode }) => (
+      {FIELDS.map(({ label, id, field, type, placeholder, inputMode, maxLength }) => (
         <div className="grid gap-2" key={id}>
           <Label htmlFor={id}>{t(label)}</Label>
           <div className="relative">
@@ -143,6 +149,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
               type={type}
               placeholder={t(placeholder)}
               inputMode={inputMode}
+              maxLength={maxLength}
               min={type === "number" ? 0 : undefined}
               step={type === "number" ? "any" : undefined}
               aria-invalid={errors[field] ? true : undefined}

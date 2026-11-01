@@ -4,9 +4,11 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import {
   EmailAuthProvider,
+  GoogleAuthProvider,
   type User,
   deleteUser,
   reauthenticateWithCredential,
+  reauthenticateWithPopup,
   sendPasswordResetEmail,
   verifyBeforeUpdateEmail,
 } from "firebase/auth";
@@ -21,7 +23,9 @@ import { usePasswordPrompt } from "@/components/ui/PasswordPromptDialog";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { useToast } from "./use-toast";
 import { usePageTitle } from "@/lib/usePageTitle";
-import { changeUsername } from "@/lib/authHandlers";
+import { changeUsername, isSilentAuthError } from "@/lib/authHandlers";
+import { looksLikeEmail } from "@/lib/email";
+import { MAX_AUTHOR_LENGTH } from "@/lib/limits";
 import {
   deleteUserData,
   fetchFollowedWishlists,
@@ -159,6 +163,7 @@ const ChangeUsername: React.FC = () => {
         type="text"
         placeholder={t("settings.username.placeholder")}
         aria-label={t("settings.username.placeholder")}
+        maxLength={MAX_AUTHOR_LENGTH}
         value={username}
         onChange={(e) => { setUsername(e.target.value); }}
       />
@@ -181,17 +186,12 @@ const ChangeEmail: React.FC = () => {
   const [isValid, setIsValid] = useState(true);
   const { askPassword, passwordDialog } = usePasswordPrompt();
 
-  const isValidEmail = (email: string) => {
-    const regex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
-    return regex.test(email);
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
   };
 
   const validateEmail = (e: React.FocusEvent<HTMLInputElement>) => {
-    setIsValid(isValidEmail(e.target.value));
+    setIsValid(looksLikeEmail(e.target.value.trim()));
   };
 
   const changeEmail = async () => {
@@ -201,10 +201,10 @@ const ChangeEmail: React.FC = () => {
     }
 
     try {
-      const user = await reauthenticateWithPassword(t, toast, askPassword);
+      const user = await reauthenticate(t, toast, askPassword);
       if (!user) return;
 
-      await verifyBeforeUpdateEmail(user, email);
+      await verifyBeforeUpdateEmail(user, email.trim());
       toast({ title: t("settings.email.sent", { email }) });
     } catch (error) {
       console.error("Error changing email:", error);
@@ -252,18 +252,19 @@ const authErrorTitle = (t: TFunction, error: unknown, fallback: string): string 
 };
 
 /**
- * Asks for the current password and re-authenticates, which Firebase requires
- * for sensitive changes. Resolves with the user, or null when the flow should
- * stop quietly (session not ready, Google-only account, prompt cancelled).
- * Rejects when Firebase rejects the password.
+ * Confirms the user's identity again, which Firebase requires for sensitive
+ * changes: password accounts type their password, Google accounts go through
+ * the Google popup. Resolves with the user, or null when the flow should stop
+ * quietly (session not ready, unsupported sign-in method, prompt or popup
+ * closed). Rejects when Firebase rejects the password or the Google account.
  */
-async function reauthenticateWithPassword(
+async function reauthenticate(
   t: TFunction,
   toast: Toast,
   askPassword: () => Promise<string | null>,
 ): Promise<User | null> {
   const user = auth.currentUser;
-  if (!user?.email) {
+  if (!user) {
     toast({
       title: t("settings.reauth.loading"),
       description: t("settings.reauth.loadingDescription"),
@@ -271,23 +272,35 @@ async function reauthenticateWithPassword(
     });
     return null;
   }
-  if (!user.providerData.some((p) => p.providerId === "password")) {
-    toast({
-      title: t("settings.reauth.unavailable"),
-      description: t("settings.reauth.unavailableDescription"),
-      variant: "destructive",
-    });
-    return null;
+  const providers = user.providerData.map((p) => p.providerId);
+
+  if (providers.includes(EmailAuthProvider.PROVIDER_ID) && user.email) {
+    const password = await askPassword();
+    if (!password) return null;
+    await reauthenticateWithCredential(
+      user,
+      EmailAuthProvider.credential(user.email, password),
+    );
+    return user;
   }
 
-  const password = await askPassword();
-  if (!password) return null;
+  if (providers.includes(GoogleAuthProvider.PROVIDER_ID)) {
+    // No await before this, so the popup opens within the click and isn't blocked.
+    try {
+      await reauthenticateWithPopup(user, new GoogleAuthProvider());
+    } catch (error) {
+      if (isSilentAuthError(error)) return null;
+      throw error;
+    }
+    return user;
+  }
 
-  await reauthenticateWithCredential(
-    user,
-    EmailAuthProvider.credential(user.email, password),
-  );
-  return user;
+  toast({
+    title: t("settings.reauth.unavailable"),
+    description: t("settings.reauth.unavailableDescription"),
+    variant: "destructive",
+  });
+  return null;
 }
 
 const ExportData: React.FC = () => {
@@ -359,7 +372,7 @@ const RemoveAccount: React.FC = () => {
 
   const removeAccount = async () => {
     try {
-      const user = await reauthenticateWithPassword(t, toast, askPassword);
+      const user = await reauthenticate(t, toast, askPassword);
       if (!user) return;
 
       await deleteUserData(user.uid);
