@@ -20,7 +20,7 @@ ESLint uses `typescript-eslint` **strictTypeChecked** + stylistic, `@eslint-reac
 
 ## Environment
 
-Firebase config is read from `VITE_APP_FIREBASE_*` env vars (`src/firebaseSetup.ts`), and must be set in the Vercel project. `.env` also contains Supabase/Turso entries that nothing in `src/` uses.
+Firebase config is read from `VITE_APP_FIREBASE_*` env vars (`src/firebaseSetup.ts`), and must be set in the Vercel project.
 
 ## Architecture
 
