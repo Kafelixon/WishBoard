@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- Security headers on every response (`vercel.json`): a Content-Security-Policy (scripts from this site and Google's sign-in loader only, Firebase Auth/Firestore connections, the Firebase auth frame, `frame-ancestors 'none'`), `X-Content-Type-Options: nosniff` and `Referrer-Policy: strict-origin-when-cross-origin` (#84).
+- "Fetch details from link" is limited to 30 lookups per user per 10 minutes (429 after that). Needs the new `rate_limits` table from `db/schema.sql` (#84).
 - Product-detail fetching could be pointed at internal addresses written as IPv4-mapped IPv6 (`[::ffff:127.0.0.1]`) or reached through DNS rebinding; addresses are now checked with `net.BlockList` at connection time.
 - The API validates input: length limits on names and URLs, links and images must be http(s), and prices are capped.
 

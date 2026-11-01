@@ -55,3 +55,10 @@ CREATE TABLE IF NOT EXISTS item_reservations (
   reserved_at  timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS item_reservations_user_idx ON item_reservations(user_id);
+
+-- Fixed-window request counters, keyed by what is limited and who (e.g. "product-meta:<uid>").
+CREATE TABLE IF NOT EXISTS rate_limits (
+  key           text PRIMARY KEY,
+  window_start  timestamptz NOT NULL DEFAULT now(),
+  hits          integer NOT NULL DEFAULT 1
+);
