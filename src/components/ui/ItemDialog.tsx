@@ -24,7 +24,8 @@ interface ItemDialogProps {
   setDialogOpen: (open: boolean) => void;
   currentItem: WishlistItem;
   handleItemChange: (changes: Partial<WishlistItem>) => void;
-  handleAction: (data: WishlistItem) => void;
+  /** Resolves with whether the save worked; the dialog closes only then. */
+  handleAction: (data: WishlistItem) => Promise<boolean>;
   handleDelete?: () => void;
   isSubmitting: boolean;
   dialogTitle: string;
@@ -85,10 +86,9 @@ export const ItemDialog: FC<ItemDialogProps> = ({
     resolver: yupResolver(schema),
   });
 
-  const onSubmit = (data: ItemSchema) => {
-    const wishlistItem = { id: currentItem.id, ...data };
-    handleAction(wishlistItem);
-    setDialogOpen(false);
+  const onSubmit = async (data: ItemSchema) => {
+    // Kept open on failure, so what was typed isn't lost.
+    if (await handleAction({ id: currentItem.id, ...data })) setDialogOpen(false);
   };
 
   return (

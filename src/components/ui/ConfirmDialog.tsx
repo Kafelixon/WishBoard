@@ -16,9 +16,11 @@ interface ConfirmDialogProps {
   description: string;
   confirmLabel: string;
   onConfirm: () => void;
+  /** Red confirm button; turn off for confirmations that aren't destructive. */
+  destructive?: boolean;
 }
 
-/** Replaces `window.confirm` for destructive actions. Focus starts on Cancel. */
+/** Replaces `window.confirm`. Focus starts on Cancel. */
 export function ConfirmDialog({
   open,
   onOpenChange,
@@ -26,6 +28,7 @@ export function ConfirmDialog({
   description,
   confirmLabel,
   onConfirm,
+  destructive = true,
 }: ConfirmDialogProps) {
   const { t } = useTranslation();
   return (
@@ -55,7 +58,7 @@ export function ConfirmDialog({
           </Button>
           <Button
             type="button"
-            variant="destructive"
+            variant={destructive ? "destructive" : "default"}
             onClick={() => {
               onOpenChange(false);
               onConfirm();

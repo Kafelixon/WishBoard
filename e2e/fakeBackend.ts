@@ -297,6 +297,7 @@ export class FakeBackend {
         if (index < 0) throw new ApiError(404, "Item not found.");
         const { createdAt } = wishlist.items[index];
         wishlist.items[index] = { ...toItem(body.item, itemId), createdAt };
+        if (!wishlist.items[index].public) this.reservations.delete(itemId);
         return wishlist.items;
       }
 
@@ -328,10 +329,14 @@ export class FakeBackend {
         const me = user();
         const wishlist = this.wishlists.get(required(body.wishlistId, "wishlistId"));
         const itemId = required(body.itemId, "itemId");
-        const item = wishlist?.items.find((candidate) => candidate.id === itemId && candidate.public);
+        const reserve = body.op === "reserveItem";
+        // Releasing works on an item made private since; reserving needs it public.
+        const item = wishlist?.items.find(
+          (candidate) => candidate.id === itemId && (candidate.public || !reserve),
+        );
         if (!wishlist || !item) throw new ApiError(404, "Item not found.");
         if (wishlist.ownerId === me) throw new ApiError(403, "You cannot reserve items on your own wishlist.");
-        if (body.op === "reserveItem") {
+        if (reserve) {
           const holder = this.activeReservation(itemId);
           if (holder && holder.userId !== me) throw new ApiError(409, "Someone has already reserved this item.");
           if (!holder) this.reservations.set(itemId, { userId: me, until: Date.now() + RESERVATION_MS });
@@ -464,6 +469,21 @@ export async function installFakeBackend(page: Page, backend: FakeBackend): Prom
           lastLoginAt: String(Date.now()),
         },
       ],
+    });
+  });
+
+  // updateProfile (changing the username in Settings).
+  await page.route(/identitytoolkit\.googleapis\.com\/v1\/accounts:update/, (route) => {
+    const { idToken, displayName } = route.request().postDataJSON() as { idToken: string; displayName?: string };
+    const user = USERS.find((candidate) => candidate.uid === callerFrom(`Bearer ${idToken}`));
+    if (!user) return json(route, 400, { error: { code: 400, message: "INVALID_ID_TOKEN" } });
+    return json(route, 200, {
+      localId: user.uid,
+      email: user.email,
+      displayName: displayName ?? user.name,
+      idToken: makeIdToken(user),
+      refreshToken: `e2e-refresh-${user.uid}`,
+      expiresIn: "3600",
     });
   });
 

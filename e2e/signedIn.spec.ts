@@ -142,6 +142,49 @@ test.describe("own wishlists", () => {
     await expect(visitorPage.getByRole("heading", { name: "Only for me" })).toBeHidden();
     await visitor.close();
   });
+
+  test("a failed save keeps the item dialog open with what was typed", async ({ page, backend }) => {
+    const id = backend.seed({ ownerId: TEST_USER.uid, name: "Kitchen", author: TEST_USER.name });
+    await signIn(page);
+    await page.goto(`/wishlist/${id}`);
+    let failNextAdd = true;
+    await page.route("**/api/wishlists", (route) => {
+      if (failNextAdd && route.request().postData()?.includes('"addItem"') === true) {
+        failNextAdd = false;
+        return route.fulfill({ status: 500, contentType: "application/json", body: '{"error":"Something went wrong."}' });
+      }
+      return route.fallback();
+    });
+
+    await page.getByRole("button", { name: "Add item" }).first().click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByLabel("Name").fill("Cast iron pan");
+    await dialog.getByRole("button", { name: "Add item" }).click();
+    await expect(page.getByText("Failed to add item to wishlist.", { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel("Name")).toHaveValue("Cast iron pan");
+
+    await dialog.getByRole("button", { name: "Add item" }).click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByRole("heading", { name: "Cast iron pan" })).toBeVisible();
+  });
+});
+
+test.describe("settings", () => {
+  test("changing the username keeps you signed in and renames your wishlists' author", async ({ page, backend }) => {
+    backend.seed({ ownerId: TEST_USER.uid, name: "Garden", author: TEST_USER.name });
+    await signIn(page);
+    await page.goto("/settings");
+    await page.getByLabel("New username").fill("Renamed Tester");
+    await page.getByRole("button", { name: "Update username" }).click();
+    await expect(page.getByText("Username updated successfully!", { exact: true })).toBeVisible();
+    await expect(page).toHaveURL(/\/settings$/);
+
+    await page.getByRole("button", { name: "Account menu" }).click();
+    await expect(page.getByRole("menu").getByText("Renamed Tester", { exact: true })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.goto("/wishlists");
+    await expect(page.getByText("Renamed Tester", { exact: true })).toBeVisible();
+  });
 });
 
 test.describe("following", () => {

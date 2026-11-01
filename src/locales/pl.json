@@ -131,6 +131,7 @@
     "tooManyRequests": "Zbyt wiele prób. Poczekaj chwilę i spróbuj ponownie.",
     "network": "Problem z siecią. Sprawdź połączenie i spróbuj ponownie.",
     "differentCredential": "Ten adres e-mail jest już zarejestrowany z użyciem innej metody logowania.",
+    "popupBlocked": "Przeglądarka zablokowała okno logowania Google. Zezwól na wyskakujące okna dla tej strony i spróbuj ponownie.",
     "generic": "Podczas logowania coś poszło nie tak. Spróbuj ponownie.",
     "loginFailed": "Nieprawidłowy e-mail lub hasło. Spróbuj ponownie.",
     "registerFailed": "Rejestracja nie powiodła się. Spróbuj ponownie.",
@@ -150,16 +151,18 @@
       "label": "Hasło",
       "description": "Wyślemy Ci e-mailem link do ustawienia nowego hasła.",
       "button": "Wyślij e-mail do resetu",
-      "sent": "E-mail do resetu hasła został wysłany!",
+      "confirm": "Wyślemy na adres {{email}} link do ustawienia nowego hasła. Obecne hasło działa, dopóki go nie zmienisz.",
+      "confirmNoEmail": "Wyślemy Ci e-mailem link do ustawienia nowego hasła. Obecne hasło działa, dopóki go nie zmienisz.",
+      "sent": "E-mail do resetu hasła został wysłany",
+      "sentDescription": "Sprawdź skrzynkę {{email}}, również folder spam.",
       "failed": "Nie udało się wysłać e-maila do resetu hasła."
     },
     "username": {
       "label": "Nazwa użytkownika",
-      "description": "Wyświetlana na Twoich listach życzeń. Po zmianie zostaniesz poproszony o ponowne zalogowanie.",
+      "description": "Wyświetlana na Twoich listach życzeń.",
       "placeholder": "Nowa nazwa użytkownika",
       "button": "Zmień nazwę użytkownika",
       "updated": "Nazwa użytkownika została zmieniona!",
-      "updatedDescription": "Zaloguj się ponownie.",
       "failed": "Nie udało się zmienić nazwy użytkownika."
     },
     "email": {
@@ -173,6 +176,7 @@
     },
     "reauth": {
       "incorrectPassword": "Nieprawidłowe hasło",
+      "userMismatch": "To inne konto Google. Wybierz to, którym się logujesz.",
       "loading": "Twoje konto wciąż się wczytuje",
       "loadingDescription": "Spróbuj ponownie za chwilę.",
       "unavailable": "Niedostępne dla tego konta",

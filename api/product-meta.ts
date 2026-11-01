@@ -1,15 +1,13 @@
 import { Pool } from "pg";
 import { createRemoteJWKSet } from "jose";
 import { attachDatabasePool } from "@vercel/functions";
-import { createVerifier, FIREBASE_JWKS_URL } from "./_lib/auth.js";
+import { createVerifier, FIREBASE_JWKS_URL, firebaseProjectId } from "./_lib/auth.js";
 import { poolDb } from "./_lib/db.js";
 import { HttpError } from "./_lib/ops.js";
 import { fetchPage, parseProductMeta } from "./_lib/productMeta.js";
 import { takeRateLimit } from "./_lib/rateLimit.js";
 
-const projectId =
-  process.env.FIREBASE_PROJECT_ID ?? process.env.VITE_APP_FIREBASE_PROJECT_ID ?? "";
-const verify = createVerifier(projectId, createRemoteJWKSet(new URL(FIREBASE_JWKS_URL)));
+const verify = createVerifier(firebaseProjectId(), createRemoteJWKSet(new URL(FIREBASE_JWKS_URL)));
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 attachDatabasePool(pool);

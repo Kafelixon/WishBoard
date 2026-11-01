@@ -21,6 +21,7 @@ const AUTH_ERROR_KEYS: Partial<Record<string, TKey>> = {
   "auth/too-many-requests": "authErrors.tooManyRequests",
   "auth/network-request-failed": "authErrors.network",
   "auth/account-exists-with-different-credential": "authErrors.differentCredential",
+  "auth/popup-blocked": "authErrors.popupBlocked",
 };
 
 // The user closing the Google popup is not an error worth a toast.
@@ -98,6 +99,8 @@ export const changeUsername = async (newUsername: string) => {
     await updateProfile(auth.currentUser, {
       displayName: newUsername,
     });
+    // The API reads `name` from the ID token, which keeps the old name until it is refreshed.
+    await auth.currentUser.getIdToken(true);
   } catch (error) {
     console.error(error);
     throw Object.assign(new Error(i18n.t("authErrors.usernameFailed")), {
