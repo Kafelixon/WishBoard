@@ -106,6 +106,7 @@
     "itemName": "Give the item a name",
     "priceNumber": "Price must be a number",
     "priceNegative": "Price can't be negative",
+    "priceTooHigh": "Price can't be more than {{max, number}}",
     "wishlistName": "Give your wishlist a name",
     "hex": "Use a hex code like #2563eb."
   },
@@ -174,7 +175,7 @@
       "loading": "Your account is still loading",
       "loadingDescription": "Please try again in a moment.",
       "unavailable": "Not available for this account yet",
-      "unavailableDescription": "Accounts that sign in with Google can't do this from Settings.",
+      "unavailableDescription": "This account's sign-in method can't confirm the change from Settings.",
       "prompt": "Please enter your password to continue.",
       "title": "Confirm your password",
       "passwordLabel": "Password"
@@ -340,6 +341,7 @@
     "reserved": "Reserved",
     "reservedHint": ", someone else is getting this",
     "reservedByYou": "Reserved by you",
+    "reservedUntil": "until {{date}}",
     "reservedToast": "Reserved. Other visitors will see it's taken.",
     "reserveFailed": "Couldn't reserve this item. Someone may have just reserved it.",
     "unreservedToast": "Reservation cancelled.",

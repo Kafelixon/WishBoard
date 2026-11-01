@@ -266,6 +266,8 @@ test.describe("reservations", () => {
     await page.getByRole("button", { name: /^Reserve Tea set/ }).click();
     await expect(page.getByText("Reserved. Other visitors will see it's taken.", { exact: true })).toBeVisible();
     await expect(page.getByText("Reserved by you", { exact: true })).toBeVisible();
+    // Reservations lapse after a while; the reserver sees until when it holds.
+    await expect(page.getByText(/^until [A-Z][a-z]{2} \d{1,2}$/)).toBeVisible();
     await expect(page.getByRole("button", { name: /^Reserve Tea set/ })).toHaveCount(0);
 
     // It is still there after a reload: the reservation lives on the server.

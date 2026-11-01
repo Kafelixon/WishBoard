@@ -106,6 +106,7 @@
     "itemName": "Nadaj przedmiotowi nazwę",
     "priceNumber": "Cena musi być liczbą",
     "priceNegative": "Cena nie może być ujemna",
+    "priceTooHigh": "Cena nie może przekraczać {{max, number}}",
     "wishlistName": "Nadaj swojej liście nazwę",
     "hex": "Użyj kodu szesnastkowego, np. #2563eb."
   },
@@ -176,7 +177,7 @@
       "loading": "Twoje konto wciąż się wczytuje",
       "loadingDescription": "Spróbuj ponownie za chwilę.",
       "unavailable": "Niedostępne dla tego konta",
-      "unavailableDescription": "Konta logujące się przez Google nie mogą tego zrobić w Ustawieniach.",
+      "unavailableDescription": "Sposób logowania tego konta nie pozwala potwierdzić tej zmiany w Ustawieniach.",
       "prompt": "Podaj hasło, aby kontynuować.",
       "title": "Potwierdź hasło",
       "passwordLabel": "Hasło"
@@ -346,6 +347,7 @@
     "reserved": "Zarezerwowane",
     "reservedHint": ", ktoś inny już to kupuje",
     "reservedByYou": "Twoja rezerwacja",
+    "reservedUntil": "do {{date}}",
     "reservedToast": "Zarezerwowano. Inni odwiedzający zobaczą, że jest zajęte.",
     "reserveFailed": "Nie udało się zarezerwować. Ktoś mógł właśnie to zarezerwować.",
     "unreservedToast": "Rezerwacja anulowana.",
