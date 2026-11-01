@@ -5,6 +5,7 @@ import { WishlistItem, Wishlist, ProductMeta } from "@/lib/types";
 import { toWishlistIconColor, toWishlistIconName } from "@/lib/wishlistIcons";
 import type {
   FollowStateChanger,
+  UserDataExport,
   WishlistChanger,
   WishlistItemChanger,
   WishlistView,
@@ -109,10 +110,14 @@ const toWishlist = (raw: Wishlist): Wishlist => ({
   iconColor: toWishlistIconColor(raw.iconColor),
 });
 
-export const createWishlist: WishlistChanger = async (userId, wishlist) => {
-  if (!userId) throw new Error("User ID is not provided.");
-  if (!wishlist.name) throw new Error("Wishlist name is not provided.");
-  await call("createWishlist", {
+/** Wishlist writes answer with the owner's updated list. */
+const writeWishlist = async (op: string, params: Record<string, unknown>) =>
+  (await call<Wishlist[]>(op, params)).map(toWishlist);
+
+export const createWishlist: WishlistChanger = (userId, wishlist) => {
+  if (!userId) return Promise.reject(new Error("User ID is not provided."));
+  if (!wishlist.name) return Promise.reject(new Error("Wishlist name is not provided."));
+  return writeWishlist("createWishlist", {
     name: wishlist.name,
     author: wishlist.author,
     icon: wishlist.icon,
@@ -120,19 +125,17 @@ export const createWishlist: WishlistChanger = async (userId, wishlist) => {
   });
 };
 
-export const updateWishlist: WishlistChanger = async (_userId, wishlist) => {
-  await call("updateWishlist", {
+export const updateWishlist: WishlistChanger = (_userId, wishlist) =>
+  writeWishlist("updateWishlist", {
     id: wishlist.id,
     name: wishlist.name,
     author: wishlist.author,
     icon: wishlist.icon,
     iconColor: toWishlistIconColor(wishlist.iconColor) ?? null,
   });
-};
 
-export const deleteWishlist = async (_userId: string, wishlistId: string) => {
-  await call("deleteWishlist", { id: wishlistId });
-};
+export const deleteWishlist = (_userId: string, wishlistId: string): Promise<Wishlist[]> =>
+  writeWishlist("deleteWishlist", { id: wishlistId });
 
 export const addItemToWishlist: WishlistItemChanger = (_u, wishlistId, item) =>
   call<WishlistItem[]>("addItem", { wishlistId, item });
@@ -192,11 +195,14 @@ export const fetchFollowedWishlists = async (
   _userId: string,
 ): Promise<Wishlist[]> => (await call<Wishlist[]>("followed")).map(toWishlist);
 
-export const isFollowingWishlist = async (
-  _userId: string,
-  wishlistId: string,
-): Promise<boolean> =>
-  (await call<{ following: boolean }>("isFollowing", { wishlistId })).following;
+/** One request for the whole export: owned wishlists with all their items, and followed wishlists. */
+export const exportUserData = async (_userId: string): Promise<UserDataExport> => {
+  const data = await call<UserDataExport>("export");
+  return {
+    wishlists: data.wishlists.map((wishlist) => ({ ...toWishlist(wishlist), items: wishlist.items })),
+    followedWishlists: data.followedWishlists.map(toWishlist),
+  };
+};
 
 export const fetchWishlistById = async (
   wishlistId: string,

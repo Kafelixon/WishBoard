@@ -24,9 +24,7 @@ import { usePageTitle } from "@/lib/usePageTitle";
 import { changeUsername } from "@/lib/authHandlers";
 import {
   deleteUserData,
-  fetchFollowedWishlists,
-  fetchWishlistView,
-  findWishlistsByOwner,
+  exportUserData,
   updateExistingWishlistsAuthor,
 } from "@/lib/wishlistHandlers";
 import { useUserId } from "@/lib/common";
@@ -299,21 +297,12 @@ const ExportData: React.FC = () => {
   const exportData = async () => {
     setIsExporting(true);
     try {
-      const [owned, followed] = await Promise.all([
-        findWishlistsByOwner(userId),
-        fetchFollowedWishlists(userId),
-      ]);
-      const wishlists = await Promise.all(
-        owned.map(async (wishlist) => ({
-          ...wishlist,
-          items: (await fetchWishlistView(wishlist.id, userId))?.items ?? [],
-        })),
-      );
+      const { wishlists, followedWishlists } = await exportUserData(userId);
       const data = {
         exportedAt: new Date().toISOString(),
         email: auth.currentUser?.email ?? null,
         wishlists,
-        followedWishlists: followed,
+        followedWishlists,
       };
 
       const url = URL.createObjectURL(

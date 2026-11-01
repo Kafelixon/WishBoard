@@ -19,6 +19,17 @@ const op = (caller: Caller | null, body: Record<string, unknown>) =>
 const rejects = (promise: Promise<unknown>, status: number) =>
   assert.rejects(promise, (e) => e instanceof HttpError && e.status === status);
 
+interface ListedWishlist { id: string; name: string }
+
+/** Creates a wishlist and returns its id; the op answers with the owner's list, newest first. */
+const create = async (caller: Caller, name: string) => {
+  const list = (await op(caller, {
+    op: "createWishlist", name, author: caller.name, icon: "gift",
+  })) as ListedWishlist[];
+  assert.equal(list[0]?.name, name);
+  return list[0]?.id ?? "";
+};
+
 after(async () => {
   await pool.query("delete from users where id = any($1)", [
     [alice.uid, bob.uid, carol.uid],
@@ -30,11 +41,19 @@ describe("wishlist operations", () => {
   let wishlistId = "";
 
   it("creates and lists a wishlist for its owner", async () => {
-    ({ id: wishlistId } = (await op(alice, {
-      op: "createWishlist", name: "Birthday", author: "Alice", icon: "gift",
-    })) as { id: string });
-    const mine = (await op(alice, { op: "listMine" })) as { id: string }[];
+    wishlistId = await create(alice, "Birthday");
+    const mine = (await op(alice, { op: "listMine" })) as ListedWishlist[];
     assert.deepEqual(mine.map((w) => w.id), [wishlistId]);
+  });
+
+  it("returns the owner's list from wishlist updates and deletes", async () => {
+    const extraId = await create(alice, "Extra");
+    const updated = (await op(alice, {
+      op: "updateWishlist", id: extraId, name: "Extra!", author: "Alice", icon: "gift",
+    })) as ListedWishlist[];
+    assert.deepEqual(updated.map((w) => w.name), ["Extra!", "Birthday"]);
+    const after = (await op(alice, { op: "deleteWishlist", id: extraId })) as ListedWishlist[];
+    assert.deepEqual(after.map((w) => w.id), [wishlistId]);
   });
 
   it("stores, changes and clears the icon color", async () => {
@@ -123,9 +142,14 @@ describe("wishlist operations", () => {
   });
 
   it("follows, reports and unfollows", async () => {
+    const following = async (caller: Caller | null) =>
+      ((await op(caller, { op: "view", wishlistId })) as { following: boolean }).following;
     await op(bob, { op: "follow", wishlistId });
     await op(bob, { op: "follow", wishlistId });
-    assert.deepEqual(await op(bob, { op: "isFollowing", wishlistId }), { following: true });
+    assert.equal(await following(bob), true);
+    assert.equal(await following(carol), false);
+    assert.equal(await following(null), false);
+    assert.equal(await following(alice), false);
     const followed = (await op(bob, { op: "followed" })) as { id: string }[];
     assert.deepEqual(followed.map((w) => w.id), [wishlistId]);
     await op(bob, { op: "renameFollow", wishlistId, customName: "  Mum's list " });
@@ -136,7 +160,7 @@ describe("wishlist operations", () => {
     assert.equal(cleared[0]?.customName, undefined);
     await rejects(op(alice, { op: "renameFollow", wishlistId, customName: "x" }), 404);
     await op(bob, { op: "unfollow", wishlistId });
-    assert.deepEqual(await op(bob, { op: "isFollowing", wishlistId }), { following: false });
+    assert.equal(await following(bob), false);
     await rejects(op(bob, { op: "follow", wishlistId: "nope" }), 404);
   });
 
@@ -146,10 +170,35 @@ describe("wishlist operations", () => {
     assert.equal(mine[0]?.author, "Alicia");
   });
 
+  it("exports owned wishlists with every item, and followed wishlists", async () => {
+    await op(bob, { op: "follow", wishlistId });
+    await op(bob, { op: "renameFollow", wishlistId, customName: "Alice's" });
+    const ownerView = (await op(alice, { op: "view", wishlistId })) as {
+      items: { id: string; public: boolean }[];
+    };
+    const exported = (await op(alice, { op: "export" })) as {
+      wishlists: (ListedWishlist & { items: { id: string; public: boolean }[] })[];
+      followedWishlists: unknown[];
+    };
+    assert.deepEqual(exported.wishlists.map((w) => w.id), [wishlistId]);
+    assert.deepEqual(exported.wishlists[0]?.items, ownerView.items);
+    assert.ok(ownerView.items.some((i) => !i.public));
+    assert.deepEqual(exported.followedWishlists, []);
+    const bobs = (await op(bob, { op: "export" })) as {
+      wishlists: unknown[];
+      followedWishlists: (ListedWishlist & { customName?: string })[];
+    };
+    assert.deepEqual(bobs.wishlists, []);
+    assert.deepEqual(
+      bobs.followedWishlists.map((w) => [w.id, w.customName]),
+      [[wishlistId, "Alice's"]],
+    );
+    await op(bob, { op: "unfollow", wishlistId });
+    await rejects(op(null, { op: "export" }), 401);
+  });
+
   it("deletes all of a user's data with the account", async () => {
-    const { id } = (await op(bob, {
-      op: "createWishlist", name: "Bobs", author: "Bob", icon: "gift",
-    })) as { id: string };
+    const id = await create(bob, "Bobs");
     await op(bob, { op: "addItem", wishlistId: id, item: { name: "x" } });
     await op(bob, { op: "deleteAccount" });
     const left = await pool.query(
@@ -187,9 +236,7 @@ describe("item reservations", () => {
     op(caller, { op: "unreserveItem", wishlistId, itemId });
 
   it("sets up a wishlist with a public and a private item", async () => {
-    ({ id: wishlistId } = (await op(alice, {
-      op: "createWishlist", name: "Wedding", author: "Alice", icon: "gift",
-    })) as { id: string });
+    wishlistId = await create(alice, "Wedding");
     await op(alice, { op: "addItem", wishlistId, item: { name: "Gift", public: true } });
     const all = (await op(alice, {
       op: "addItem", wishlistId, item: { name: "Secret", public: false },

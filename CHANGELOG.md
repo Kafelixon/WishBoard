@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ESLint rule rejecting hardcoded UI text in JSX, and Polish-locale Playwright smoke tests (#69).
 - Gift reservations: signed-in visitors can reserve an item so nobody else buys it, and other signed-in visitors see it as reserved. The owner and signed-out visitors never see reservations; the server leaves them out of the response. Needs the new `item_reservations` table from `db/schema.sql`; not available in the Firestore-only build (#70).
 
+### Changed
+
+- Fewer requests and a smaller first load (#82): the wishlist page gets its follow state from the `view` op (the `isFollowing` op is gone), data export is one `export` op, and wishlist create/update/delete return the owner's new list. Firebase Auth uses `initializeAuth` with the popup resolver passed only to Google sign-in, and Polish strings load only when Polish is active. New `user_follows(wishlist_id)` index in `db/schema.sql` (apply it with `scripts/apply-schema.ts`).
+
 ## [1.1.0] - 2026-10-31
 
 ### Added
