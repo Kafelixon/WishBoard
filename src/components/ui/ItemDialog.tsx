@@ -16,6 +16,7 @@ import { Loader2 } from "lucide-react";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { ItemFormFields } from "./ItemFormFields";
 import { isValidWebUrl } from "@/lib/url";
+import { MAX_PRICE } from "@/lib/limits";
 import i18n from "@/i18n";
 
 interface ItemDialogProps {
@@ -31,7 +32,7 @@ interface ItemDialogProps {
   actionLabel: string;
 }
 
-type ItemSchema = Omit<WishlistItem, "id" | "reservation">;
+type ItemSchema = Omit<WishlistItem, "id" | "reservation" | "reservedUntil">;
 
 const schema: yup.ObjectSchema<ItemSchema> = yup.object({
   name: yup.string().required(() => i18n.t("validation.itemName")),
@@ -44,6 +45,7 @@ const schema: yup.ObjectSchema<ItemSchema> = yup.object({
     .transform((value, originalValue) => (originalValue === "" ? 0 : (value as number)))
     .typeError(() => i18n.t("validation.priceNumber"))
     .min(0, () => i18n.t("validation.priceNegative"))
+    .max(MAX_PRICE, () => i18n.t("validation.priceTooHigh", { max: MAX_PRICE }))
     .required(),
   currency: yup.string(),
   link: yup
