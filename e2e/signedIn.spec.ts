@@ -518,7 +518,8 @@ test.describe("sharing", () => {
     expect(await page.evaluate(() => (window as unknown as { shared: ShareData[] }).shared)).toEqual([
       { title: "Wedding", url: new URL(`/wishlist/${id}`, page.url()).href },
     ]);
-    await expect(page.getByRole("button", { name: "Copy link" })).toBeVisible();
+    // The share sheet has its own copy action, so the separate button is hidden.
+    await expect(page.getByRole("button", { name: "Copy link" })).toHaveCount(0);
   });
 
   test("without a native share sheet only Copy link is shown", async ({ page, backend }) => {
