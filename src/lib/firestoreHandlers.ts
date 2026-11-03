@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreDb } from "@/firestoreSetup";
 import { WishlistItem, Wishlist, ProductMeta } from "@/lib/types";
+import { ProductMetaError } from "@/lib/productMetaError";
 import { toWishlistIconColor, toWishlistIconName } from "@/lib/wishlistIcons";
 import { v4 as uuid } from "uuid";
 
@@ -450,4 +451,4 @@ export const unreserveItem = (_userId: string, _wishlistId: string, _itemId: str
 
 /** Product lookup needs the /api function, which the Firestore-only build doesn't have. */
 export const fetchProductMeta = (_link: string): Promise<ProductMeta> =>
-  Promise.reject(new Error("Fetching product details isn't available in this build."));
+  Promise.reject(new ProductMetaError(501));

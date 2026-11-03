@@ -19,7 +19,7 @@
   },
   "nav": {
     "main": "Główna",
-    "wishlists": "Listy życzeń",
+    "wishlists": "Listy",
     "following": "Obserwowane",
     "getStarted": "Zaczynamy"
   },
@@ -394,6 +394,11 @@
     "fetchFilled": "Uzupełniono to, co udało się znaleźć.",
     "fetchNothing": "Na tej stronie nie znaleziono nic nowego.",
     "fetchFailed": "Nie udało się pobrać szczegółów.",
+    "fetchSignIn": "Zaloguj się, aby pobrać szczegóły produktu.",
+    "fetchRateLimited": "Zbyt wiele zapytań. Spróbuj ponownie za kilka minut.",
+    "fetchUnavailable": "Pobieranie szczegółów produktu nie jest dostępne w tej wersji.",
+    "fetchBadLink": "Nie można połączyć się z tym linkiem. Sprawdź adres.",
+    "fetchBlocked": "Nie udało się odczytać tej strony. Sklep może blokować automatyczne pobieranie — uzupełnij dane ręcznie.",
     "undo": "Cofnij",
     "undone": "Przywrócono poprzednie wartości.",
     "public": "Publiczny",

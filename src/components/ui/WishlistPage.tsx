@@ -134,10 +134,13 @@ function ShareButtons({
           {t("wishlistPage.share")}
         </Button>
       )}
-      <Button variant="outline" onClick={copyLink}>
-        <Link2 aria-hidden="true" />
-        {t("wishlistPage.copyLink")}
-      </Button>
+      {/* The share sheet already has "Copy"; a second button only crowds the header. */}
+      {!canShare && (
+        <Button variant="outline" onClick={copyLink}>
+          <Link2 aria-hidden="true" />
+          {t("wishlistPage.copyLink")}
+        </Button>
+      )}
     </>
   );
 }

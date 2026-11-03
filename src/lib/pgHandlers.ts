@@ -2,6 +2,7 @@ import { auth } from "@/firebaseSetup";
 import { readCachedIdToken } from "@/lib/cachedToken";
 import { getStoredUser } from "@/lib/userStore";
 import { WishlistItem, Wishlist, ProductMeta } from "@/lib/types";
+import { ProductMetaError } from "@/lib/productMetaError";
 import { toWishlistIconColor, toWishlistIconName } from "@/lib/wishlistIcons";
 import type {
   FollowStateChanger,
@@ -52,7 +53,7 @@ async function send<T>(
     error?: string;
   } | null;
   if (!response.ok || !payload || !("data" in payload)) {
-    throw new Error(payload?.error ?? `Request failed (${String(response.status)})`);
+    throw new ProductMetaError(response.status);
   }
   return payload.data as T;
 }
@@ -234,12 +235,9 @@ export const fetchProductMeta = async (link: string): Promise<ProductMeta> => {
     headers: await authHeaders(),
     body: JSON.stringify({ url: link }),
   });
-  const payload = (await response.json().catch(() => null)) as {
-    data?: ProductMeta;
-    error?: string;
-  } | null;
+  const payload = (await response.json().catch(() => null)) as { data?: ProductMeta } | null;
   if (!response.ok || !payload?.data) {
-    throw new Error(payload?.error ?? `Request failed (${String(response.status)})`);
+    throw new ProductMetaError(response.status);
   }
   return payload.data;
 };

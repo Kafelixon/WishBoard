@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "./switch";
 import { Loader2 } from "lucide-react";
 import { fetchProductMeta } from "@/lib/wishlistHandlers";
+import { ProductMetaError } from "@/lib/productMetaError";
 import { isValidWebUrl, normalizeUrl } from "@/lib/url";
 import { DEFAULT_CURRENCY, currencyOptions } from "@/lib/currency";
 import { MAX_NAME_LENGTH, MAX_NOTES_LENGTH, MAX_QUANTITY, MAX_URL_LENGTH } from "@/lib/limits";
@@ -83,6 +84,17 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
   // What the last fetch overwrote, so it can be taken back.
   const [undoValues, setUndoValues] = useState<Partial<WishlistItem> | null>(null);
 
+  /** Server messages are English, so the lookup's HTTP status picks the translated text. */
+  const fetchErrorMessage = (error: unknown) => {
+    const status = error instanceof ProductMetaError ? error.status : 0;
+    if (status === 401) return t("itemForm.fetchSignIn");
+    if (status === 429) return t("itemForm.fetchRateLimited");
+    if (status === 501) return t("itemForm.fetchUnavailable");
+    if (status === 400) return t("itemForm.fetchBadLink");
+    if (status === 422 || status === 502) return t("itemForm.fetchBlocked");
+    return t("itemForm.fetchFailed");
+  };
+
   /** Fills name and image from the product link where empty, and sets the price and currency. */
   const fetchDetails = async () => {
     const link = normalizeUrl(getValues("link") as string);
@@ -119,7 +131,7 @@ export const ItemFormFields: FC<ItemFormFieldsProps> = ({
           : t("itemForm.fetchNothing"),
       );
     } catch (error) {
-      setFetchMessage(error instanceof Error ? error.message : t("itemForm.fetchFailed"));
+      setFetchMessage(fetchErrorMessage(error));
       setFetchFailed(true);
     } finally {
       setFetching(false);
